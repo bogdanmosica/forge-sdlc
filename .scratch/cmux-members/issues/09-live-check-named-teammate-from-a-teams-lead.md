@@ -5,46 +5,36 @@ Status: open
 Labels: wayfinder:task
 Map: ../map.md
 Blocked by: none
-Worked by: the owner (HITL). The agent cannot launch a teams lead; it prepared the hook and the worktree.
+Worked by: the owner (HITL), from the videobot host. The agent cannot launch a teams lead; it prepared the host, the hook and the worktree there on 2026-10-18.
 
 ## Question
 
 Confirm, before the spec is written, the four hypotheses ticket 08 left: (a) a named background Agent call under a teams lead brings the lead back with the completion notification carrying the report; (b) Stop fires inside the split-pane teammate with the teammate's own cwd, the worktree, so `verified-before-stop` holds there; (c) the definition's `disallowedTools` hold in the pane; (d) a name with a space and an apostrophe survives the roster, the mailbox and the Crew panel.
 
-## Checklist
+## Prepared by the agent (done)
 
-Steps 1 and 2 were done by the agent on 2026-10-18 (the hooks are in `.claude/settings.local.json` beside its existing MCP setting; the worktree is cut). The owner starts at step 3.
+- forge-sdlc and mattpocock-skills installed in `~/Desktop/personal/videobot` at project scope (`.claude/settings.json` there, untracked).
+- The throwaway hook registered in `videobot/.claude/settings.local.json` for Stop, SubagentStop and TeammateIdle; it runs `videobot/.forge/live-check/stop-log.sh`, which appends every payload and the team and cmux variables to `videobot/.forge/live-check/stop.log`. The log path is absolute, so a teammate whose project dir is the worktree still writes there.
+- A throwaway worktree at `videobot/.forge/live-check/wt` on branch `live-check/teammate`, which no forge hook watches, so the log is the evidence.
 
-1. **Register the throwaway hook** in this repo (not committed; the file is gitignored). Create `.claude/settings.local.json` with:
+## Checklist (the owner)
 
-   ```json
-   {
-     "hooks": {
-       "Stop": [{ "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.forge/live-check/stop-log.sh", "timeout": 5 }] }],
-       "SubagentStop": [{ "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.forge/live-check/stop-log.sh", "timeout": 5 }] }],
-       "TeammateIdle": [{ "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.forge/live-check/stop-log.sh", "timeout": 5 }] }]
-     }
-   }
-   ```
+1. **Launch a teams lead** in the videobot cmux workspace with the Claude 🤖 tab-bar button (since 2026-10-18 it runs `cmux claude-teams`). The hooks from the local settings file load with that session.
 
-   The script `.forge/live-check/stop-log.sh` appends every payload and the team and cmux variables to `.forge/live-check/stop.log`. Remove the file after the check.
+2. **Paste this prompt verbatim** in that lead:
 
-2. **Cut a throwaway worktree** from the repo root, on a branch no forge hook watches:
+   > Use the Agent tool once, with `subagent_type: "forge-sdlc:implementer"`, `name: "Miles O'Brien"`, `run_in_background: true`, and this prompt: "First Bash call: `cd /Users/mosica.bogdan/Desktop/personal/videobot/.forge/live-check/wt`. Then run `pwd && git branch --show-current` and report both lines. Then say whether the tools named AskUserQuestion and Agent are available to you, by describing your tool list, without calling them. Then stop." Do nothing else: wait, and when something arrives from the teammate, paste it to me verbatim, saying whether it came as a task notification or as a mailbox message.
+
+3. **Collect**, once the lead has reported: the lead's own output from step 2 (notification or message, and its text); the Crew panel's row for the teammate (its name as displayed); and the log:
 
    ```sh
-   git worktree add .forge/live-check/wt -b live-check/teammate feat/cmux-members
+   cat ~/Desktop/personal/videobot/.forge/live-check/stop.log
    ```
 
-3. **Launch a teams lead** in this repo's cmux workspace with the Claude 🤖 tab-bar button (since 2026-10-18 it runs `cmux claude-teams`). In that lead, paste this prompt verbatim:
+4. **Paste** all three under `## Results` below, then run `/forge-sdlc:wayfinder cmux-members` in the forge-sdlc lead. The resolution records: (a) how the lead was told; (b) which events the log shows for the teammate, with `hook_event_name`, `cwd` and `CLAUDE_PROJECT_DIR`; (c) whether the teammate reported the two tools missing; (d) whether the name survived with its space and apostrophe.
 
-   > Use the Agent tool once, with `subagent_type: "forge-sdlc:implementer"`, `name: "Miles O'Brien"`, `run_in_background: true`, and this prompt: "First Bash call: `cd /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/live-check/wt`. Then run `pwd && git branch --show-current` and report both lines. Then say whether the tools named AskUserQuestion and Agent are available to you, by trying to describe your tool list, without calling them. Then stop." Do nothing else: wait, and when something arrives from the teammate, paste it to me verbatim, saying whether it came as a task notification or as a mailbox message.
+5. **Clean up** (the agent can do this at resolution): in videobot, `git worktree remove .forge/live-check/wt && git branch -D live-check/teammate`, delete `.claude/settings.local.json` and `.forge/live-check/`. The plugin install stays: videobot is the next host.
 
-4. **Collect**, once the lead has reported: the lead's own output from step 3 (notification or message, and its text); the Crew panel's row for the teammate (its name as displayed); and the log:
+## Results
 
-   ```sh
-   cat .forge/live-check/stop.log
-   ```
-
-5. **Paste** all three here, then run `/forge-sdlc:wayfinder cmux-members`. The resolution records: (a) how the lead was told; (b) which events the log shows for the teammate, with `hook_event_name`, `cwd` and `CLAUDE_PROJECT_DIR`; (c) whether the teammate reported the two tools missing; (d) whether the name survived with its space and apostrophe.
-
-6. **Clean up**: `git worktree remove .forge/live-check/wt && git branch -D live-check/teammate`, delete `.claude/settings.local.json`.
+(paste here)
