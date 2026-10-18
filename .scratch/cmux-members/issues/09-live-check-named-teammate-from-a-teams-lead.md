@@ -13,6 +13,8 @@ Confirm, before the spec is written, the four hypotheses ticket 08 left: (a) a n
 
 ## Checklist
 
+Steps 1 and 2 were done by the agent on 2026-10-18 (the hooks are in `.claude/settings.local.json` beside its existing MCP setting; the worktree is cut). The owner starts at step 3.
+
 1. **Register the throwaway hook** in this repo (not committed; the file is gitignored). Create `.claude/settings.local.json` with:
 
    ```json
