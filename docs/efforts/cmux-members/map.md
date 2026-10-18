@@ -52,6 +52,8 @@ Engineering, in this plugin. Every session reads `docs/design.md` sections 5 and
   - Where: one script, `bin/crew.mjs`, with `spawn`, `await`, `close`, applying the detection, wrapping crew.sh or answering `mode: agent` as JSON, never making the Agent call itself; build and slice-review call it.
   - Spawn failure: that slice falls back to a subagent and the build report says so.
   - Vocabulary: **lead** and **member** added to the glossary; "crew" stays cmux's word.
+- [Stop payload cwd in a member](../../../.scratch/cmux-members/issues/02-stop-payload-cwd-in-a-member.md): the payload's cwd is the member's current directory, the worktree crew.sh launched it in; `verified-before-stop` reads the slice branch from it unchanged, and the host config from the slice's own checkout. No hook change; keep the implementer's `cd <worktree>` rule; add a subfolder-cwd test. Note: `docs/research/cmux-members/stop-payload-cwd-in-a-member.md`.
+- [Crew Stop hook under a blocked stop](../../../.scratch/cmux-members/issues/01-crew-stop-hook-under-a-blocked-stop.md): Stop hooks run in parallel, so every stop forge blocks still marks the member done and wakes the lead. `bin/crew.mjs await` therefore settles a member only on a green verify record at the worktree HEAD or a red slice in state, never on `done` alone. No hook change. Note: `docs/research/cmux-members/crew-stop-hook-under-a-blocked-stop.md`.
 
 ## Not yet specified
 
