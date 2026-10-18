@@ -277,6 +277,8 @@ Skills advise, hooks enforce. Every hook is a Node script under `hooks/scripts/`
 
 Decision (test-frozen): fix mode belongs to a checkout, so a fix implementer on one slice freezes only that slice's tests while parallel implementers keep editing theirs ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
 
+Decision (test-frozen, spec-frozen): both read `.forge/state.json` from the host found through git, the parent of the edited file's checkout's git common dir, falling back to the project dir outside a repo. A member's project dir is its slice worktree, which holds no `.forge/`; reading state from it would leave a member's tests unfrozen in fix mode and its effort's artifacts editable. This is the fix ADR 0007's consequence names, the lookup `verified-before-stop` already makes; where the project dir is the main checkout, as for a subagent, the two dirs are the same and nothing changes ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
+
 Decision (verified-before-stop): the hook does not go quiet on `stop_hook_active`, which the engine sets on the stop after a block and would make the gate one-shot. The count in `.forge/verify/<slug>-<nn>.denials` ends the loop instead: block until the record is fresh and green or three stops were refused, then allow one stop with the red reason and reset the count ([ADR 0014](adr/0014-stop-gate-counts-instead-of-stop-hook-active.md)).
 
 Not hooked, on purpose: anything a linter already enforces, and anything that would need the model's judgment (a hook decides from state and text only).

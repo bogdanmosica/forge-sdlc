@@ -101,6 +101,17 @@ state() {
 JSON
 }
 
+# worktree <nn> [mode]: slice <nn>'s worktree at .forge/worktrees/$SLUG-<nn>, cut from the checked-out
+# branch as build cuts it, and the slice marked building in .forge/state.json with that mode (default
+# normal). Run after state. A member's project dir is this worktree: it holds no .forge/ of its own.
+worktree() {
+  git worktree add -q -b "slice/$SLUG-$1" ".forge/worktrees/$SLUG-$1"
+  node -e 'const fs = require("fs"), [f, slug, slice, mode] = process.argv.slice(1);
+    const s = JSON.parse(fs.readFileSync(f, "utf8"));
+    Object.assign(s.efforts[slug].slices[slice], { status: "building", mode });
+    fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\n");' .forge/state.json "$SLUG" "$SLUG-$1" "${2:-normal}"
+}
+
 # local_origin: a bare repository in TMPDIR as origin, holding main, so a push has somewhere to land.
 local_origin() {
   local bare

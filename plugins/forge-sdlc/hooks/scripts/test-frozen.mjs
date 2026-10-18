@@ -3,11 +3,13 @@
 // matching the host's test globs (docs/agents/forge.md, Test file globs) while the checkout it
 // lands in is in fix mode (.forge/state.json). The edited file's checkout decides whose mode
 // counts: a slice worktree (branch slice/<slug>-<nn>) reads that slice's mode, the main checkout
-// on feat/<slug> reads the effort's. Quiet without state, globs, or a branch of either shape.
+// on feat/<slug> reads the effort's. The state is the host's, found through git from that checkout,
+// so a session whose project dir is the worktree is held too. Quiet without state, globs, or a
+// branch of either shape.
 
 import path from 'node:path';
 
-import { DEFAULT_BRANCHES, allow, branchRules, checkoutRootOf, currentBranch, deny, effortOf, listOf, matchesGlob, matchesPath, readState, run } from './lib.mjs';
+import { DEFAULT_BRANCHES, allow, branchRules, checkoutRootOf, currentBranch, deny, effortOf, hostDirOf, listOf, matchesGlob, matchesPath, readState, run } from './lib.mjs';
 
 /** The name a branch shape's placeholder stands for: `slice/x-01` under `slice/<slug>-<nn>` is `x-01`. */
 const nameIn = (branch, shape) => branch.slice(shape.indexOf('<'));
@@ -39,7 +41,7 @@ export function testFrozenCheck(payload, { projectDir, config }) {
   const rel = path.relative(root, path.resolve(filePath)).split(path.sep).join('/');
   const glob = globs.find((g) => matchesPath(rel, g));
   if (!glob) return allow();
-  const state = readState(projectDir);
+  const state = readState(hostDirOf(root, projectDir));
   const branch = currentBranch(root);
   if (!state || !branch) return allow();
   const found = modeOf(state, branch, config, root);
