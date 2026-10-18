@@ -87,7 +87,7 @@ Set `MATTPOCOCK_SKILLS_ROOT=<a mattpocock-skills plugin root>` when running `npm
 | Suite | Cases | Checks |
 | --- | --- | --- |
 | `triggering` | one `<command>-fires` per command, and `init-builtin-quiet`, `wayfinder-neighbour-quiet`, `slice-review-neighbour-quiet` | each command runs its first step from its slash line, and the neighbours' phrasing (built-in `/init`, plain words about mapping an idea or reviewing a diff) leaves it unrun |
-| `guardrails` | one per hook | the hook fires on a fixture host and the run shows its decision; `seam.json` is the same payload, run by `npm test` with no model call |
+| `guardrails` | one per hook, plus a member-shaped case for `test-frozen` and `spec-frozen` | the hook fires on a fixture host and the run shows its decision; `seam.json` is the same payload, run by `npm test` with no model call, its optional `projectDir` (a slice worktree under the workspace) standing for a member session's project dir |
 | `frame` | `build-three-slices` | `/forge-sdlc:build` on the three-ticket fixture effort (`evals/fixtures/word-count/`) ends at Gate 4 with the PR body sections, no question asked, every slice reviewed clean before merging |
 | `upstream` | `upstream-check-ok` | `skill-path.mjs --check` is ok on the installed mattpocock-skills (the scaffold fails otherwise) and no drift warning reaches the session |
 
