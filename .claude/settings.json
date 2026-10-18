@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "forge-sdlc@forge-personal": true,
+    "mattpocock-skills@claude-plugins-official": true
+  }
+}
