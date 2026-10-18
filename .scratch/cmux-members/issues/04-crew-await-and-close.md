@@ -1,7 +1,7 @@
 # 04: cmux-members-04: crew.mjs await and close
 
 Type: slice
-Status: ready-for-agent
+Status: closed (superseded: transport reopened by ticket 07, crew.sh dropped)
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
@@ -17,3 +17,8 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/crew.test.mjs` → passes its await and close cases
+
+## Notes from the build
+
+- recommended: `close` closes the tab and writes `member: null` but does not `forget` the record; records are forgotten once at the end of the build, by id, for every slice that was a member. Reason: the exploration note on crew.sh (`.forge/notes/cmux-members/crew-sh-interface.md`) found that `forget <id>` while a later member is live makes the next spawn reuse that later id and overwrite its record, and parallel spawns race on the id counter. The intent's own decision (Q7) was "forget every record when the build ends"; the spec's "close forgets" is the deviation. (source: intent Decisions so far, lifecycle; crew.sh lines 262-263 per the note)
+- recommended: `crew.mjs spawn` is called one slice at a time by the lead, never concurrently, so the id-counter race cannot occur inside one build (source: build skill step 4, sequential dispatch)

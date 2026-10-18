@@ -1,7 +1,7 @@
 # 06: cmux-members-06: Fix members from slice-review
 
 Type: slice
-Status: ready-for-agent
+Status: withdrawn (to be rewritten at plan after ticket 07)
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 

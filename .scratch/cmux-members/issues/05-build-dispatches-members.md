@@ -1,7 +1,7 @@
 # 05: cmux-members-05: Build dispatches members
 
 Type: slice
-Status: ready-for-agent
+Status: withdrawn (to be rewritten at plan after ticket 07)
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 

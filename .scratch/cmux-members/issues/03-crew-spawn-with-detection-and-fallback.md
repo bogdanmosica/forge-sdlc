@@ -1,7 +1,7 @@
 # 03: cmux-members-03: crew.mjs spawn with detection and fallback
 
 Type: slice
-Status: ready-for-agent
+Status: closed (superseded: transport reopened by ticket 07, crew.sh dropped)
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
