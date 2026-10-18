@@ -44,9 +44,10 @@ export function host({ branch = 'main', initial = 'main', config = forgeMd(), br
   return { dir };
 }
 
-/** Spawn a hook script with `payload` on stdin; `{ status, stderr, decision }`. */
-export function hook(script, payload, { projectDir = payload.cwd } = {}) {
+/** Spawn a hook script with `payload` on stdin, in `cwd` (default: this process's); `{ status, stderr, decision }`. */
+export function hook(script, payload, { projectDir = payload.cwd, cwd } = {}) {
   const r = spawnSync(process.execPath, [path.join(scripts, script)], {
+    cwd,
     input: JSON.stringify(payload),
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
