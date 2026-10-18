@@ -53,3 +53,25 @@ none
 - recommended: a member resolves `${CLAUDE_PLUGIN_ROOT}` in the implementer definition as a subagent does, so the task file adds no plugin-root pointer; the first live build confirms it (source: none)
 - recommended: the eval scaffold's forge.md sets `## Crew` `mode: agent`, so a frame eval run from a cmux terminal never opens tabs (source: none)
 - recommended: the member transport gets a Decision line in design section 5 and a new ADR, the state lookup a Decision line in section 7, and CLAUDE.md's Commands list a line for `crew.mjs` (source: CLAUDE.md Conventions)
+
+## Plan
+
+[plan.md](plan.md): 6 slices.
+
+| nn | title | blocked by | delivers | proof |
+| --- | --- | --- | --- | --- |
+| 01 | Crew section and member field in the contracts | none | `## Crew` in forge.md, the init template and init; `member` on a slice and a `crew.mjs` row in the contracts; design sections 8 and 9; the eval scaffold pinned to `mode: agent` | `node --test tests/config.test.mjs` → passes with `crew.mode` and `crew.script` parsed from this repo's forge.md and the template |
+| 02 | Guardrail hooks find the host state through git | none | `test-frozen` and `spec-frozen` hold in a member whose project dir is the worktree; a subfolder-cwd case for `verified-before-stop`; member-shaped eval seams; design section 7 Decision line. Risk high | `node --test tests/test-frozen.test.mjs tests/spec-frozen.test.mjs tests/verified-before-stop.test.mjs tests/evals.test.mjs` → passes with the member-shaped cases |
+| 03 | crew.mjs spawn with detection and fallback | 01 | A cmux lead spawns a member through crew.sh with the fixed flags and `member` in state; every failed condition answers `transport: agent` with a reason; CLAUDE.md Commands line | `node --test tests/crew.test.mjs` → passes its spawn and fallback cases against a fake crew.sh |
+| 04 | crew.mjs await and close | 03 | A member settles green, red or ended by the verify record and state, never on `done` alone; timeout exits 2; close closes and forgets by id, no-op without a member | `node --test tests/crew.test.mjs` → passes its await and close cases |
+| 05 | Build dispatches members | 04 | The dispatch reference beside build; preconditions, background await, close on merge, resume rule, per-slice transport line in the Gate 4 report; design section 5 Decision line and the ADR | `node --test tests/build.test.mjs` → passes with the dispatch and the new build rules |
+| 06 | Fix members from slice-review | 05 | Slice-review closes the old member, dispatches the fix member, awaits it in the foreground with the timeout; implementer step 1 reworded for both transports | `node --test tests/slice-review.test.mjs tests/agents.test.mjs` → passes with the fix dispatch rules |
+
+Tickets, frontier first (01, 02):
+
+- `.scratch/cmux-members/issues/01-crew-section-and-member-field-in-the-contracts.md`
+- `.scratch/cmux-members/issues/02-guardrail-hooks-find-the-host-state-through-git.md`
+- `.scratch/cmux-members/issues/03-crew-spawn-with-detection-and-fallback.md`
+- `.scratch/cmux-members/issues/04-crew-await-and-close.md`
+- `.scratch/cmux-members/issues/05-build-dispatches-members.md`
+- `.scratch/cmux-members/issues/06-fix-members-from-slice-review.md`
