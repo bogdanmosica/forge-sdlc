@@ -4,3 +4,5 @@ node_modules/
 plugins/*/.claude-plugin/types/
 # Per-host run state of the loop, when this repo hosts its own plugin
 .forge/
+# Per-machine Claude Code settings (the live-check hook of cmux-members ticket 09 lives here)
+.claude/settings.local.json

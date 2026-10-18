@@ -2,7 +2,7 @@
 effort: cmux-members
 stage: map
 status: draft
-risk: normal
+risk: high
 updated: 2026-10-18
 ---
 
@@ -56,6 +56,8 @@ Engineering, in this plugin. Every session reads `docs/design.md` sections 5 and
 - [Crew Stop hook under a blocked stop](../../../.scratch/cmux-members/issues/01-crew-stop-hook-under-a-blocked-stop.md): Stop hooks run in parallel, so every stop forge blocks still marks the member done and wakes the lead. `bin/crew.mjs await` therefore settles a member only on a green verify record at the worktree HEAD or a red slice in state, never on `done` alone. No hook change. Note: `docs/research/cmux-members/crew-stop-hook-under-a-blocked-stop.md`.
 - Reopened 2026-10-18 by [Transport: agent teams instead of crew.sh, and a crew theme for the names](../../../.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md): the owner moved cmux to launch leads as `cmux claude-teams`, so named Agent calls render as panes; crew.sh is dropped, the two `crew.mjs` slices superseded, the hooks slice kept. The Mechanism decision above no longer stands; the grilling on that ticket replaces it.
 - [Named teammates under a teams lead](../../../.scratch/cmux-members/issues/08-named-teammates-under-a-teams-lead.md): `name` is on the Agent tool in every session; under a teams lead it launches a teammate, elsewhere it only makes the subagent addressable, so the loop always names its calls and detects nothing. Unconfirmed, for a live check: the completion notification of a named background call, the Stop hook and its cwd inside a split-pane teammate, `disallowedTools` there, and name characters. Note: `docs/research/cmux-members/named-teammates-under-a-teams-lead.md`.
+- [Transport: agent teams instead of crew.sh, and a crew theme for the names](../../../.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md), resolved: every agent the loop starts is a named member from the host's crew theme; init asks the theme with prior-sdlc's five presets rebuilt per forge role (researcher, prototyper, spec-writer, implementer, verifier, reviewer, merger, general); `## Crew` holds `theme` and `names` only; `bin/crew-name.mjs` picks and records the next name; display only; the slice's `member` field is the name; no close or forget rules; cmux-config out of scope; a live check (ticket 09) precedes the spec.
+- Slice 02 of the first plan, the guardrail hooks finding the host state through git, is merged on `feat/cmux-members` (871b8ac) and stays: it holds for a teammate exactly as for a crew.sh member.
 
 ## Not yet specified
 
