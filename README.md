@@ -11,7 +11,13 @@ claude plugin marketplace add <path or URL of this repository>
 claude plugin install forge-sdlc@forge-personal --scope project
 ```
 
-`mattpocock-skills@claude-plugins-official` is a declared dependency and installs with it. The loop is tested against the version in [UPSTREAM.lock](plugins/forge-sdlc/UPSTREAM.lock); a session start warns when the installed one differs.
+`mattpocock-skills@claude-plugins-official` is a declared dependency. The CLI installs it with forge-sdlc, at the same scope, and the success line lists it (`+ 1 dependency: mattpocock-skills`). That works because this marketplace's `allowCrossMarketplaceDependenciesOn` names `claude-plugins-official`; without that allowlist the CLI skips a dependency from another marketplace and forge-sdlc fails to load. If the success line does not list the dependency, install it by hand at the same scope and the plugin loads on the next start:
+
+```sh
+claude plugin install mattpocock-skills@claude-plugins-official --scope project
+```
+
+The loop is tested against the version in [UPSTREAM.lock](plugins/forge-sdlc/UPSTREAM.lock); a session start warns when the installed one differs.
 
 ## Once per host
 

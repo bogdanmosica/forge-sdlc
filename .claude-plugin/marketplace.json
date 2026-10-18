@@ -4,6 +4,7 @@
   "metadata": {
     "description": "Personal marketplace for forge-sdlc. Add this repository, then install forge-sdlc at project scope in a host."
   },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
   "plugins": [
     {
       "name": "forge-sdlc",

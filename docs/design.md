@@ -347,7 +347,9 @@ Policy skills are the playbook's Design-stage idea: the spec-writer calls each l
 
 ## 10. Depending on `mattpocock-skills@claude-plugins-official`
 
-Declared in `plugin.json` `dependencies`, so it installs with `forge-sdlc`. Skills are addressed as `mattpocock-skills:<name>`.
+Declared in `plugin.json` `dependencies`, so it installs with `forge-sdlc` at the same scope. Skills are addressed as `mattpocock-skills:<name>`.
+
+Decision (cross-marketplace dependency): the engine refuses to install a dependency from another marketplace unless the declaring plugin's marketplace allowlists it, so `marketplace.json` sets `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`; without it the install succeeds without the dependency and the plugin fails to load ([ADR 0015](adr/0015-marketplace-allowlists-the-official-dependency.md)).
 
 Two kinds of skill, two ways to use them:
 
