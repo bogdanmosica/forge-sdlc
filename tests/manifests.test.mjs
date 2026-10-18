@@ -26,6 +26,15 @@ test('marketplace.json at the repository root lists forge-sdlc under plugins/', 
   assert.ok(existsSync(path.join(repo, entry.source, '.claude-plugin', 'plugin.json')));
 });
 
+test('marketplace.json allowlists claude-plugins-official, so the dependency installs across marketplaces', () => {
+  // The engine skips a dependency from another marketplace unless the root marketplace names it
+  // (ADR 0015); the install then succeeds without mattpocock-skills and the plugin fails to load.
+  const market = JSON.parse(readFileSync(path.join(repo, '.claude-plugin', 'marketplace.json'), 'utf8'));
+  const plugin = json('.claude-plugin/plugin.json');
+  const foreign = plugin.dependencies.map((d) => d.split('@')[1]).filter((m) => m && m !== market.name);
+  for (const m of foreign) assert.ok(market.allowCrossMarketplaceDependenciesOn?.includes(m), m);
+});
+
 test('hooks.json: every script it names exists, every hook is exec-form with a timeout', () => {
   const hooks = json('hooks/hooks.json').hooks;
   const scripts = new Set();
