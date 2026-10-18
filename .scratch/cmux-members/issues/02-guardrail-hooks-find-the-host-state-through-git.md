@@ -1,7 +1,7 @@
 # 02: cmux-members-02: Guardrail hooks find the host state through git
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Risk: high (touches plugins/forge-sdlc/hooks/**)
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
@@ -24,3 +24,7 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 - recommended: the member-shaped seams are two new guardrail cases, `test-frozen-member-denied` and `spec-frozen-member-denied`, each with its own `seam.json` naming an optional `projectDir` (a slice worktree under the workspace) that `tests/evals.test.mjs` passes as `CLAUDE_PROJECT_DIR` and cwd, because a case folder holds one `seam.json` and the slice-mode reason needs its own `hook-*` grader (source: spec line 110, "Each hook's guardrail eval case gains a `seam.json` for the member shape")
 - recommended: the lookup is one helper, `hostDirOf(dir, fallback)` in `lib.mjs`; `verified-before-stop` keeps its own expression unchanged (source: spec line 91, "`verified-before-stop` needs no change")
 - recommended: the test helper `hook()` takes a `cwd`, and the empty-payload Stop case runs with cwd `/`: run from a slice worktree, as the proof is, it gated the real slice and wrote denials into the host's `.forge/verify/` (source: ticket, "existing host-dir cases stay green")
+
+## Comments
+
+merged 871b8ac3fc1a49802edea1f41f30fb490eaa85ed into feat/cmux-members; review record .forge/review/cmux-members-02.md (clean, no Important findings).
