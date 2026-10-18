@@ -85,6 +85,19 @@ test('the record is found under the main checkout when the project dir is the wo
   assert.deepEqual(hook(HOOK, stop(worktree), { projectDir: worktree }).decision, {});
 });
 
+test('a member that cd-ed into a subfolder of the worktree is gated: blocked without a record, through with a green one', () => {
+  const { dir, worktree } = sliceHost();
+  const sub = path.join(worktree, 'src', 'deep');
+  mkdirSync(sub, { recursive: true });
+  const r = hook(HOOK, stop(sub), { projectDir: worktree });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.decision.decision, 'block');
+  assert.ok(r.decision.reason.includes(`--worktree "${realpathSync(worktree)}"`));
+  assert.ok(r.decision.reason.includes(`--project "${realpathSync(dir)}"`));
+  record(dir, { head: gitIn(worktree, ['rev-parse', 'HEAD']) });
+  assert.deepEqual(hook(HOOK, stop(sub), { projectDir: worktree }).decision, {});
+});
+
 test('after three denials the fourth stop passes, the slice is marked red in state', () => {
   const { dir, worktree } = sliceHost();
   writeState(dir, { efforts: { demo: { stage: 'build', gate: 'none', slices: { 'demo-01': { status: 'building', ticket: '#1' } } } } });
@@ -155,5 +168,6 @@ test('quiet outside a repository and on an empty payload', () => {
   const r = hook(HOOK, stop('/'), { projectDir: '/' });
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(r.decision, {});
-  assert.deepEqual(hook(HOOK, {}, { projectDir: '/' }).decision, {});
+  // An empty payload falls back to the process cwd: run it outside a repo, not in the checkout running the tests.
+  assert.deepEqual(hook(HOOK, {}, { projectDir: '/', cwd: '/' }).decision, {});
 });
