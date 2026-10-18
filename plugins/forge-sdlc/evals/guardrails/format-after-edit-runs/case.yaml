@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: format-after-edit-runs
+description: After an Edit, the format-after-edit hook runs the formatter docs/agents/forge.md names on the edited file
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: src/count.mjs holds the new line and the formatter's header
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Edit]
+  prompt: 'Using the Edit tool, append the line `export const VERSION = 1;` to the end of src/count.mjs. Then tell me in one line whether the edit went through.'

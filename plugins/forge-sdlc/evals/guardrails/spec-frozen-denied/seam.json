@@ -1,0 +1,2 @@
+{ "script": "spec-frozen.mjs", "expect": "deny",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Edit", "tool_input": { "file_path": "docs/efforts/word-count/spec.md", "old_string": "- Reading from stdin.", "new_string": "- Reading from stdin.\n- Reading from stdin." } } }

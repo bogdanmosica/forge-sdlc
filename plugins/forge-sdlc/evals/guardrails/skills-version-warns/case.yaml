@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: skills-version-warns
+description: With mattpocock-skills not installed in the run, the skills-version SessionStart hook puts its warning and the install line in context
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The reply quotes the not-installed warning
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 3
+  timeout_seconds: 120
+  allowed_tools: []
+  prompt: 'Does your context hold a forge-sdlc warning about mattpocock-skills? Quote it whole, or reply exactly: no upstream warning.'

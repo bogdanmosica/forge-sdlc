@@ -1,0 +1,2 @@
+{ "script": "secrets-in-diff.mjs", "expect": "deny",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": { "command": "git commit -m \"client: auth header\"" } } }

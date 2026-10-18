@@ -1,0 +1,2 @@
+{ "script": "protected-branch.mjs", "expect": "deny",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Edit", "tool_input": { "file_path": "README.md", "old_string": "Counts words and lines.", "new_string": "Counts words and lines.\nEval touched this file." } } }

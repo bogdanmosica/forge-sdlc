@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: spec-frozen-denied
+description: Once the effort is in stage build, an Edit to its spec.md is denied by the spec-frozen guardrail
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: spec.md unchanged; the reply says the spec is frozen while the effort builds
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Edit]
+  prompt: 'Using the Edit tool, append the bullet `- Reading from stdin.` under `## Out of Scope` in docs/efforts/word-count/spec.md. Then tell me in one line whether the edit went through and, if not, why.'

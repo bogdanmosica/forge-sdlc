@@ -1,0 +1,17 @@
+# UPSTREAM.lock: the mattpocock-skills@claude-plugins-official release forge-sdlc was tested against.
+#
+# The skills-version hook warns at session start when the installed version differs from
+# `version` or a heading below is gone; `node bin/skill-path.mjs --check` prints the same
+# verdict. After re-reading the upstream delta and fixing the frame, set version and date here.
+version: 1.3.1
+date: 2026-10-17
+#
+# Skills the loop reads by file (the Skill tool refuses user-invoked upstream skills from inside
+# a skill), each with the headings the frame depends on, separated by " | ". A heading must open
+# a line of that SKILL.md exactly as written here.
+to-spec: ## Problem Statement | ## Solution | ## User Stories | ## Implementation Decisions | ## Testing Decisions | ## Out of Scope
+to-tickets: ### 1. Gather context | ### 3. Draft vertical slices | ### 4. Quiz the user | ### 5. Publish the tickets to the configured tracker
+implement-spec: ## Steps
+wayfinder: ## The Map | ## Destination | ## Ticket Types | ## Fog of war | ### Chart the map | ### Work through the map
+code-review: ### 3. Identify the standards sources | ### 4. Spawn both sub-agents in parallel | ### 5. Aggregate
+setup-matt-pocock-skills: ## Process

@@ -1,0 +1,14 @@
+{
+  "name": "forge-personal",
+  "owner": { "name": "Bogdan Mosica" },
+  "metadata": {
+    "description": "Personal marketplace for forge-sdlc. Add this repository, then install forge-sdlc at project scope in a host."
+  },
+  "plugins": [
+    {
+      "name": "forge-sdlc",
+      "source": "./plugins/forge-sdlc",
+      "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills. Depends on mattpocock-skills@claude-plugins-official."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: init-fires
+description: /forge-sdlc:init on a host Matt's setup has not touched runs its precondition and stops with the setup line
+tags: [triggering]
+plugins: ['../../..']
+runs: 2
+expected_outcome: No docs/agents/forge.md; the reply says to run /mattpocock-skills:setup-matt-pocock-skills first
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: '/forge-sdlc:init'

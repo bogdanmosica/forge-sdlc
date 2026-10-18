@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: slice-review-neighbour-quiet
+description: Asking for a code review in plain words, the phrasing of the built-in code-review, leaves forge-sdlc:slice-review and its reviewers unrun
+tags: [triggering]
+plugins: ['../../..']
+runs: 2
+expected_outcome: No slice-review call, no forge-sdlc:reviewer agent, no review record
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Skill, Agent]
+  prompt: 'Review the changes on this branch against feat/word-count for bugs.'

@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: wayfinder-fires
+description: /forge-sdlc:wayfinder with an idea runs its step 1 lookups (host config, upstream wayfinder file); with no upstream installed it stops on the install line
+tags: [triggering]
+plugins: ['../../..']
+runs: 2
+expected_outcome: A Bash call to forge-config.mjs, skill-path.mjs or effort-state.mjs; nothing charted
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: '/forge-sdlc:wayfinder Let writers export word counts as CSV'

@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: slice-review-fires
+description: /forge-sdlc:slice-review on a slice branch resolves both refs before anything else
+tags: [triggering]
+plugins: ['../../..']
+runs: 2
+expected_outcome: git rev-parse --verify on the slice or effort branch; the upstream lookup then stops the run
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: '/forge-sdlc:slice-review slice/word-count-01'

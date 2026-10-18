@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: status-fires
+description: /forge-sdlc:status reads every effort through effort-state.mjs and changes nothing
+tags: [triggering]
+plugins: ['../../..']
+runs: 2
+expected_outcome: A Bash call to effort-state.mjs; no state file written
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: '/forge-sdlc:status'

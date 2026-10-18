@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: build-three-slices
+description: /forge-sdlc:build on the three-ticket fixture effort at Gate 3 runs unattended to Gate 4; every slice is reviewed before it merges and PR.md carries the build's sections
+tags: [frame]
+plugins: ['../../..']
+runs: 1
+expected_outcome: Three clean review records, the CLI merged on feat/word-count, PR.md with Summary, Evidence per slice, Merge Danger and Red slices after the earlier gates' sections, state built at gate pr, no question asked
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 200
+  timeout_seconds: 3600
+  allowed_tools: [Read, Glob, Grep, Skill, Agent, AskUserQuestion, TodoWrite, Bash, Write, Edit]
+  prompt: '/forge-sdlc:build word-count'

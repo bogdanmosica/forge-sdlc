@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: test-frozen-denied
+description: In fix mode on the effort branch, an Edit to a file under the host's test globs is denied by the test-frozen guardrail
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: tests/count.test.mjs unchanged; the reply says the test is frozen in fix mode
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Edit]
+  prompt: 'Using the Edit tool, change the expected count in tests/count.test.mjs from 3 to 4. Then tell me in one line whether the edit went through and, if not, why.'

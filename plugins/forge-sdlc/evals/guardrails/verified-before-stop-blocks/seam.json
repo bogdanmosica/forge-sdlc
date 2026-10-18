@@ -1,0 +1,2 @@
+{ "script": "verified-before-stop.mjs", "expect": "block",
+  "payload": { "hook_event_name": "Stop", "stop_hook_active": false } }

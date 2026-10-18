@@ -1,0 +1,2 @@
+{ "script": "skills-version.mjs", "expect": "message",
+  "payload": { "hook_event_name": "SessionStart", "source": "startup" } }

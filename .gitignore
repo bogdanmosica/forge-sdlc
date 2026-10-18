@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+# Laid by the engine beside a plugin it loads from this folder
+plugins/*/.claude-plugin/types/
+# Per-host run state of the loop, when this repo hosts its own plugin
+.forge/
