@@ -1,7 +1,9 @@
 // The spec-frozen guardrail: once an effort builds, its intent, spec and plan are read-only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
@@ -57,6 +59,37 @@ test('the same file inside a slice worktree of the host is frozen: the path tail
   const { dir } = building();
   const r = frozen(dir, '.forge/worktrees/x-01/docs/efforts/x/spec.md');
   assert.equal(decisionOf(r), 'deny');
+});
+
+/** A building host whose effort branch carries spec.md, with a slice worktree x-01 cut from it; `{ dir, worktree }`. */
+function memberHost() {
+  const { dir } = building();
+  const git = (args) => {
+    const r = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+  };
+  mkdirSync(path.join(dir, 'docs', 'efforts', 'x'), { recursive: true });
+  writeFileSync(path.join(dir, 'docs', 'efforts', 'x', 'spec.md'), '# Spec\n');
+  git(['add', 'docs/efforts/x/spec.md']);
+  git(['commit', '-q', '-m', 'spec']);
+  const worktree = path.join(dir, '.forge', 'worktrees', 'x-01');
+  git(['worktree', 'add', '-q', '-b', 'slice/x-01', worktree]);
+  return { dir, worktree };
+}
+
+test('a member, whose project dir is the slice worktree, reads the host state through git: the spec is still frozen', () => {
+  const { worktree } = memberHost();
+  const r = hook('spec-frozen.mjs', edit(worktree, 'docs/efforts/x/spec.md'), { projectDir: worktree });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(decisionOf(r), 'deny');
+  assert.match(reasonOf(r), /docs\/efforts\/x\/spec\.md is frozen: effort x is in stage build/);
+  assert.deepEqual(hook('spec-frozen.mjs', edit(worktree, 'docs/efforts/x/map.md'), { projectDir: worktree }).decision, {});
+});
+
+test('outside a repository the state is read from the project dir', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'forge-norepo-'));
+  writeState(dir, { efforts: { x: { stage: 'build', gate: 'none' } } });
+  assert.equal(decisionOf(frozen(dir, 'docs/efforts/x/spec.md')), 'deny');
 });
 
 test('no state file: nothing is frozen', () => {
