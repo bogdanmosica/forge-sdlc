@@ -145,3 +145,11 @@ test('policy: no policy key prints attended', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.json.policy, 'attended');
 });
+
+test('policy: autonomous prints autonomous', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.policy, 'autonomous');
+});

@@ -37,7 +37,7 @@ const shape = config?.branches?.effort || DEFAULT_BRANCHES.effort;
 const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
 /** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
-const policy = 'attended';
+const policy = config?.gates?.policy === 'autonomous' ? 'autonomous' : 'attended';
 
 /** The first ref of the effort branch that exists: local, then origin's. */
 function refOf(slug) {
