@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,6 +25,7 @@ function crewHost(crew, { slices = {} } = {}) {
 
 const name = (dir, role, ...extra) => spawnSync(process.execPath, [script, role, '--project', dir, '--effort', 'demo', ...extra], { encoding: 'utf8' });
 const effort = (dir) => readState(dir).efforts.demo;
+const stateText = (dir) => readFileSync(path.join(dir, '.forge', 'state.json'), 'utf8');
 
 /** The printed name: exit 0, one line. */
 function printed(r) {
@@ -45,4 +47,16 @@ test('a pool run out restarts with -2, then -3', () => {
   const names = Array.from({ length: 7 }, () => printed(name(dir, 'verifier')));
   assert.deepEqual(names, ['Data', 'Tuvok', 'TPol', 'Data-2', 'Tuvok-2', 'TPol-2', 'Data-3']);
   assert.deepEqual(effort(dir).crew.verifier, names);
+});
+
+test('--slice picks a name and writes it as the slice\'s member; the same slice again prints it and records nothing new', () => {
+  const { dir } = crewHost(['- theme: star-trek'], { slices: { 'demo-01': { status: 'building', mode: 'normal' } } });
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'Scotty');
+  assert.deepEqual(effort(dir).slices['demo-01'], { status: 'building', mode: 'normal', member: 'Scotty' });
+  assert.deepEqual(effort(dir).crew.implementer, ['Scotty']);
+  const before = stateText(dir);
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'Scotty');
+  assert.equal(stateText(dir), before);
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-02')), 'OBrien', 'another slice takes the next name');
+  assert.equal(effort(dir).slices['demo-02'].member, 'OBrien');
 });

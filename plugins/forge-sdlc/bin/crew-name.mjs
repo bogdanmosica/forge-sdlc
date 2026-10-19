@@ -35,9 +35,15 @@ function nextName(pool, used) {
     if (free) return free;
   }
 }
+const member = flags.slice ? record.slices?.[flags.slice]?.member : undefined;
+if (member) {
+  process.stdout.write(`${member}\n`);
+  process.exit(0);
+}
 const pick = nextName(pool, used);
 
 record.crew = { ...record.crew, [role]: [...used, pick] };
+if (flags.slice) record.slices = { ...record.slices, [flags.slice]: { ...record.slices?.[flags.slice], member: pick } };
 record.updatedAt = new Date().toISOString();
 writeState(dir, state);
 process.stdout.write(`${pick}\n`);
