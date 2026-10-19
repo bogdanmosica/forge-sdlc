@@ -180,3 +180,12 @@ test('stop: each reason prints that stop and a why naming it, next unchanged', (
     assert.equal(r.json.next, 'plan', stop);
   }
 });
+
+test('stop: no stop prints none and the stage line as why', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.stop, 'none');
+  assert.match(r.json.why, /^Gate 2: running this approves spec\.md$/);
+});
