@@ -1,7 +1,7 @@
 # Stop gate for a subagent implementer
 
 Type: grilling
-Status: open
+Status: resolved
 Labels: wayfinder:grilling
 Map: ../map.md
 Blocked by: none
@@ -18,3 +18,9 @@ The decision: how does the hook learn which slice a stopping subagent built?
 - Option C, leave it. The implementer runs the proof before it stops and the merger refuses a slice without a fresh green record, so a missed gate costs one merger round, not a bad merge.
 
 Also to settle: whether the slice's `agent` field and the new `member` name live side by side in state, and whether `SubagentStop` with a matching slice should also block in a pane teammate if the rerun shows the same payload shape there.
+
+## Answer
+
+Option A, decided by the owner on 2026-10-19. After each Agent call that starts an implementer, the lead (the build skill, and slice-review for a fix round) writes the subagent's id on the slice in `state.json`, `agent: <id>`, beside the member name. On `SubagentStop`, `verified-before-stop` first tries the cwd branch as today; when that names no slice it reads the payload's `agent_id`, finds the slice whose `agent` matches, and gates on that slice's verify record exactly as it gates a slice checkout: fresh and green at the slice worktree's HEAD, or blocked with the verify-record command, up to three times, then the red pass. No matching slice: allow, as now. The field is cleared when the slice merges or goes red.
+
+This is a change under `hooks/**`, so the effort stays `risk: high`, and the hook's guardrail eval case gains a `seam.json` with the agent-id shape. Whether a pane teammate presents the same payload is answered by ticket 09's rerun; if it does, the same branch covers it.
