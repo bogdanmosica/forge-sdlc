@@ -19,7 +19,7 @@ Anything missing stops with one line naming it and the command that produces it 
 
 ## 2. Spawn the spec-writer
 
-One foreground Agent call, `subagent_type: "forge-sdlc:spec-writer"`. The prompt is pointers only, one per line, absolute paths:
+One [member call](../build/MEMBERS.md), role `spec-writer`, foreground under a plain lead, `subagent_type: "forge-sdlc:spec-writer"`, with this session its lead: read that file by path, which keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`. The prompt is pointers only, one per line, absolute paths:
 
 - slug, and the output `docs/efforts/<slug>/spec.md`
 - the to-spec file from step 1, and `${CLAUDE_PLUGIN_ROOT}/skills/spec/SPEC-EXTRAS.md` resolved

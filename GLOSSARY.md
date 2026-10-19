@@ -3,6 +3,9 @@
 The leading words of forge-sdlc, one line each. The design ([docs/design.md](docs/design.md)) uses them as defined here; the shapes behind them are in [docs/contracts.md](docs/contracts.md).
 
 - **effort**: one piece of work from idea to merged PR, named by its `<slug>`, with one folder `docs/efforts/<slug>/`, one effort branch and one PR.
+- **lead**: whoever starts members and waits for their reports: the session running a forge-sdlc command, which dispatches the agents of a stage, and the merger, which starts the members slice-review calls for (its reviewers, the fix implementer and the verifier).
+- **member**: an agent a lead starts with a name from the host's crew theme; under a lead with agent teams enabled it runs as a teammate in a visible pane, elsewhere as the subagent it always was. Same brief, same worktree, same proof either way.
+- **crew theme**: the host's choice of names for its members, one pool per role, picked at init; display only, never a branch, commit or record name.
 - **map**: the wayfinder map of an effort, `docs/efforts/<slug>/map.md`: its Destination, notes, decisions so far, and the tickets (on the tracker) still to resolve before the way is clear.
 - **Destination**: where the effort is going, written under the intent headings Problem, Outcome, Users, Constraints, Open questions; named first, it becomes `intent.md`.
 - **slice**: one tracer-bullet ticket of the plan, `<slug>-<nn>`, built test-first on its own local branch `slice/<slug>-<nn>` in its own worktree, then merged into the effort branch.

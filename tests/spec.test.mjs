@@ -103,3 +103,17 @@ test('agents/spec-writer.md: Opus, high, read and search, writes the spec only',
 test('spec: running it accepts Gate 1, so intent.md is set to status: accepted and commits with the spec', () => {
   assert.match(skill, /accepts Gate 1[^\n]*`status: accepted`/);
 });
+
+/* Members (the member call of skills/build/MEMBERS.md) */
+
+test('spec/SKILL.md: the spec-writer is a member call naming its role, the reference read by path', () => {
+  const { body } = split(skill);
+  const line = body.split('\n').find((l) => l.includes('subagent_type: "forge-sdlc:spec-writer"'));
+  assert.ok(line, 'an Agent call for the spec-writer');
+  assert.ok(line.includes('[member call](../build/MEMBERS.md)'), 'links the members reference');
+  assert.ok(line.includes('role `spec-writer`'), 'names its role');
+  assert.ok(line.includes('foreground under a plain lead'), 'runs in the foreground under a plain lead');
+  assert.doesNotMatch(body, /foreground Agent call/);
+  assert.match(body, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(skill, /teammate|task notification/i);
+});

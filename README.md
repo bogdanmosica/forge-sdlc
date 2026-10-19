@@ -43,6 +43,8 @@ Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sd
 
 Build is unattended: each slice is built test-first in its own worktree, verified (`.forge/verify/<slug>-<nn>.json`), reviewed on three axes (Standards, Spec, Bugs and security), and merged `--no-ff` into `feat/<slug>` only when clean. Two fix rounds at most, then the slice is red: it stays local and is listed in the PR. Only `feat/<slug>` is ever pushed.
 
+Every agent the loop starts is a named member, its name drawn from the crew theme `init` asks for. A lead launched with agent teams enabled (as `cmux claude-teams` does) is what makes the names visible: each member opens as a named pane, listed in cmux's Crew panel, and closes once its work is settled. A plain lead runs the same calls as subagents, and the names show only in the Gate 4 report.
+
 ## Hooks
 
 Reminders for the agent, not a sandbox: the git host's branch protection stays the enforcement of record. State comes from `.forge/state.json`, `docs/agents/forge.md` and git, never from the conversation.
@@ -55,7 +57,7 @@ Reminders for the agent, not a sandbox: the git host's branch protection stays t
 | test-frozen | no edit to a file matching `forge.md`'s test globs | while the edited file's checkout is in fix mode (the slice's mode in its worktree, the effort's on `feat/<slug>`) |
 | secrets-in-diff | no `git commit` that would add a credential shape or a `.env*` file: what is staged plus what the same command stages first (`git add … &&`, `commit -a`, `commit <path>`), simulated in a throwaway index; the reason names path and pattern, never the value | always |
 | format-after-edit | runs `forge.md`'s formatter on each edited file | when `forge.md` names a formatter |
-| verified-before-stop | an agent in a slice checkout stops only with a green verify record at its current HEAD; the reason is the command to run. After three blocks the next stop passes once, the slice marked red | on Stop and SubagentStop on a `slice/<slug>-<nn>` branch |
+| verified-before-stop | an agent in a slice checkout stops only with a green verify record at its current HEAD; the reason is the command to run. After three blocks the next stop passes once, the slice marked red | on Stop and SubagentStop on a `slice/<slug>-<nn>` branch, and on a subagent's SubagentStop by the slice whose `agent` is its id |
 | skills-version | warns when mattpocock-skills is missing, another version, or lost a heading the loop reads | at session start, resume and clear |
 
 ## Agents
@@ -87,7 +89,7 @@ Set `MATTPOCOCK_SKILLS_ROOT=<a mattpocock-skills plugin root>` when running `npm
 | Suite | Cases | Checks |
 | --- | --- | --- |
 | `triggering` | one `<command>-fires` per command, and `init-builtin-quiet`, `wayfinder-neighbour-quiet`, `slice-review-neighbour-quiet` | each command runs its first step from its slash line, and the neighbours' phrasing (built-in `/init`, plain words about mapping an idea or reviewing a diff) leaves it unrun |
-| `guardrails` | one per hook | the hook fires on a fixture host and the run shows its decision; `seam.json` is the same payload, run by `npm test` with no model call |
+| `guardrails` | one per hook, plus a case for `test-frozen` and `spec-frozen` run by a session whose project dir is a slice worktree | the hook fires on a fixture host and the run shows its decision; `seam.json` is the same payload, run by `npm test` with no model call, its optional `projectDir` (a slice worktree under the workspace) standing for a session whose project dir is a slice worktree |
 | `frame` | `build-three-slices` | `/forge-sdlc:build` on the three-ticket fixture effort (`evals/fixtures/word-count/`) ends at Gate 4 with the PR body sections, no question asked, every slice reviewed clean before merging |
 | `upstream` | `upstream-check-ok` | `skill-path.mjs --check` is ok on the installed mattpocock-skills (the scaffold fails otherwise) and no drift warning reaches the session |
 

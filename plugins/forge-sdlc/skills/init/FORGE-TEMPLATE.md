@@ -1,6 +1,6 @@
 # forge-sdlc host config
 
-Read by every forge-sdlc skill and hook. One `- key: value` bullet per line under a `## Section`; a trailing `# comment` is ignored. Rewritten whole by `/forge-sdlc:init`.
+Read by every forge-sdlc skill and hook. One `- key: value` bullet per line under a `## Section`; a trailing `# comment` is ignored. Rewritten whole by `/forge-sdlc:init`, which keeps any `- names.<role>: <name>, ...` bullet under `## Crew` while the theme stays.
 
 ## Proof commands
 - test: <command that exits non-zero on a failing test>
@@ -32,3 +32,6 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 
 ## Test file globs
 - globs: <globs>                 # **/*.test.*, **/*.spec.*, tests/**
+
+## Crew
+- theme: none                    # a preset id (warcraft, star-trek, star-wars, got, mario), none, or free text

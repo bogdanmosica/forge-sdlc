@@ -211,9 +211,10 @@ test('every scaffold builds its host (an upstream one when MATTPOCOCK_SKILLS_ROO
   }
 });
 
-const resolvePayload = (payload, work) => {
+/** The seam's payload as the engine sends it: cwd is the session's project dir, file paths are joined to the workspace. */
+const resolvePayload = (payload, cwd, work) => {
   const p = structuredClone(payload);
-  p.cwd = work;
+  p.cwd = cwd;
   if (p.tool_input?.file_path) p.tool_input.file_path = path.join(work, p.tool_input.file_path);
   return p;
 };
@@ -233,12 +234,15 @@ test('every hook script has a guardrails case, and each case hook decides what t
     const seam = JSON.parse(readFileSync(path.join(c.dir, 'seam.json'), 'utf8'));
     covered.add(seam.script);
     const { work, base } = scaffold(c);
-    const env = { ...process.env, CLAUDE_PROJECT_DIR: work, CLAUDE_CONFIG_DIR: path.join(base, 'config') };
+    // A seam may name its project dir, a slice worktree under the workspace, for a session whose project dir is a slice worktree.
+    const projectDir = path.join(work, seam.projectDir ?? '');
+    assert.ok(existsSync(projectDir), `${c.name}: seam projectDir ${seam.projectDir} does not exist`);
+    const env = { ...process.env, CLAUDE_PROJECT_DIR: projectDir, CLAUDE_CONFIG_DIR: path.join(base, 'config') };
     delete env.MATTPOCOCK_SKILLS_ROOT;
     const r = spawnSync(process.execPath, [path.join(plugin, 'hooks', 'scripts', seam.script)], {
-      cwd: work,
+      cwd: projectDir,
       env,
-      input: JSON.stringify(resolvePayload(seam.payload, work)),
+      input: JSON.stringify(resolvePayload(seam.payload, projectDir, work)),
       encoding: 'utf8',
     });
     assert.equal(r.status, 0, `${c.name}: ${r.stderr}`);

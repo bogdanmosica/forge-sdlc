@@ -10,6 +10,7 @@ A Claude Code plugin, `plugins/forge-sdlc/`, in its own marketplace `forge-perso
 - `node plugins/forge-sdlc/bin/forge-config.mjs <host>`: print a host's parsed `docs/agents/forge.md`.
 - `node plugins/forge-sdlc/bin/effort-state.mjs [host] <slug>` (or `--list [host]`): an effort's stage, gate and next command, from `.forge/state.json` or re-derived from its artifacts. Read-only.
 - `node plugins/forge-sdlc/bin/verify-record.mjs --slice <slug>-<nn> --worktree <dir> --project <host> [--proof "<cmd>"]`: run a slice's proof and the host's proof commands, write `.forge/verify/<slug>-<nn>.json`; exit 0 green, 1 red, 2 bad usage.
+- `node plugins/forge-sdlc/bin/crew-name.mjs <role> --project <host> --effort <slug> [--slice <slug>-<nn>]`: print a member's next name from the host's `## Crew` theme in handle form and record it in `.forge/state.json` (`--slice`, an implementer's, reuses the slice's `member`); exit 0, 2 bad usage.
 - `claude plugin eval plugins/forge-sdlc ...`: the eval suites; the README's Evals section has the commands. `--max-cost-usd 0` loads every case for free.
 
 ## Conventions

@@ -186,3 +186,34 @@ test('prototyper: Opus, high, worktree isolation, everything but Agent, throwawa
   assert.match(a, /throwaway/i);
   assert.match(a, /verdict/);
 });
+
+/* Members (the member call of skills/build/MEMBERS.md) */
+
+const MEMBER_LINK = '[member call](../build/MEMBERS.md)';
+const agentRow = (agent) => skill.split('\n').find((l) => l.startsWith('|') && l.includes(`forge-sdlc:${agent}`));
+
+test('the researcher and prototyper are member calls naming their roles', () => {
+  for (const role of ['researcher', 'prototyper']) {
+    const row = agentRow(role);
+    assert.ok(row, `a table row for ${role}`);
+    assert.ok(row.includes(MEMBER_LINK), `${role} links the members reference`);
+    assert.ok(row.includes(`role \`${role}\``), `${role} names its role`);
+  }
+});
+
+test('each member row says how it runs: researchers in the background at once, the prototyper in the foreground', () => {
+  assert.ok(agentRow('researcher').includes('in the background, all at once'), 'researchers run in the background, all at once');
+  assert.ok(agentRow('prototyper').includes('foreground under a plain lead'), 'the prototyper runs in the foreground under a plain lead');
+});
+
+test('the prototyper call passes isolation on the call itself, so it keeps its own worktree under any lead', () => {
+  assert.match(agentRow('prototyper'), /passes `isolation: "worktree"` on the call/);
+  assert.doesNotMatch(agentRow('researcher'), /isolation/);
+});
+
+test('this session is the lead of its member calls, reading the reference by path; no transport words', () => {
+  const line = skill.split('\n').find((l) => /\(\.\.\/build\/MEMBERS\.md\)[^\n]*plugin-root variable unresolved/.test(l));
+  assert.ok(line, 'the by-path sentence at the member calls');
+  assert.match(line, /lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(skill, /teammate|task notification/i);
+});

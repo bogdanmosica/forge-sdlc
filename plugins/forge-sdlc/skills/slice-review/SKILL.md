@@ -9,6 +9,8 @@ argument-hint: <slice-branch> [effort-branch]
 
 Labels come from [REVIEW.md](../../review/REVIEW.md): **Important** blocks, **Nit** is listed and never blocks.
 
+Each Agent call below is a [member call](../build/MEMBERS.md), and the session running this skill (the merger, or you by hand) is its lead: read that file by path, which keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`.
+
 ## 1. Resolve
 
 - The slice branch reads `slice/<slug>-<nn>`; take `<slug>` and `<nn>` from it. The effort branch, when omitted, is `feat/<slug>`. The worktree is `.forge/worktrees/<slug>-<nn>` (the main checkout when absent).
@@ -21,7 +23,7 @@ A bad ref or an empty diff stops here with one line naming it. Done when you hol
 
 ## 2. Review
 
-Three Agent calls in one message, so they run in parallel, each foreground, `subagent_type: "forge-sdlc:reviewer"`. Each prompt is pointers only, one per line, absolute paths:
+Three Agent calls in one message, so they run in parallel, each a [member call](../build/MEMBERS.md), role `reviewer` (one name run per call), foreground under a plain lead, `subagent_type: "forge-sdlc:reviewer"`. Each prompt is pointers only, one per line, absolute paths:
 
 - first line, one of `Axis: Standards`, `Axis: Spec`, `Axis: Bugs and security`
 - the diff command `git diff <effort>...<slice>`, the effort and slice branches, the worktree
@@ -51,8 +53,8 @@ Done when the record holds the round and the three reports are printed.
 
 Round 0 is the first review. When a round has an Important finding on any axis and fewer than two fix rounds have run:
 
-1. **Fix.** One foreground Agent call, `subagent_type: "forge-sdlc:implementer"`, in the same worktree; pointers only, the implementer's build pointers plus the fix: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` and its proof line, the effort branch, the worktree on the slice branch, `.forge/notes/<slug>/`, then the record path and the round to fix (`Round <n>`, its Important findings, every axis). Done when the implementer reports and the slice branch has a commit after the reviewed sha.
-2. **Verify.** One foreground Agent call, `subagent_type: "forge-sdlc:verifier"`; pointers, in the verifier's order: `<slug>-<nn>`, the worktree, the project dir (where `.forge/` lives), and the proof command copied from row `<nn>` of `docs/efforts/<slug>/plan.md` (or `none`). Its record writer is `node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs"`. Done when `.forge/verify/<slug>-<nn>.json` has `head` equal to `git -C <worktree> rev-parse HEAD`; a record that is not `green` is an Important finding of the next round.
+1. **Fix.** One [member call](../build/MEMBERS.md), role `implementer` with `--slice <slug>-<nn>`, foreground under a plain lead, `subagent_type: "forge-sdlc:implementer"`, in the same worktree; pointers only, the implementer's build pointers plus the fix: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` and its proof line, the effort branch, the worktree on the slice branch, `.forge/notes/<slug>/`, then the record path and the round to fix (`Round <n>`, its Important findings, every axis). Its report is the call's return, so skip the reference's Agent id step: the verify step below is the gate of a fix round. Done when the implementer reported and the slice branch has a commit after the reviewed sha.
+2. **Verify.** One [member call](../build/MEMBERS.md), role `verifier`, foreground under a plain lead, `subagent_type: "forge-sdlc:verifier"`; pointers, in the verifier's order: `<slug>-<nn>`, the worktree, the project dir (where `.forge/` lives), and the proof command copied from row `<nn>` of `docs/efforts/<slug>/plan.md` (or `none`). Its record writer is `node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs"`. Done when `.forge/verify/<slug>-<nn>.json` has `head` equal to `git -C <worktree> rev-parse HEAD`; a record that is not `green` is an Important finding of the next round.
 3. **Review again**: steps 2 and 3 as round `<n+1>`.
 
 Done when a round has no Important finding, or two fix rounds have run.

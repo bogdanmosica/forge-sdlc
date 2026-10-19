@@ -1,0 +1,76 @@
+---
+effort: cmux-members
+stage: map
+status: draft
+risk: high
+updated: 2026-10-18
+---
+
+# Visible implementers as cmux members
+
+## Destination
+
+### Problem
+
+The build stage dispatches every implementer as a background Agent subagent. When the lead runs inside cmux, the owner cannot see those sessions: no tab, no status, no way to click into a slice that is taking long or has stopped. The crew the owner watched during the first build of this plugin was spawned by hand through crew.sh, outside the loop.
+
+### Outcome
+
+A spec and plan for forge-sdlc alone. When the lead runs inside cmux, each implementer is a **member**: a visible cmux session hosting `forge-sdlc:implementer` in the slice's worktree, spawned through crew.sh, awaited through its report, closed when its slice merges. Anywhere else, or when crew.sh is missing or fails, the implementer is the Agent subagent it is today, and the build report says which transport each slice used. The implementer's brief, worktree, Stop hook and verify record are the same in both modes.
+
+### Users
+
+The owner of a host repo who runs `/forge-sdlc:build` from a cmux lead and wants to watch the slices build. The merger, which spawns fix-mode implementers through the same path. Hosts outside cmux, who must see no change.
+
+### Constraints
+
+- cmux-config is a dependency this effort reads, never a deliverable. crew.sh lives untracked at `~/.config/cmux/scripts/crew.sh` and is called where it is.
+- forge-sdlc keeps cutting `.forge/worktrees/<slug>-<nn>` and the dependency symlink itself; crew.sh's own `--worktree` is not used, the member gets `--repo <worktree>`.
+- One brief, two transports: the member's task file carries the same pointers the Agent prompt carries; no model or effort flags, the agent definition rules.
+- No hook changes unless a ticket proves one necessary; then that slice is risk high and adds its guardrail eval case.
+- Proof by node tests: a fake crew.sh fixture that records its arguments and writes a report file for the member path, the cmux variables unset for the fallback path.
+
+### Open questions
+
+- Does cmux's own Stop hook mark a member done, and deliver the wake-up, when forge's `verified-before-stop` hook blocks that stop? (ticket: crew Stop hook under a blocked stop)
+- What cwd does the Stop payload carry inside a member, and does `verified-before-stop` read the slice branch from it? (ticket: Stop payload cwd in a member)
+
+## Notes
+
+Engineering, in this plugin. Every session reads `docs/design.md` sections 5 and 7 (the build stage and the hooks), `GLOSSARY.md`, and the cmux-crew skill in `../cmux-config/skills/cmux-crew/SKILL.md`. Skills to consult: `mattpocock-skills:codebase-design` when placing `bin/crew.mjs`, `mattpocock-skills:writing-for-agents` for the skill and agent edits. Standing preference: the member path is a convenience over the subagent path, never a requirement; a host outside cmux must not notice this effort.
+
+## Decisions so far
+
+- Destination settled by grilling on 2026-10-18, fourteen questions, every recommendation accepted:
+  - Mechanism: crew.sh spawns, not agent teams; a member works from any cmux-hosted lead, panes from agent teams need a `cmux claude-teams` launch the plugin cannot control.
+  - Detection: inside cmux means the workspace id variable is set and crew.sh exists and is executable; anything else falls back to the subagent silently, with one line in the build report.
+  - Host knob: `forge.md` gains `## Crew` with `mode: auto | crew | agent` (default auto) and `script: ~/.config/cmux/scripts/crew.sh`, both derived by init.
+  - Who: implementers only, first build and fix mode alike; merger, verifier, researcher and reviewers stay Agent calls.
+  - Spawn: role `forge-sdlc:implementer`, task file under `.forge/notes/<slug>/`, `--repo <worktree>`, `--permission-mode auto`, name `<slug>-<nn>`, no model or effort flags.
+  - Waiting and evidence: a background `crew.sh await` plus cmux's wake-up message; the verify record stays the evidence, the report file is the summary line.
+  - Lifecycle: close a member's tab when its slice merges, keep a red slice's tab open, forget every record when the build ends.
+  - Where: one script, `bin/crew.mjs`, with `spawn`, `await`, `close`, applying the detection, wrapping crew.sh or answering `mode: agent` as JSON, never making the Agent call itself; build and slice-review call it.
+  - Spawn failure: that slice falls back to a subagent and the build report says so.
+  - Vocabulary: **lead** and **member** added to the glossary; "crew" stays cmux's word.
+- [Stop payload cwd in a member](../../../.scratch/cmux-members/issues/02-stop-payload-cwd-in-a-member.md): the payload's cwd is the member's current directory, the worktree crew.sh launched it in; `verified-before-stop` reads the slice branch from it unchanged, and the host config from the slice's own checkout. No hook change; keep the implementer's `cd <worktree>` rule; add a subfolder-cwd test. Note: `docs/research/cmux-members/stop-payload-cwd-in-a-member.md`.
+- [Crew Stop hook under a blocked stop](../../../.scratch/cmux-members/issues/01-crew-stop-hook-under-a-blocked-stop.md): Stop hooks run in parallel, so every stop forge blocks still marks the member done and wakes the lead. `bin/crew.mjs await` therefore settles a member only on a green verify record at the worktree HEAD or a red slice in state, never on `done` alone. No hook change. Note: `docs/research/cmux-members/crew-stop-hook-under-a-blocked-stop.md`.
+- Reopened 2026-10-18 by [Transport: agent teams instead of crew.sh, and a crew theme for the names](../../../.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md): the owner moved cmux to launch leads as `cmux claude-teams`, so named Agent calls render as panes; crew.sh is dropped, the two `crew.mjs` slices superseded, the hooks slice kept. The Mechanism decision above no longer stands; the grilling on that ticket replaces it.
+- [Named teammates under a teams lead](../../../.scratch/cmux-members/issues/08-named-teammates-under-a-teams-lead.md): `name` is on the Agent tool in every session; under a teams lead it launches a teammate, elsewhere it only makes the subagent addressable, so the loop always names its calls and detects nothing. Unconfirmed, for a live check: the completion notification of a named background call, the Stop hook and its cwd inside a split-pane teammate, `disallowedTools` there, and name characters. Note: `docs/research/cmux-members/named-teammates-under-a-teams-lead.md`.
+- [Transport: agent teams instead of crew.sh, and a crew theme for the names](../../../.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md), resolved: every agent the loop starts is a named member from the host's crew theme; init asks the theme with prior-sdlc's five presets rebuilt per forge role (researcher, prototyper, spec-writer, implementer, verifier, reviewer, merger, general); `## Crew` holds `theme` and `names` only; `bin/crew-name.mjs` picks and records the next name; display only; the slice's `member` field is the name; no close or forget rules; cmux-config out of scope; a live check (ticket 09) precedes the spec.
+- Slice 02 of the first plan, the guardrail hooks finding the host state through git, is merged on `feat/cmux-members` (871b8ac) and stays: it holds for a teammate exactly as for a crew.sh member.
+- [Live check](../../../.scratch/cmux-members/issues/09-live-check-named-teammate-from-a-teams-lead.md), run 1 on 2026-10-19: the lead was plain `claude`, so the teammate hypotheses stay open and a rerun from `cmux claude-teams` is scheduled. The run settled the subagent path: a subagent's `SubagentStop` cwd is the directory the harness assigned it, the lead's root, never its last `cd`; `disallowedTools` hold; the report arrives as a hand-back message. Consequence: `verified-before-stop` has never gated a subagent implementer, which [Stop gate for a subagent implementer](../../../.scratch/cmux-members/issues/10-stop-gate-for-a-subagent-implementer.md) now decides.
+- [Stop gate for a subagent implementer](../../../.scratch/cmux-members/issues/10-stop-gate-for-a-subagent-implementer.md), resolved: the lead records each implementer's agent id on its slice in state (`agent: <id>`, beside the member name) after the Agent call; on `SubagentStop` the hook, when the cwd names no slice, finds the slice by the payload's `agent_id` and gates on its verify record as for a slice checkout; no match allows as now. A `hooks/**` change, so risk stays high; the eval case gains the agent-id seam.
+- [Live check](../../../.scratch/cmux-members/issues/09-live-check-named-teammate-from-a-teams-lead.md), run 2 from `cmux claude-teams`, resolved: a named Agent call opens a real pane teammate with the plugin definition's type and model; the lead is woken by mailbox messages (the teammate's report, then an `idle_notification` carrying its final message), never a task notification, and the teammate stays idle until shut down; `Stop`, `TeammateIdle` and `SubagentStop` all fire in the teammate with its own cwd, the worktree, so `verified-before-stop` holds there unchanged; denied tools hold; names allow letters, digits, `_` and `-` only, so "Miles O'Brien" became `Miles-OBrien`.
+
+## Not yet specified
+
+- Agent teams as a second member transport, if cmux makes `cmux claude-teams` the default launch: named Agent calls would then render as panes with no crew.sh at all.
+- How init derives the `## Crew` section on a host where cmux is installed but the lead is not in it (probably `auto` unchanged, nothing to derive).
+- Whether the build report's transport line belongs in `state.json` per slice, so a resumed build knows which members to await or close.
+- Publishing: a public host of forge-sdlc has no crew.sh. The fallback already makes the member path optional; what the README says about obtaining crew.sh, and whether a public cmux-crew package or a `cmux new-surface` adapter in the plugin replaces it, is decided when forge-sdlc goes public, not here.
+
+## Out of scope
+
+- Changes to cmux-config: tracking crew.sh in that repo, its sidebars, its hooks. Housekeeping for that repo, not this effort.
+- Visibility for the merger, verifier, researcher or reviewers.
+- Any change to what the implementer does once it is running.

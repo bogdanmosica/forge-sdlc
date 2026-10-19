@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: verified-before-stop-agent-blocks
+description: A subagent implementer's SubagentStop from the host on the effort branch, whose agent id the lead recorded on slice word-count-01, is blocked by the verified-before-stop gate with the verify-record command for that slice's worktree
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The SubagentStop hook blocks once, naming the slice and its branch and the missing record, never the agent id
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep]
+  prompt: 'Reply with the single word: done.'
