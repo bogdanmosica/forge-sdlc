@@ -121,7 +121,7 @@ test('spec/SKILL.md: the spec-writer is a member call naming its role, the refer
 
 /* Gate policy (skills/wayfinder/GATE-POLICY.md) */
 
-const step = (n) => stepOf(split(skill).body, n);
+const step = (n) => stepOf(skill, n);
 
 test('spec step 7: applies the gate policy reference and leaves its rules there', () => {
   const step7 = step(7);
@@ -143,6 +143,8 @@ test('spec step 7: the report is a short list, one gate line per policy and outc
 test('spec step 7: a stop under autonomous writes stop: <reason>, and the Done line reads it back', () => {
   const step7 = step(7);
   assert.match(step7, /`autonomous`[^\n]*`stop: <reason>`/);
+  const lines = step7.split('\n').filter((l) => l.startsWith('- '));
+  assert.ok(lines.every((l) => !l.includes('`stop: <reason>`')), 'the state write sits outside the report list');
   assert.match(step7, /Done when [^\n]*`stop: <reason>`/);
 });
 
@@ -154,6 +156,7 @@ test('spec step 1: Gate 1 is accepted by the human typing the command or by the 
   const step1 = step(1);
   assert.match(step1, /gates\.policy/);
   assert.match(step1, /accepts Gate 1[^\n]*policy[^\n]*`status: accepted`|policy[^\n]*accepts Gate 1[^\n]*`status: accepted`/);
+  assert.match(step1, /Done when [^\n]*gate policy/);
 });
 
 test('spec step 6: the state write drops stop, so a stop is written only by step 7', () => {
@@ -162,7 +165,6 @@ test('spec step 6: the state write drops stop, so a stop is written only by step
 });
 
 test('spec/SKILL.md: every numbered step ends on a completion criterion', () => {
-  const steps = split(skill).body.split(/^## (?=\d+\. )/m).slice(1);
-  assert.equal(steps.length, 7);
-  for (const s of steps) assert.match(s.trimEnd(), /Done when [^\n]+$/, s.split('\n')[0]);
+  assert.equal(stepOf(skill, 8), '', 'seven numbered steps');
+  for (const n of [1, 2, 3, 4, 5, 6, 7]) assert.match(stepOf(skill, n).trimEnd(), /Done when [^\n]+$/, `step ${n}`);
 });

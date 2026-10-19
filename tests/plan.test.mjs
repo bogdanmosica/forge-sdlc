@@ -136,9 +136,8 @@ test('PLAN-TEMPLATE.md: frontmatter per contracts, the slice table columns, the 
 });
 
 test('every numbered step of SKILL.md ends on a completion criterion', () => {
-  const steps = skill.split(/^## (?=\d+\. )/m).slice(1);
-  assert.ok(steps.length >= 6, 'at least six numbered steps');
-  for (const step of steps) assert.match(step, /Done when /, step.split('\n')[0]);
+  const steps = [1, 2, 3, 4, 5, 6, 7].map((n) => stepOf(skill, n));
+  for (const [k, body] of steps.entries()) assert.match(body, /Done when /, `step ${k + 1}`);
 });
 
 test('plan: each slice enters state with status open and mode normal (docs/contracts.md)', () => {
@@ -166,13 +165,15 @@ test('plan step 3: an open: line among the Quiz lines stops Gate 3 under autonom
   assert.match(step3, /`open:` line/);
   assert.match(step3, /`stop: open`/);
   assert.match(step3, /passes Gate 3|Gate 3 passes/);
+  assert.match(step3, /Done when [^\n]*four Quiz lines/);
 });
 
-test('plan step 6: a policy stop writes stop (open, or risk-high for a risk-high effort under autonomous); a pass drops it', () => {
+test('plan step 6: under autonomous a Gate 3 stop goes beside gate as the reference\'s State write says; no reason restated', () => {
   const step6 = step(6);
-  assert.match(step6, /`stop: open`/);
-  assert.match(step6, /`autonomous`[^\n]*`risk: high`[^\n]*`stop: risk-high`|`stop: risk-high`[^\n]*`autonomous`[^\n]*`risk: high`/);
-  assert.match(step6, /pass(ed)?[^\n]*drop(s|ping)? `stop`|drop(s|ping)? `stop`[^\n]*pass/);
+  assert.match(step6, /`autonomous`[^\n]*Gate 3 stop[^\n]*beside `gate`[^\n]*State write/);
+  for (const restated of [/`stop: open`/, /`stop: risk-high`/, /drop(s|ping)? `stop`/]) {
+    assert.doesNotMatch(step6, restated, `restates the reference: ${restated}`);
+  }
   assert.match(step6, /Done when [^\n]*`stop`/);
 });
 
@@ -180,6 +181,7 @@ test('plan step 7: under autonomous a stopped Gate 3 reports its reasons and res
   const step7 = step(7);
   assert.match(step7, /`Gate 3 passed: policy autonomous, nothing open`/);
   assert.match(step7, /stopped[^\n]*reasons[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
+  assert.match(step7, /stopped[^\n]*changes the breakdown[^\n]*`\/forge-sdlc:plan <slug>`/, 'a settlement that changes the breakdown reruns plan first');
 });
 
 test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, four recommended lines, no author instruction in it', () => {
@@ -201,7 +203,7 @@ test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; 
   const contracts = readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8');
   const row = contracts.split('\n').find((l) => l.startsWith('| `## Plan` |'));
   assert.ok(row, 'a ## Plan row');
-  assert.match(row, /Quiz lines[^|]*`autonomous`/);
+  assert.match(row, /Quiz lines[^|]*`autonomous`[^|]*`risk: normal`/);
   const stop = contracts.split('\n').find((l) => l.startsWith('- `stop` is optional'));
   assert.match(stop, /`open` \([^)]*plan\.md\)/);
 });
