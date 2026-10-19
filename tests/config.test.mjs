@@ -68,6 +68,17 @@ test('bin/forge-config.mjs prints the config with rules, and fails loud on a hos
   assert.match(missing.stderr, /forge-sdlc:init/);
 });
 
+const repoRoot = path.resolve(root, '..', '..');
+const printConfig = (dir) => {
+  const r = spawnSync(process.execPath, [path.join(root, 'bin', 'forge-config.mjs'), dir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout);
+};
+
+test("bin/forge-config.mjs prints this repo's crew theme as crew.theme", () => {
+  assert.equal(printConfig(repoRoot).crew?.theme, 'star-trek');
+});
+
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {
   const { dir } = host();
   assert.equal(readState(dir), null);

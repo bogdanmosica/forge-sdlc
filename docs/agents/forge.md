@@ -32,3 +32,6 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 
 ## Test file globs
 - globs: tests/**
+
+## Crew
+- theme: star-trek               # a preset id (warcraft, star-trek, star-wars, got, mario), none, or free text
