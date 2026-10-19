@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { block, branchRules, effortOf, globOfShape, listOf, parseForgeConfig, readState, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { forgeMd, host } from './support/host.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc');
@@ -77,6 +77,22 @@ const printConfig = (dir) => {
 
 test("bin/forge-config.mjs prints this repo's crew theme as crew.theme", () => {
   assert.equal(printConfig(repoRoot).crew?.theme, 'star-trek');
+});
+
+const template = readFileSync(path.join(root, 'skills', 'init', 'FORGE-TEMPLATE.md'), 'utf8');
+
+test('bin/forge-config.mjs prints crew.theme none for a host written from the init template', () => {
+  const { dir } = host({ branch: 'main', config: template });
+  assert.deepEqual(printConfig(dir).crew, { theme: 'none' });
+});
+
+test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in display form", () => {
+  const withNames = template.replace(/^- theme: .*$/m, "- theme: deep space\n- names.implementer: Miles O'Brien, Seven of Nine, Rom, Nog, Quark");
+  const { dir } = host({ branch: 'main', config: withNames });
+  assert.deepEqual(printConfig(dir).crew, {
+    theme: 'deep space',
+    'names.implementer': "Miles O'Brien, Seven of Nine, Rom, Nog, Quark",
+  });
 });
 
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {

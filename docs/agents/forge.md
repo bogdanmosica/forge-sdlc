@@ -1,6 +1,6 @@
 # forge-sdlc host config
 
-Read by every forge-sdlc skill and hook. One `- key: value` bullet per line under a `## Section`; a trailing `# comment` is ignored. Rewritten whole by `/forge-sdlc:init`.
+Read by every forge-sdlc skill and hook. One `- key: value` bullet per line under a `## Section`; a trailing `# comment` is ignored. Rewritten whole by `/forge-sdlc:init`, which keeps any `- names.<role>: <name>, ...` bullet under `## Crew` while the theme stays.
 
 ## Proof commands
 - test: npm test
