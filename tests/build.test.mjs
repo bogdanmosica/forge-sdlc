@@ -15,6 +15,7 @@ const plugin = path.join(repo, 'plugins', 'forge-sdlc');
 const SKILL = 'skills/build/SKILL.md';
 const IMPLEMENTER = 'agents/implementer.md';
 const MERGER = 'agents/merger.md';
+const MEMBERS = 'skills/build/MEMBERS.md';
 const read = (rel) => readFileSync(path.join(plugin, rel), 'utf8');
 
 /** `{ fields, body }` of a markdown file with `key: value` frontmatter. */
@@ -131,6 +132,24 @@ for (const name of ['implement-spec', 'pr']) {
     for (const line of lines) assert.ok(!skill.includes(line), `upstream line pasted: ${line}`);
   });
 }
+
+/* The members reference */
+
+test('members: the reference beside build names the script, the name, the agent write, the wait and the shutdown', () => {
+  assert.ok(existsSync(path.join(plugin, MEMBERS)), MEMBERS);
+  const text = read(MEMBERS);
+  assert.match(text, /node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/crew-name\.mjs" <role> --project [^\n]*--effort <slug>/);
+  assert.match(text, /--slice <slug>-<nn>/);
+  assert.match(text, /as the call's `name`/);
+  assert.match(text, /slices\["<slug>-<nn>"\]\.agent/);
+  assert.match(text, /the member's report arrives/);
+  assert.match(text, /task notification/);
+  assert.match(text, /idle_notification[^\n]*`result`/);
+  assert.match(text, /verify record[^\n]*evidence|evidence[^\n]*verify record/);
+  assert.match(text, /SendMessage[^\n]*shutdown request|shutdown request[^\n]*SendMessage/);
+  assert.match(text, /merges or goes red/);
+  for (const link of relativeLinks(text)) assert.ok(existsSync(path.join(plugin, 'skills', 'build', link)), link);
+});
 
 /* The implementer */
 
