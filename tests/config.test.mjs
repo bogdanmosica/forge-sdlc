@@ -86,6 +86,11 @@ test('bin/forge-config.mjs prints crew.theme none for a host written from the in
   assert.deepEqual(printConfig(dir).crew, { theme: 'none' });
 });
 
+test('bin/forge-config.mjs prints gates.policy attended for a host written from the init template', () => {
+  const { dir } = host({ branch: 'main', config: template });
+  assert.equal(printConfig(dir).gates.policy, 'attended');
+});
+
 test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in display form", () => {
   const withNames = template.replace(/^- theme: .*$/m, "- theme: deep space\n- names.implementer: Miles O'Brien, Seven of Nine, Rom, Nog, Quark");
   const { dir } = host({ branch: 'main', config: withNames });
