@@ -11,9 +11,12 @@ import { listOf, readHostConfig, readState, writeState } from '../hooks/scripts/
 
 const PRESETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'crew.json');
 
-/** A display name in the form the Agent tool accepts: diacritics folded, spaces to `-`, only letters, digits, `_` and `-`. */
+/**
+ * A display name in the form the Agent tool accepts: diacritics folded, spaces to `-`, only
+ * letters, digits, `_` and `-`, runs of `-` collapsed and none at either end. '' when nothing is left.
+ */
 export const handleOf = (name) =>
-  name.normalize('NFD').replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '').replace(/-{2,}/g, '-');
+  name.normalize('NFD').replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
 
 const [role, ...rest] = process.argv.slice(2);
 const flags = {};
@@ -21,18 +24,22 @@ for (let i = 0; i < rest.length; i += 2) flags[rest[i].replace(/^--/, '')] = res
 const dir = path.resolve(flags.project);
 const slug = flags.effort;
 
+/** Display names in handle form, dropping any with nothing left. */
+const handlesOf = (names) => (names ?? []).map(handleOf).filter(Boolean);
+
 /**
- * The role's pool in display form: the host's `names.<role>` bullet, else the preset its theme
+ * The role's pool in handle form: the host's `names.<role>` bullet, else the preset its theme
  * names, else the fallback (`<slug>-<nn>` for an implementer with `--slice`, `<role>` otherwise).
  */
 function poolOf(crew) {
-  const override = listOf(crew?.[`names.${role}`]);
+  const override = handlesOf(listOf(crew?.[`names.${role}`]));
   if (override.length) return override;
   const presets = JSON.parse(readFileSync(PRESETS, 'utf8')).presets;
-  if (Object.hasOwn(presets, crew?.theme ?? '')) return presets[crew.theme].names[role];
+  const preset = Object.hasOwn(presets, crew?.theme ?? '') ? handlesOf(presets[crew.theme].names[role]) : [];
+  if (preset.length) return preset;
   return [role === 'implementer' && flags.slice ? flags.slice : role];
 }
-const pool = poolOf(readHostConfig(dir)?.crew).map(handleOf);
+const pool = poolOf(readHostConfig(dir)?.crew);
 
 const state = readState(dir);
 const record = state.efforts[slug];
@@ -42,7 +49,7 @@ const used = record.crew?.[role] ?? [];
 function nextName(pool, used) {
   for (let round = 1; ; round += 1) {
     const free = pool.map((n) => (round === 1 ? n : `${n}-${round}`)).find((n) => !used.includes(n));
-    if (free) return free;
+    if (free !== undefined) return free;
   }
 }
 const member = flags.slice ? record.slices?.[flags.slice]?.member : undefined;

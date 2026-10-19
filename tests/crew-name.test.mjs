@@ -3,10 +3,11 @@
 // crew.json (docs/contracts.md, "Member name").
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 import { readState, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { forgeMd, host } from './support/host.mjs';
@@ -23,14 +24,14 @@ function crewHost(crew, { slices = {} } = {}) {
   return { dir };
 }
 
-const name = (dir, role, ...extra) => spawnSync(process.execPath, [script, role, '--project', dir, '--effort', 'demo', ...extra], { encoding: 'utf8' });
+const name = (dir, role, ...extra) => spawnSync(process.execPath, [script, role, '--project', dir, '--effort', 'demo', ...extra], { encoding: 'utf8', timeout: 10_000 });
 const effort = (dir) => readState(dir).efforts.demo;
 const stateText = (dir) => readFileSync(path.join(dir, '.forge', 'state.json'), 'utf8');
 
-/** The printed name: exit 0, one line. */
+/** The printed name: exit 0, one line, in handle form (letters, digits, `_`, `-`). */
 function printed(r) {
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^[^\n]+\n$/, 'one line');
+  assert.match(r.stdout, /^[A-Za-z0-9_-]+\n$/, 'one line in handle form');
   return r.stdout.trim();
 }
 
@@ -89,3 +90,32 @@ for (const [label, crew] of [['no ## Crew', null], ['theme: none', ['- theme: no
     assert.deepEqual(effort(dir).crew, { implementer: ['demo-01', 'implementer'], verifier: ['verifier', 'verifier-2'] });
   });
 }
+
+test('handle form: diacritics folded, spaces to -, other characters dropped; a name left empty is skipped', () => {
+  const { dir } = crewHost(['- names.general: Padmé Amidala, Bowser Jr., Professor E. Gadd, - Kes -, !!!, 日本']);
+  const names = Array.from({ length: 5 }, () => printed(name(dir, 'general')));
+  assert.deepEqual(names, ['Padme-Amidala', 'Bowser-Jr', 'Professor-E-Gadd', 'Kes', 'Padme-Amidala-2']);
+});
+
+test('an override with no name left in handle form counts as none: the preset, else <role>', () => {
+  const { dir } = crewHost(['- theme: star-trek', '- names.reviewer: !!!, 日本']);
+  assert.equal(printed(name(dir, 'reviewer')), 'Spock');
+  const free = crewHost(['- theme: Discworld', '- names.reviewer: !!!, 日本']);
+  assert.equal(printed(name(free.dir, 'reviewer')), 'reviewer');
+});
+
+test('every shipped preset pool prints each of its names once, in handle form, before restarting with -2', async () => {
+  const presets = JSON.parse(readFileSync(path.join(path.dirname(script), '..', 'crew.json'), 'utf8')).presets;
+  const run = promisify(execFile);
+  const next = async (dir, role) => printed({ status: 0, ...(await run(process.execPath, [script, role, '--project', dir, '--effort', 'demo'])) });
+  // One host per preset, run side by side; within a host the calls stay in order, as they share its state.
+  await Promise.all(Object.entries(presets).map(async ([id, preset]) => {
+    const { dir } = crewHost([`- theme: ${id}`]);
+    for (const [role, pool] of Object.entries(preset.names)) {
+      const names = [];
+      for (let i = 0; i < pool.length; i += 1) names.push(await next(dir, role));
+      assert.equal(new Set(names).size, pool.length, `${id}.${role}: two names share a handle`);
+      assert.equal(await next(dir, role), `${names[0]}-2`, `${id}.${role}`);
+    }
+  }));
+});
