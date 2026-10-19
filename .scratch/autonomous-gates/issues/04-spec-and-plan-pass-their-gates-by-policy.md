@@ -17,3 +17,10 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 ## Proof
 
 `node --test tests/spec.test.mjs tests/plan.test.mjs` → passes with the policy rules and the Quiz block
+
+## Assumptions
+
+- recommended: spec step 6 and plan step 6 drop `stop` on their state write, and only spec step 7 writes `stop: <reason>` on an autonomous stop; plan writes none, since under `autonomous` a `risk: high` effort already stopped at Gate 1 and Gate 3 then asks the dialog quiz (source: spec Implementation Decisions, "Every other stage state write drops `stop`")
+- recommended: the carried nit from review 03 is fixed here: the `open` reason in GATE-POLICY.md and in contracts' `stop` line now names `plan.md` too, matching the stop rule's Gate 3 artifact (source: GATE-POLICY.md stop rule; .forge/review/autonomous-gates-03.md)
+- recommended: each Quiz line reads `- recommended: <question>: <answer> (source: policy autonomous)`, the question named first so a reviewer at Gate 4 sees which answer it is (source: spec user story 19)
+- recommended: under `autonomous`, a stopped Gate 2 reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume instead of `/forge-sdlc:plan <slug>` (source: GATE-POLICY.md Report line)
