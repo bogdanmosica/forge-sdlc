@@ -34,12 +34,14 @@ Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sd
 
 | Stage | Command | Artifact committed on `feat/<slug>` | Agents | Gate (who decides) |
 | --- | --- | --- | --- | --- |
-| Plan | `/forge-sdlc:wayfinder <idea>` (`/forge-sdlc:intent <slug>` reshapes the Destination) | `map.md`, then `intent.md`; draft PR (or `PR.md`) | researcher, prototyper | 1: the owner accepts the intent |
-| Design | `/forge-sdlc:spec <slug>` | `spec.md` | spec-writer | 2: the owner approves; the tech lead too when `risk: high` |
-| Build 1 | `/forge-sdlc:plan <slug>` | `plan.md`, tickets on the tracker | none: the engineer is quizzed in the session | 3: the engineer approves the breakdown |
+| Plan | `/forge-sdlc:wayfinder <idea>` (`/forge-sdlc:intent <slug>` reshapes the Destination) | `map.md`, then `intent.md`; draft PR (or `PR.md`) | researcher, prototyper | 1: the owner accepts the intent, or the policy when nothing is open |
+| Design | `/forge-sdlc:spec <slug>` | `spec.md` | spec-writer | 2: the owner approves, or the policy when nothing is open or flagged; the tech lead too when `risk: high` |
+| Build 1 | `/forge-sdlc:plan <slug>` | `plan.md`, tickets on the tracker | none: the engineer is quizzed in the session | 3: the engineer approves the breakdown, or the policy answers the quiz with it |
 | Build 2 + Test | `/forge-sdlc:build <slug>` | merged slices; PR ready with evidence and red slices | implementer, verifier, merger, reviewer ×3 | 4: the code owner reviews and merges |
 | Test, by hand | `/forge-sdlc:slice-review <slice-branch> [effort-branch]` | `.forge/review/<slug>-<nn>.md` (not committed) | reviewer ×3, implementer, verifier | verdict `clean` or `red` |
 | any | `/forge-sdlc:status [slug]` | none: read-only | none | none |
+
+Who passes Gates 1 to 3 is the gate policy, `policy` under `## Gates` in `forge.md`. `attended`, the default, stops at every gate for its human, as the table reads. With `policy: autonomous`, one `/forge-sdlc:wayfinder <idea>` charts and works the map with you, then runs intent, spec, plan and build in the same run, printing each stage's report as its gate passes, and stops only on an `open:` assumption line, a flagged concern in the spec, `risk: high` (that effort then runs attended), or Gate 4, which stays the code owner's. The quiz's answers are recorded in `plan.md` and the PR body for review at Gate 4; a stopped effort resumes with `/forge-sdlc:wayfinder <slug>` to its next stop.
 
 Build is unattended: each slice is built test-first in its own worktree, verified (`.forge/verify/<slug>-<nn>.json`), reviewed on three axes (Standards, Spec, Bugs and security), and merged `--no-ff` into `feat/<slug>` only when clean. Two fix rounds at most, then the slice is red: it stays local and is listed in the PR. Only `feat/<slug>` is ever pushed.
 

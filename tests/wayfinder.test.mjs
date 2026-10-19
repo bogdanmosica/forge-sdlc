@@ -321,3 +321,37 @@ test('design.md section 5 carries a Decision (gates) line linking ADR 0018; sect
   assert.match(item6, /policy/);
   assert.doesNotMatch(item6, /^6\. \*\*Unattended between gates\.\*\*/);
 });
+
+test('design.md describes who passes each gate under each policy (sections 3, 4, 5, 8, 11)', () => {
+  const design = doc('docs/design.md');
+  const part = (n, m) => new RegExp(`^## ${n}\\. [^\\n]*\\n([\\s\\S]*?)^## ${m}\\. `, 'm').exec(design)[1];
+  const s3 = part(3, 4);
+  assert.match(s3, /Gate 1[^\n]*policy/, 'the diagram names the policy at Gate 1');
+  assert.match(s3, /`autonomous`[^\n]*first stop or Gate 4/);
+  const s4 = part(4, 5);
+  const gates = s4.split('\n').filter((l) => /^\| [123] (intent|spec|plan) \|/.test(l));
+  assert.equal(gates.length, 3);
+  for (const row of gates) assert.match(row, /`autonomous`/, row.slice(0, 12));
+  assert.match(gates[2], /## Quiz/);
+  const s5 = part(5, 6);
+  const sub = (name) => new RegExp(`^### \`${name}\`[^\\n]*\\n([\\s\\S]*?)(?=^### )`, 'm').exec(s5)[1];
+  assert.match(sub('wayfinder'), /GATE-POLICY\.md|gate policy/);
+  assert.match(sub('wayfinder'), /first stop or Gate 4/);
+  assert.match(sub('spec'), /`autonomous`[^\n]*`spec:` key/);
+  assert.match(sub('plan'), /`autonomous`[^\n]*## Quiz/);
+  assert.match(part(8, 9), /`autonomous` the `spec` key is ignored/);
+  assert.match(part(11, 12), /wayfinder\/SKILL\.md[^\n]*GATE-POLICY\.md/);
+});
+
+test('README: the loop table names the policy pass at Gates 1 to 3 and one paragraph describes the policy', () => {
+  const readme = doc('README.md');
+  const rows = readme.split('\n').filter((l) => /^\| (Plan|Design|Build 1) \|/.test(l));
+  assert.equal(rows.length, 3);
+  for (const row of rows) assert.match(row, /policy/, row.slice(0, 20));
+  assert.match(readme, /^\| Build 2 \+ Test \|[^\n]*4: the code owner/m);
+  const para = readme.split('\n').find((l) => /`policy: autonomous`/.test(l));
+  assert.ok(para, 'a paragraph on policy: autonomous');
+  assert.match(para, /`attended`[^\n]*default/);
+  assert.match(para, /Gate 4/);
+  assert.match(para, /`open:`[^\n]*flagged[^\n]*`risk: high`/);
+});

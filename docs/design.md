@@ -57,11 +57,11 @@ Matt's skills already cover the procedures of each stage: `grilling` and `wayfin
 ```mermaid
 flowchart TD
     idea([idea · issue · bug report]) --> intent["Plan · /forge-sdlc:wayfinder<br/>chart the map, work its tickets, write intent.md"]
-    intent --> g1{{"Gate 1 · owner accepts intent.md<br/>draft PR opened"}}
+    intent --> g1{{"Gate 1 · owner accepts intent.md, or the policy<br/>draft PR opened"}}
     g1 --> spec["Design · /forge-sdlc:spec<br/>spec-writer synthesises, policy skills constrain"]
-    spec --> g2{{"Gate 2 · owner approves spec.md<br/>tech lead when risk: high"}}
+    spec --> g2{{"Gate 2 · owner approves spec.md, or the policy<br/>tech lead when risk: high"}}
     g2 --> plan["Build 1 · /forge-sdlc:plan<br/>to-tickets, engineer quizzed"]
-    plan --> g3{{"Gate 3 · engineer approves plan.md<br/>tickets published"}}
+    plan --> g3{{"Gate 3 · engineer approves plan.md, or the policy<br/>tickets published"}}
     g3 --> build["Build 2 + Test · /forge-sdlc:build<br/>unattended: implementers, verifier, merger, reviewers"]
     build --> pr{{"Gate 4 · PR ready, evidence attached<br/>code owner reviews intent and risk"}}
     pr --> main([merged by a human])
@@ -71,15 +71,15 @@ flowchart TD
     class g1,g2,g3,pr gate
 ```
 
-Yellow is where a human decides. Between gates nothing asks a question: a choice the artifacts leave open takes the reading the artifacts support and is recorded as an assumption line for the next gate.
+Yellow is where a human decides. Between gates nothing asks a question: a choice the artifacts leave open takes the reading the artifacts support and is recorded as an assumption line for the next gate. Who passes Gates 1 to 3 is the host's gate policy: under `attended`, the default, the human at each one; under `autonomous`, the policy whenever the gate's artifact has no `open:` line, no flagged concern and normal risk, so one `wayfinder` run goes on to the first stop or Gate 4, which is always the code owner's.
 
 ### Stage map
 
 | Playbook stage | Artifact committed | Matt's skills used | forge-sdlc command | Agents | Human gate (playbook role) |
 | --- | --- | --- | --- | --- | --- |
-| Plan | `map.md`, then `intent.md` | `wayfinder` (the map), `grilling`, `domain-modeling` for its grilling tickets; `research`, `prototype` for its other tickets | `wayfinder` (`intent` by hand) | researcher, prototyper (map tickets) | Product owner accepts the intent |
-| Design | `spec.md` | `to-spec` (procedure and template), `codebase-design` | `spec` | spec-writer | Product owner approves; tech lead when the effort is `risk: high` |
-| Build (plan) | `plan.md` + tickets on the tracker | `to-tickets` | `plan` | none (HITL quiz in the main session) | Engineer approves the breakdown |
+| Plan | `map.md`, then `intent.md` | `wayfinder` (the map), `grilling`, `domain-modeling` for its grilling tickets; `research`, `prototype` for its other tickets | `wayfinder` (`intent` by hand) | researcher, prototyper (map tickets) | Product owner accepts the intent; under `autonomous`, the policy when nothing is open |
+| Design | `spec.md` | `to-spec` (procedure and template), `codebase-design` | `spec` | spec-writer | Product owner approves; tech lead when the effort is `risk: high`; under `autonomous`, the policy when nothing is open or flagged |
+| Build (plan) | `plan.md` + tickets on the tracker | `to-tickets` | `plan` | none (HITL quiz in the main session) | Engineer approves the breakdown; under `autonomous`, the policy answers the quiz with it |
 | Build (code) | commits on `feat/<slug>` | `implement-spec` (frame), `tdd`, `codebase-design` | `build` | implementer, merger | none |
 | Test | `.forge/verify/*.json` evidence, review records | `code-review` (two axes, plus a third), `pr` | inside `build`; `slice-review` by hand | verifier, reviewer ×3 | Code owner reviews the PR with evidence attached |
 | Deploy, Maintain | v2 | `retro` today | v2 | v2 | Release manager, service owner (v2) |
@@ -103,7 +103,7 @@ docs/efforts/<slug>/
 | `map.md` | the main session, as tickets resolve | `feat/<slug>`, first commit, then one commit per resolved ticket | never: a reopened ticket updates it | git; the tracker holds the tickets and a map issue that links to the file |
 | `intent.md` | the main session with the human (HITL) | `feat/<slug>` when no ticket is open | Gate 1 passed | git |
 | `spec.md` | spec-writer agent (AFK, synthesis only) | `feat/<slug>` | Gate 2 passed; `build` started makes it read-only by hook | git; tracker issue links to it |
-| `plan.md` | the main session, after the engineer's quiz | `feat/<slug>` | Gate 3 passed | git; tickets on the tracker carry the live state (claims, frontier, closed) |
+| `plan.md` | the main session, after the engineer's quiz (the policy's, under `autonomous`) | `feat/<slug>` | Gate 3 passed | git; tickets on the tracker carry the live state (claims, frontier, closed) |
 | code and tests | implementer agents, merged by the merger | local slice branches `slice/<slug>-<nn>`, merged `--no-ff` into `feat/<slug>` | PR merged | git |
 | evidence | `bin/verify-record.mjs`, run by the implementer or the verifier agent | `.forge/verify/<slug>-<nn>.json` (not committed); summarised in the PR body | per slice | the PR body |
 
@@ -115,9 +115,9 @@ Why git, not the tracker, for the spec: Matt's `to-spec` publishes the spec to t
 
 | Gate | PR state | What the human does |
 | --- | --- | --- |
-| 1 intent | draft, body leads with `## Intent` and `## Assumptions to confirm` | comments or edits `intent.md`, then runs `/forge-sdlc:wayfinder <slug>` again (or `spec` by hand) |
-| 2 spec | draft, body gains `## Spec`, `## Flagged concerns` | resolves flagged concerns, approves |
-| 3 plan | draft, body gains `## Plan` with the slice table | approves the breakdown in the quiz; the commit is the approval |
+| 1 intent | draft, body leads with `## Intent` and `## Assumptions to confirm` | comments or edits `intent.md`, then runs `/forge-sdlc:wayfinder <slug>` again (or `spec` by hand); under `autonomous` the policy passes it when nothing is open and risk is normal, and the run goes on |
+| 2 spec | draft, body gains `## Spec`, `## Flagged concerns` | resolves flagged concerns, approves; under `autonomous` the policy passes it when nothing is open or flagged and risk is normal |
+| 3 plan | draft, body gains `## Plan` with the slice table | approves the breakdown in the quiz; the commit is the approval; under `autonomous` the quiz answers itself with the drafted breakdown, its four `recommended:` lines in a `## Quiz` block of `plan.md` and under the PR body's slice table for review at Gate 4 |
 | 4 built | **ready for review**, body is the `pr` template + `## Evidence` per slice + `## Red slices` | reviews intent and risk, merges |
 
 On the local tracker (no remote) the PR does not exist; the gate is the commit plus the human typing the next command. The commands are identical.
@@ -129,10 +129,10 @@ All user-invoked (`disable-model-invocation: true`). Type them in full with the 
 | Command | Arguments | Stage | Ends with |
 | --- | --- | --- | --- |
 | `/forge-sdlc:init` | | once per host, after Matt's setup | `docs/agents/forge.md` written, `### Delivery loop` block under `## Agent skills` in CLAUDE.md, `.forge/` gitignored; stops first when Matt's `setup-matt-pocock-skills` has not run |
-| `/forge-sdlc:wayfinder` | `<idea>` \| `#issue` \| `<slug>` | **the front door**, Plan | charts and works the map, writes `intent.md`, opens the draft PR or `PR.md` (Gate 1); on a slug, `bin/effort-state.mjs` names the next stage, which runs and stops at its gate |
+| `/forge-sdlc:wayfinder` | `<idea>` \| `#issue` \| `<slug>` | **the front door**, Plan | charts and works the map, writes `intent.md`, opens the draft PR or `PR.md` (Gate 1); on a slug, `bin/effort-state.mjs` names the next stage, which runs and stops at its gate; under the `autonomous` gate policy the run goes on to the first stop or Gate 4 |
 | `/forge-sdlc:intent` | `<slug>` | Plan, by hand | reshapes a charted map's Destination (problem, outcome, users, constraints, open questions), and a draft `intent.md` with it, without charting tickets |
 | `/forge-sdlc:spec` | `<slug>` | Design | `spec.md` committed, tracker issue linked, PR body updated (Gate 2) |
-| `/forge-sdlc:plan` | `<slug>` | Build 1 | engineer quizzed, tickets published, `plan.md` committed (Gate 3) |
+| `/forge-sdlc:plan` | `<slug>` | Build 1 | engineer quizzed (the quiz self-answered under `autonomous`), tickets published, `plan.md` committed (Gate 3) |
 | `/forge-sdlc:build` | `<slug>` | Build 2 + Test | unattended; PR ready with evidence and red slices (Gate 4) |
 | `/forge-sdlc:slice-review` | `<slice-branch> [effort-branch]` | Test | one slice reviewed on three axes, up to two fix rounds, record `.forge/review/<slug>-<nn>.md`, verdict `clean` or `red` |
 | `/forge-sdlc:status` | `[slug]` | any | read-only: the effort's stage, gate, next command, frontier, red slices, worktrees |
@@ -165,8 +165,8 @@ The one command of the loop. Every effort starts here and resumes here; `spec`, 
 2. Chart the map by following Matt's `wayfinder` (read from its file, section 10). Naming the **Destination** is the first act, and it is written under the playbook's intent headings: problem, outcome, users, constraints, open questions. Then the tickets, each `wayfinder:<type>`: **grilling** (HITL, in this session, through `grilling` and `domain-modeling`), **research** (the researcher agent), **prototype** (the prototyper agent), **task**. A small effort is a map with a Destination and no tickets: charting still happens, it just ends at once. The map body is `docs/efforts/<slug>/map.md`, committed on `feat/<slug>` as the effort's first commit and re-committed as each ticket resolves; the tracker holds the tickets (blocking, claims, frontier) and a map issue labelled `wayfinder:map` that links to the file. A decision lives on its ticket, the map only indexes it.
 3. Work the map. Research tickets run in the background, in parallel; grilling and prototype tickets one at a time, the human speaking for themselves (the agent never answers its own interview). Resolving a ticket graduates fog into new tickets until no ticket is open.
 4. When the way is clear, write `docs/efforts/<slug>/intent.md`: the Destination, Decisions so far, Out of scope, every gap an **assumption line** (`recommended:` the reading taken, `open:` needs the owner), and `risk:` computed from the host's risk globs. The intent is the map at the moment the way is clear, committed so Gate 1 has an artifact.
-5. Commit the intent on `feat/<slug>` (created from the default branch at step 2, when the map was first committed) and on GitHub open the draft PR with the intent and the assumptions leading its body. Stop: Gate 1.
-6. On resume (`wayfinder <slug>`): `spec`, then `plan`, then `build`, each stopping at its own gate as section 5 describes. A comment or edit on the PR that reopens a question reopens the matching map ticket; the next resume works it before moving on.
+5. Commit the intent on `feat/<slug>` (created from the default branch at step 2, when the map was first committed) and on GitHub open the draft PR with the intent and the assumptions leading its body. Gate 1: under `attended`, stop; under `autonomous`, the gate policy (`skills/wayfinder/GATE-POLICY.md`) passes it when nothing is open and risk is normal, and the run goes on as a resume does.
+6. On resume (`wayfinder <slug>`): `spec`, then `plan`, then `build`, each stopping at its own gate as section 5 describes; a stage whose gate the policy passed reports `Gate <n> passed` and the run continues, each next stage read by file when it starts, to the first stop or Gate 4. A comment or edit on the PR that reopens a question reopens the matching map ticket; the next resume works it before moving on.
 
 ### `intent` (by hand)
 
@@ -178,12 +178,12 @@ Shapes or reshapes one map's Destination through a short grilling, without chart
 2. Spawn the **spec-writer** agent with pointers only: the intent, the map and its closed tickets when there is one, the glossary, the ADRs, the host's policy skills (section 8). It reads `to-spec`'s file for the template and the seam discipline and synthesises; it asks nothing.
 3. The spec is Matt's template plus three sections: `## Affected users and systems`, `## Flagged concerns` (a concern a policy skill raised and the spec could not resolve) and `## Assumptions to confirm`.
 4. Commit on `feat/<slug>`. Publish the tracker issue with a link and `ready-for-agent`. Update the PR body.
-5. Stop at Gate 2 when the spec gate is `always`, or when an `open:` assumption or a flagged concern remains; otherwise `wayfinder` continues into `plan`. A `risk: high` effort always stops and labels the PR `needs-tech-lead`.
+5. Stop at Gate 2 when the spec gate is `always`, or when an `open:` assumption or a flagged concern remains; otherwise `wayfinder` continues into `plan`. A `risk: high` effort always stops and labels the PR `needs-tech-lead`. Under `autonomous` the `spec:` key is not consulted: the gate policy alone decides, and a stop writes `stop` to the effort's state.
 
 ### `plan` (Build, the engineer's gate)
 
 1. Precondition: `spec.md` committed and the gate passed.
-2. Follow `to-tickets` (read its file): tracer-bullet slices, blocking edges, prefactoring first, expand–contract for wide refactors. Its quiz step **is Gate 3**: present the breakdown, iterate until the engineer approves.
+2. Follow `to-tickets` (read its file): tracer-bullet slices, blocking edges, prefactoring first, expand–contract for wide refactors. Its quiz step **is Gate 3**: present the breakdown, iterate until the engineer approves. Under `autonomous` with `risk: normal` the quiz's answer is the drafted breakdown: its four answers are `recommended:` lines in a `## Quiz` block of `plan.md` after `## Prefactoring` and under the PR body's slice table, and the report says `Gate 3 passed`.
 3. Each slice gets a **proof** line: the command and the observable that show it done (a test file, an e2e tag, a build target). This is the playbook's "proof" column and what the verifier runs.
 4. Publish the tickets to the tracker (blockers first, native blocking edges on GitHub, `Blocked by` text locally), label `ready-for-agent`. Write `docs/efforts/<slug>/plan.md` from the approved breakdown: the slice table, order of work (the initial frontier), risks, prefactoring. Commit. Update the PR body.
 
@@ -336,7 +336,7 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 - names.implementer: Scotty, Miles O'Brien, Rom, Nog, Quark   # optional, one per overridden role
 ```
 
-Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is set aside.
+Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is ignored ([ADR 0018](adr/0018-gates-pass-by-policy.md)).
 
 CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup created, replaced in place on re-run:
 
@@ -359,7 +359,7 @@ Policy skills are the playbook's Design-stage idea: the spec-writer calls each l
 └── notes/<slug>/       # researcher's exploration notes for the build
 ```
 
-`state.json` is the only cross-session memory the hooks read. The commands write it at each stage boundary; `status` prints it. `stop`, optional, names why a run under the `autonomous` gate policy stopped at `gate` (`open`, `flagged` or `risk-high`); every other stage write drops it. Losing it is recoverable: `wayfinder` re-derives the stage from which artifacts exist on `feat/<slug>` and whether the PR is draft or ready.
+`state.json` is the only cross-session memory the hooks read. The commands write it at each stage boundary; `status` prints it. `stop`, optional, names why a run under the `autonomous` gate policy stopped at `gate` (`open`, `flagged` or `risk-high`); every other stage write drops it ([ADR 0018](adr/0018-gates-pass-by-policy.md)). Losing it is recoverable: `wayfinder` re-derives the stage from which artifacts exist on `feat/<slug>` and whether the PR is draft or ready.
 
 ## 10. Depending on `mattpocock-skills@claude-plugins-official`
 
@@ -387,7 +387,7 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   ├── .claude-plugin/plugin.json    # name, version, dependencies: ["mattpocock-skills@claude-plugins-official"]
 │   ├── skills/
 │   │   ├── init/SKILL.md         # + FORGE-TEMPLATE.md
-│   │   ├── wayfinder/SKILL.md    # the front door: + INTENT-TEMPLATE.md, ASSUMPTIONS.md
+│   │   ├── wayfinder/SKILL.md    # the front door: + INTENT-TEMPLATE.md, ASSUMPTIONS.md, GATE-POLICY.md
 │   │   ├── intent/SKILL.md       # Destination by hand
 │   │   ├── spec/SKILL.md         # + SPEC-EXTRAS.md (the three added sections)
 │   │   ├── plan/SKILL.md         # + PLAN-TEMPLATE.md
