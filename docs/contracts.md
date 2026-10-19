@@ -46,7 +46,7 @@ Written by the commands at every stage boundary, read by the hooks and `status`.
 ```
 
 - `stage` is the last stage that has an artifact; `gate` is the gate the effort waits at (`none` while a stage runs). `wayfinder <slug>` resumes from `stage` and `gate`.
-- `stop` is optional: why a run under the `autonomous` gate policy stopped at `gate`, one of `open` (an `open:` line in intent.md or spec.md), `flagged` (a flagged concern in spec.md), `risk-high` (the effort runs attended). A stage that stops by policy writes it beside `gate`; every other stage write drops it. It is additive: an absent `stop` reads as none, and no migration runs.
+- `stop` is optional: why a run under the `autonomous` gate policy stopped at `gate`, one of `open` (an `open:` line in intent.md, spec.md or plan.md), `flagged` (a flagged concern in spec.md), `risk-high` (the effort runs attended). A stage that stops by policy writes it beside `gate`; every other stage write drops it. It is additive: an absent `stop` reads as none, and no migration runs.
 - `pr` is `null` on a host without a remote.
 - `mode` exists at two levels. The effort's `mode: fix` is for work in the main checkout (the `diagnosing-bugs` flow on `feat/<slug>`). A slice's `mode: fix` is set by the fix implementer for that slice only, so parallel implementers on other slices keep editing their tests. The `test-frozen` hook resolves the edited file's checkout: inside a slice worktree it reads that slice's `mode`; in the main checkout it reads the effort's.
 - `crew` holds, per role, the handle-form names `crew-name.mjs` has handed out in this effort; a slice's `member` is its implementer's name, kept across fix rounds and resumes, and written by `crew-name.mjs --slice`. A slice's `agent` is the id the Agent result named for its current implementer, written by the lead (or the merger, for a fix round) right after the call and cleared when the slice goes `merged` or `red`; the `verified-before-stop` hook reads it to find the slice a stopping subagent built. All three are additive: an absent field reads as none, and no migration runs.
@@ -111,7 +111,7 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | `## Assumptions to confirm` | wayfinder, then spec | the assumption lines, `open` first |
 | `## Spec` | spec | a link to `spec.md` and the user-story count |
 | `## Flagged concerns` | spec | the spec's bullets, verbatim |
-| `## Plan` | plan | the slice table: nn, title, blocked by, proof |
+| `## Plan` | plan | the slice table: nn, title, blocked by, proof; the four Quiz lines of plan.md's `## Quiz` under it, under `autonomous` only |
 | `## Summary`, `## Evidence`, `## Merge Danger` | build | the `pr` template, Evidence one bullet per slice from its verify record |
 | `## Red slices` | build | one line per red slice with its ticket and reason, or `none` |
 

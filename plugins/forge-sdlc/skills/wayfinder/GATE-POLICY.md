@@ -24,7 +24,7 @@ A closed set, in this order:
 
 | Reason | Holds when |
 | --- | --- |
-| `open` | an `open:` line in `intent.md` or `spec.md` |
+| `open` | an `open:` line in `intent.md`, `spec.md` or `plan.md` |
 | `flagged` | a flagged concern in `spec.md` |
 | `risk-high` | the effort is `risk: high`, so it runs attended |
 

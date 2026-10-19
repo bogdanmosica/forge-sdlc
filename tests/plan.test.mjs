@@ -178,3 +178,16 @@ test('plan steps 1, 5, 6 and 7: a policy-passed Gate 2, the Quiz block in plan.m
   assert.match(step(6), /drop(s|ping)? `stop`/);
   assert.match(step(7), /`Gate 3 passed: policy autonomous, nothing open`/);
 });
+
+test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous', () => {
+  const contracts = readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8');
+  const row = contracts.split('\n').find((l) => l.startsWith('| `## Plan` |'));
+  assert.ok(row, 'a ## Plan row');
+  assert.match(row, /Quiz lines[^|]*`autonomous`/);
+});
+
+test('the gate policy reference: the open reason covers plan.md, the artifact Gate 3 checks', () => {
+  const ref = readFileSync(path.join(dir, '..', 'wayfinder', 'GATE-POLICY.md'), 'utf8');
+  const row = ref.split('\n').find((l) => l.startsWith('| `open` |'));
+  assert.match(row, /`plan\.md`/);
+});
