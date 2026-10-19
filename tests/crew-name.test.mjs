@@ -115,7 +115,7 @@ test('an effort absent from state prints a name and leaves the state file unchan
   assert.equal(existsSync(path.join(bare.dir, '.forge', 'state.json')), false);
 });
 
-test('an unknown role, a missing or unknown flag, or --slice off an implementer exits 2 and records nothing', () => {
+test('an unknown role, a missing or unknown flag, --slice off an implementer, or a --slice not <effort>-<nn> exits 2 and records nothing', () => {
   const { dir } = crewHost(['- theme: star-trek']);
   const before = stateText(dir);
   const run = (args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
@@ -128,6 +128,12 @@ test('an unknown role, a missing or unknown flag, or --slice off an implementer 
     ['implementer', '--project', dir, '--effort', 'demo', '--slice'],
     ['verifier', '--project', dir, '--effort', 'demo', '--slot', 'x'],
     ['verifier', '--project', dir, '--effort', 'demo', '--slice', 'demo-01'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'other-01'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'demo-1'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'demo-001'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'demo-01x'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'Data Two'],
+    ['implementer', '--project', dir, '--effort', 'd.mo', '--slice', 'demo-01'],
   ]) {
     const r = run(args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.stderr}`);
