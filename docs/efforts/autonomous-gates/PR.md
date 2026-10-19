@@ -52,3 +52,21 @@ none
 - recommended: no new glossary term; `stop` is used in its plain sense and the stops are named in the existing **gate policy** entry (source: GLOSSARY.md)
 - recommended: wayfinder's description gains one clause for the autonomous run and the skill stays user-invoked (source: writing-for-agents context pointers; docs/contracts.md Skills)
 - recommended: overturning a Quiz line at Gate 4 uses the existing paths (a PR comment, an edit, a stage rerun by hand); this effort adds no undo path (source: intent Out of scope)
+
+## Plan
+
+[plan.md](plan.md): 4 slices.
+
+| nn | title | blocked by | delivers | proof |
+| --- | --- | --- | --- | --- |
+| 01 | Policy in the config, init and contracts | none | `policy: attended` in the template and this repo's forge.md; init asks the policy first; `stop` and the Names row in the contracts; design sections 8 and 9 | `node --test tests/config.test.mjs tests/init.test.mjs` → passes with `gates.policy` parsed from a host written from the template and the policy asked first |
+| 02 | effort-state and status print the policy and the stop | 01 | `effort-state` prints `policy` and `stop`, `why` names a stop, `--list` carries both, default attended in the script; status prints them | `node --test tests/effort-state.test.mjs tests/status.test.mjs` → passes with the seven policy and stop cases |
+| 03 | Gate policy reference and wayfinder's one run | 02 | The reference (stop rule, reasons, report line, state write); wayfinder step 1, step 7 and Resume continue on `Gate <n> passed` to the first stop or Gate 4; ADR 0018, ADR 0006 superseded; design sections 3, 4, 5 and 13; README | `node --test tests/wayfinder.test.mjs` → passes with the reference linked and the continuation rule |
+| 04 | spec and plan pass their gates by policy | 03 | spec accepts a policy-passed Gate 1 and applies the stop rule; plan accepts a policy-passed Gate 2, answers the quiz with the drafted breakdown under autonomous, writes the Quiz block in plan.md and the PR body, reports `Gate 3 passed`; the template's Quiz section | `node --test tests/spec.test.mjs tests/plan.test.mjs` → passes with the policy rules and the Quiz block |
+
+Tickets, frontier first (01):
+
+- `.scratch/autonomous-gates/issues/01-policy-in-the-config-init-and-contracts.md`
+- `.scratch/autonomous-gates/issues/02-effort-state-and-status-print-the-policy-and-the-stop.md`
+- `.scratch/autonomous-gates/issues/03-gate-policy-reference-and-wayfinder-one-run.md`
+- `.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`

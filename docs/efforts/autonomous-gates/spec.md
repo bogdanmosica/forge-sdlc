@@ -1,7 +1,7 @@
 ---
 effort: autonomous-gates
 stage: spec
-status: draft
+status: accepted
 risk: normal
 updated: 2026-10-19
 ---
