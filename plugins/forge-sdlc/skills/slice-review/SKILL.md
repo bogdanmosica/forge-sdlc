@@ -9,6 +9,8 @@ argument-hint: <slice-branch> [effort-branch]
 
 Labels come from [REVIEW.md](../../review/REVIEW.md): **Important** blocks, **Nit** is listed and never blocks.
 
+Each Agent call below is a [member call](../build/MEMBERS.md), and the session running this skill (the merger, or you by hand) is its lead: read that file by path, which keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`.
+
 ## 1. Resolve
 
 - The slice branch reads `slice/<slug>-<nn>`; take `<slug>` and `<nn>` from it. The effort branch, when omitted, is `feat/<slug>`. The worktree is `.forge/worktrees/<slug>-<nn>` (the main checkout when absent).

@@ -217,3 +217,11 @@ test('slice-review: the fix implementer is a background member call with --slice
   assert.match(line, /Done when the implementer reported and the slice branch has a commit after the reviewed sha/);
   assert.doesNotMatch(frontmatter(read(SKILL)).body, /foreground Agent call/);
 });
+
+test('slice-review: the session running it is the lead of its member calls, reading the reference by path', () => {
+  const body = frontmatter(read(SKILL)).body;
+  const line = body.split('\n').find((l) => /plugin-root variable unresolved/.test(l));
+  assert.ok(line, 'the by-path sentence');
+  assert.match(line, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(read(SKILL), /teammate|task notification/i, 'the transport words stay in the reference');
+});
