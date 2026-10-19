@@ -1,7 +1,7 @@
 # Live check: a named teammate from a teams lead
 
 Type: task
-Status: open
+Status: resolved
 Labels: wayfinder:task
 Map: ../map.md
 Blocked by: none
@@ -51,3 +51,14 @@ cd ~/Desktop/personal/videobot && cmux claude-teams --permission-mode auto
 ```
 
 Before pasting the prompt, confirm teams are on: ask the lead to run `echo ${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-unset}` in Bash and to say whether its Agent tool has a `name` parameter. Only then paste step 2. The hook file still holds the three entries; the log keeps appending.
+
+### Run 2, 2026-10-19 06:40 UTC: a real teams lead
+
+The lead was started with `cmux claude-teams --permission-mode auto`; it confirmed the teams variable set to 1 and a `name` parameter on its Agent tool. The roster `~/.claude/teams/session-719c0784/config.json` lists the lead and one member, `agentType: forge-sdlc:implementer`, `model: claude-opus-5-5`, with a tmux pane id: a real pane.
+
+- **(a) Notification.** No task notification. The lead received two mailbox messages, each delivered as a user turn headed "Another Claude session sent a message": the teammate's own report, and an automatic `idle_notification` JSON whose `result` is the teammate's final message. The lead woke on each. The teammate then stays **idle, not shut down**. The Agent tool in teams mode has no `run_in_background`: teammates always run in the background.
+- **(b) Hooks and cwd.** In the teammate's own session (a separate session id), `Stop` fired with `cwd` equal to the worktree the teammate had `cd`'d into, `agent_type: forge-sdlc:implementer`; `TeammateIdle` fired with `teammate_name` and `team_name` and the same cwd; `SubagentStop` fired with the same cwd and an `agent_id`. `CLAUDE_PROJECT_DIR` in the teammate is the lead's project directory, not the worktree. So `verified-before-stop` holds in a pane as it stands, through the cwd branch; the agent-id branch of ticket 10 covers it twice over.
+- **(c) Denied tools.** Hold in the pane: the teammate found neither AskUserQuestion nor Agent in its loaded or loadable tools.
+- **(d) Name.** The Agent tool accepts letters, digits, `_` and `-` only; the lead turned "Miles O'Brien" into `Miles-OBrien` before spawning, and that is the roster, hook and mailbox name. Crew names must be emitted in that form.
+
+Resolved 2026-10-19. The videobot preparation was removed at resolution; the plugin install there stays.
