@@ -7,7 +7,7 @@ argument-hint: <slug>
 
 `/forge-sdlc:build <slug>` is Build 2 and Test, **unattended**: from Gate 3 to Gate 4 nothing asks a question, so `AskUserQuestion` stays out of this run. An open choice takes the reading the spec supports and is recorded on the ticket as `- recommended: <reading> (source: <spec line>)`. The procedure is Matt's `implement-spec`, read by file and followed step by step; this skill is the frame: which branch, which agent, which record, which PR body.
 
-Prompts to agents are **pointers**: paths, ticket ids, branch names, one per line, never pasted text. Every state write uses `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`) on `efforts.<slug>`, with `updatedAt` now.
+Prompts to agents are **pointers**: paths, ticket ids, branch names, one per line, never pasted text. Every state write uses `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`) on `efforts.<slug>`, with `updatedAt` now. Each Agent call below is a [member call](MEMBERS.md): read that file by path, which keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`.
 
 ## 1. Precondition
 
@@ -46,4 +46,4 @@ Without a remote the same text goes into `docs/efforts/<slug>/PR.md`, committed 
 
 ## 4. Gate 4
 
-Set the effort to `stage: built`, `gate: pr`, each slice's final status. Report: the PR link (or `feat/<slug>`), merged and red counts, the red slices with their tickets, and one line per slice, `<slug>-<nn>: <member>`, the name its state holds as `member`. Stop: Gate 4 is the code owner's. Done when the state reads back `stage: built`, `gate: pr` and the report is printed.
+Set the effort to `stage: built`, `gate: pr`, each slice's final status. Report: the PR link (or `feat/<slug>`), merged and red counts, the red slices with their tickets, and one line per slice, `<slug>-<nn>: <member>`, where `<member>` is the name its state holds as `member`, or `none` when the slice holds no member (a slice red by its blocker never started one). Stop: Gate 4 is the code owner's. Done when the state reads back `stage: built`, `gate: pr` and the report is printed.
