@@ -105,7 +105,7 @@ test('other tools and an empty payload are allowed', () => {
   assert.deepEqual(r.decision, {});
 });
 
-test('a member, whose project dir is the slice worktree, reads the host state through git: its fix mode still freezes its tests', () => {
+test('a session whose project dir is a slice worktree reads the host state through git: its fix mode still freezes its tests', () => {
   const { dir, wt } = fixture({ slices: { 'x-01': 'fix' } });
   const worktree = path.join(dir, wt('01'));
   const r = hook(HOOK, edit(worktree, 'src/cart.test.ts'), { projectDir: worktree });

@@ -1,6 +1,6 @@
 schema_version: '1.1'
 name: spec-frozen-member-denied
-description: Once the effort is in stage build, an Edit to its spec.md inside a slice worktree is denied by the spec-frozen guardrail, from the host or from a member whose project dir is the worktree
+description: Once the effort is in stage build, an Edit to its spec.md inside a slice worktree is denied by the spec-frozen guardrail, from the host or from a session whose project dir is a slice worktree
 tags: [guardrails, hooks]
 plugins: ['../../..']
 runs: 1

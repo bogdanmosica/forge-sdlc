@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { block, branchRules, effortOf, globOfShape, listOf, parseForgeConfig, readState, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { forgeMd, host } from './support/host.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc');
@@ -66,6 +66,43 @@ test('bin/forge-config.mjs prints the config with rules, and fails loud on a hos
   const missing = spawnSync(process.execPath, [path.join(root, 'bin', 'forge-config.mjs'), bare.dir], { encoding: 'utf8' });
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /forge-sdlc:init/);
+});
+
+const repoRoot = path.resolve(root, '..', '..');
+const printConfig = (dir) => {
+  const r = spawnSync(process.execPath, [path.join(root, 'bin', 'forge-config.mjs'), dir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout);
+};
+
+test("bin/forge-config.mjs prints this repo's crew theme as crew.theme", () => {
+  assert.equal(printConfig(repoRoot).crew?.theme, 'star-trek');
+});
+
+const template = readFileSync(path.join(root, 'skills', 'init', 'FORGE-TEMPLATE.md'), 'utf8');
+
+test('bin/forge-config.mjs prints crew.theme none for a host written from the init template', () => {
+  const { dir } = host({ branch: 'main', config: template });
+  assert.deepEqual(printConfig(dir).crew, { theme: 'none' });
+});
+
+test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in display form", () => {
+  const withNames = template.replace(/^- theme: .*$/m, "- theme: deep space\n- names.implementer: Miles O'Brien, Seven of Nine, Rom, Nog, Quark");
+  const { dir } = host({ branch: 'main', config: withNames });
+  assert.deepEqual(printConfig(dir).crew, {
+    theme: 'deep space',
+    'names.implementer': "Miles O'Brien, Seven of Nine, Rom, Nog, Quark",
+  });
+});
+
+test('docs/contracts.md: the state shape has crew per effort, member and agent per slice, and the Names rows for crew-name.mjs and crew.json', () => {
+  const contracts = readFileSync(path.join(repoRoot, 'docs', 'contracts.md'), 'utf8');
+  const shape = /## `\.forge\/state\.json`[\s\S]*?```json\n([\s\S]*?)```/.exec(contracts)[1];
+  assert.match(shape, /"crew": \{ "<role>": \[/);
+  assert.match(shape, /"<slug>-01": \{[^\n]*"member": [^\n]*"agent": /);
+  const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(names, /^\| Member name \|[^\n]*bin\/crew-name\.mjs/m);
+  assert.match(names, /^\| Crew presets \|[^\n]*crew\.json/m);
 });
 
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {

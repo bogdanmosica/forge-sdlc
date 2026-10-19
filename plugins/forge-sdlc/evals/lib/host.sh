@@ -103,7 +103,7 @@ JSON
 
 # worktree <nn> [mode]: slice <nn>'s worktree at .forge/worktrees/$SLUG-<nn>, cut from the checked-out
 # branch as build cuts it, and the slice marked building in .forge/state.json with that mode (default
-# normal). Run after state. A member's project dir is this worktree: it holds no .forge/ of its own.
+# normal). Run after state. A session whose project dir is a slice worktree has no .forge/ of its own there.
 worktree() {
   git worktree add -q -b "slice/$SLUG-$1" ".forge/worktrees/$SLUG-$1"
   node -e 'const fs = require("fs"), [f, slug, slice, mode] = process.argv.slice(1);
