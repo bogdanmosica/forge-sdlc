@@ -147,3 +147,9 @@ test('spec step 6: the state write drops stop, so a stop is written only by step
   assert.match(step(6), /drop(s|ping)? `stop`/);
   assert.match(step(6), /Done when /);
 });
+
+test('spec/SKILL.md: every numbered step ends on a completion criterion', () => {
+  const steps = split(skill).body.split(/^## (?=\d+\. )/m).slice(1);
+  assert.equal(steps.length, 7);
+  for (const s of steps) assert.match(s.trimEnd(), /Done when [^\n]+$/, s.split('\n')[0]);
+});
