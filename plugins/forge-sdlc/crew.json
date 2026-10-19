@@ -1,0 +1,70 @@
+{
+  "_comment": "Crew presets: the display names of each forge role's pool for a host's `## Crew` theme. bin/crew-name.mjs gives each member the first name of its role's pool not yet used in the effort, in handle form (letters, digits, `_`, `-`: `Seven of Nine` is `Seven-of-Nine`); a pool run out starts again with `-2`. Display only: branches, commits, worktrees and records keep `<slug>-<nn>`. A host overrides one role's pool with `names.<role>` in docs/agents/forge.md. Rebuilt from prior-sdlc's presets.",
+  "presets": {
+    "warcraft": {
+      "label": "Warcraft",
+      "names": {
+        "researcher": ["Khadgar", "Jaina Proudmoore", "Brann Bronzebeard"],
+        "prototyper": ["Gazlowe", "Gelbin Mekkatorque", "Mimiron"],
+        "spec-writer": ["Anduin Wrynn", "Thrall", "Velen"],
+        "implementer": ["Peon", "Peasant", "Wisp", "Acolyte", "Grunt"],
+        "verifier": ["Medivh", "Chromie", "Nozdormu"],
+        "reviewer": ["Illidan Stormrage", "Sylvanas Windrunner", "Garrosh Hellscream", "Varian Wrynn"],
+        "merger": ["Malfurion Stormrage", "Uther the Lightbringer"],
+        "general": ["Tyrande Whisperwind", "Alexstrasza", "Ysera", "Murloc", "Kobold", "Harvest Golem"]
+      }
+    },
+    "star-trek": {
+      "label": "Star Trek",
+      "names": {
+        "researcher": ["Uhura", "Hoshi Sato", "Jadzia Dax"],
+        "prototyper": ["Geordi La Forge", "B'Elanna Torres", "Wesley Crusher"],
+        "spec-writer": ["Picard", "Janeway", "Sisko"],
+        "implementer": ["Scotty", "O'Brien", "Rom", "Barclay", "Tom Paris"],
+        "verifier": ["Data", "Tuvok", "T'Pol"],
+        "reviewer": ["Spock", "Odo", "Seven of Nine", "Worf"],
+        "merger": ["Riker", "Chakotay"],
+        "general": ["Troi", "Guinan", "Kes", "Ensign Kim", "Nog", "Ezri Dax"]
+      }
+    },
+    "star-wars": {
+      "label": "Star Wars",
+      "names": {
+        "researcher": ["Cassian Andor", "Jyn Erso", "Bodhi Rook"],
+        "prototyper": ["Anakin Skywalker", "Rey", "Ezra Bridger"],
+        "spec-writer": ["Leia Organa", "Mon Mothma", "Ahsoka Tano"],
+        "implementer": ["R2-D2", "BB-8", "Chopper", "K-2SO", "Chewbacca"],
+        "verifier": ["Yoda", "Obi-Wan Kenobi", "Lor San Tekka"],
+        "reviewer": ["Mace Windu", "Qui-Gon Jinn", "Kanan Jarrus", "Luke Skywalker"],
+        "merger": ["Han Solo", "Poe Dameron"],
+        "general": ["C-3PO", "Padmé Amidala", "Lando Calrissian", "Wedge Antilles", "Biggs Darklighter", "Mouse Droid"]
+      }
+    },
+    "got": {
+      "label": "Game of Thrones",
+      "names": {
+        "researcher": ["Varys", "Samwell Tarly", "Missandei"],
+        "prototyper": ["Gendry", "Bronn", "Podrick Payne"],
+        "spec-writer": ["Tyrion Lannister", "Olenna Tyrell", "Davos Seaworth"],
+        "implementer": ["Jon Snow", "Arya Stark", "Brienne of Tarth", "Jaime Lannister", "Sandor Clegane"],
+        "verifier": ["Maester Aemon", "Bran Stark", "Old Nan"],
+        "reviewer": ["Ned Stark", "Stannis Baratheon", "Jorah Mormont", "Barristan Selmy"],
+        "merger": ["Tywin Lannister", "Robert Baratheon"],
+        "general": ["Sansa Stark", "Margaery Tyrell", "Daenerys Targaryen", "Hodor", "Hot Pie", "Lommy Greenhands"]
+      }
+    },
+    "mario": {
+      "label": "Super Mario",
+      "names": {
+        "researcher": ["Toad", "Captain Toad", "Toadette"],
+        "prototyper": ["Luigi", "Wario", "Waluigi"],
+        "spec-writer": ["Princess Peach", "Princess Daisy"],
+        "implementer": ["Mario", "Yoshi", "Donkey Kong", "Diddy Kong", "Birdo"],
+        "verifier": ["Professor E. Gadd", "Cranky Kong", "Rosalina"],
+        "reviewer": ["Bowser", "Bowser Jr.", "King Boo", "Kamek"],
+        "merger": ["Pauline", "Funky Kong"],
+        "general": ["Lakitu", "Shy Guy", "Koopa Troopa", "Goomba", "Boo", "Bob-omb"]
+      }
+    }
+  }
+}
