@@ -85,7 +85,8 @@ function main(argv) {
   const dir = path.resolve(usage.project);
   const state = readState(dir);
   const record = state?.efforts && Object.hasOwn(state.efforts, effort) ? state.efforts[effort] : undefined;
-  const member = slice ? record?.slices?.[slice]?.member : undefined;
+  const stored = slice ? record?.slices?.[slice]?.member : undefined;
+  const member = typeof stored === 'string' ? handleOf(stored) : '';
   if (member) {
     process.stdout.write(`${member}\n`);
     return 0;
