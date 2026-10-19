@@ -103,16 +103,16 @@ plugins/forge-sdlc/
 │   └── verified-before-stop.mjs    # SubagentStop gated by the slice's agent id, cwd branch first (06)
 ├── skills/
 │   ├── init/                       # the Crew theme question, ## Crew in the template (03)
-│   └── build/MEMBERS.md, SKILL.md  # the member call: name before, agent after, the wait, the shutdown (07)
-├── agents/merger.md                # a member call; clears the slice's agent on merged or red (07)
-└── evals/guardrails/               # *-member-denied (02), verified-before-stop-agent-blocks (06)
+│   ├── build/MEMBERS.md, SKILL.md  # the member call: name before, agent after, the wait, the shutdown (07)
+│   ├── slice-review/, wayfinder/, spec/SKILL.md   # member calls with roles; fix implementer foreground (08)
+└── agents/merger.md                # a member call; clears the slice's agent on merged or red (07)
 docs/
 ├── contracts.md                    # state: crew, member, agent; Names rows (03)
 ├── adr/0016-…agent-id.md, 0017-agents-as-named-members.md
 └── efforts/cmux-members/           # map, two intents, two specs, two plans, tickets
 ```
 
-Red, kept in its worktree: 08, the member calls in slice-review, wayfinder and spec. Until it lands, build names its members and the other three stages do not.
+Every agent the loop starts now carries a name from the host's crew theme; under a `cmux claude-teams` lead each is a visible pane, under a plain lead the same subagent as before. The Stop gate holds for subagent implementers through the agent id the lead records; fix rounds inside the merger stay foreground, with the merger's verifier step as their gate (owner's decision, ADR 0016 amended).
 
 ## Evidence
 
@@ -122,18 +122,18 @@ Red, kept in its worktree: 08, the member calls in slice-review, wayfinder and s
 - `cmux-members-05`: `node --test tests/crew-name.test.mjs` exit 0; `npm test` exit 0; head `b21998b`, at 2026-10-19T10:11:55.671Z
 - `cmux-members-06`: `node --test tests/verified-before-stop.test.mjs tests/evals.test.mjs` exit 0; `npm test` exit 0; head `fbf6940`, at 2026-10-19T07:52:57.711Z
 - `cmux-members-07`: `node --test tests/build.test.mjs tests/agents.test.mjs` exit 0; `npm test` exit 0; head `54db55d`, at 2026-10-19T10:52:24.328Z
-- `cmux-members-08`: `node --test tests/slice-review.test.mjs tests/wayfinder.test.mjs tests/spec.test.mjs` exit 0; `npm test` exit 0; head `dda074a`, at 2026-10-19T11:22:13.354Z
+- `cmux-members-08`: `node --test tests/slice-review.test.mjs tests/wayfinder.test.mjs tests/spec.test.mjs` exit 0; `npm test` exit 0; head `bc0ebca`, at 2026-10-19T12:14:59.368Z
 
 ## Merge Danger
 
 **Door:** two-way
 
-Every change is additive: new state fields read as absent, the hook's new branch runs only on a `SubagentStop` whose cwd names no slice, and the init question defaults to `none`. Build's member calls pass `name`, which a plain lead ignores.
+Every change is additive: new state fields read as absent, the hook's new branch runs only on a `SubagentStop` whose cwd names no slice, the init question defaults to `none`, and `name` on an Agent call is ignored by a plain lead.
 
-**Blast Radius:** hooks and the build stage
+**Blast Radius:** hooks and every dispatching stage
 
-`verified-before-stop` blocks a subagent implementer's stop when its slice has an `agent` in state and no fresh green record; build now writes that field. From a lead with agent teams enabled, build opens one pane per member and ends each through a shutdown request; that path has one live check behind it (ticket 09) and no full build yet.
+`verified-before-stop` blocks a subagent implementer's stop when its slice has an `agent` in state and no fresh green record. From a teams lead, build, slice-review, wayfinder and spec open one pane per member and end implementers through a shutdown request; that path has one live check behind it (ticket 09) and no full build yet. Nits left in the review records: MEMBERS.md step 2 and contracts line 50 still mention a background fix call.
 
 ## Red slices
 
-- `cmux-members-08` `.scratch/cmux-members/issues/08-members-in-slice-review-wayfinder-and-spec.md`: red after two fix rounds, verify green at `dda074a`. One cause on all three axes: the second fix added "or the verifier's record for it is fresh" to slice-review step 4.1, a second way to finish waiting that contradicts the step's Done line and spec line 107, and would let verify and the next review round run while the background fix implementer is still committing. Underneath: a merger leading a background fix implementer has no stated way to wait for its report (round 1, Bugs and security), and ADR 0017's runtime premise for it is unconfirmed. Review: `.forge/review/cmux-members-08.md`. Worktree and branch kept.
+none
