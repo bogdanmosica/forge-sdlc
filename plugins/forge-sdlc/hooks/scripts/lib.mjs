@@ -137,7 +137,7 @@ export function currentBranch(dir) {
 /**
  * The host dir whose `.forge/` holds the run state for a path: the main checkout of the repository
  * holding `dir` (the parent of its git common dir), so a slice worktree resolves to its host even
- * when the session's project dir is the worktree, as a member's is. `fallback` outside a repo.
+ * for a session whose project dir is a slice worktree. `fallback` outside a repo.
  */
 export function hostDirOf(dir, fallback) {
   const r = git(['-C', nearestExisting(dir), 'rev-parse', '--path-format=absolute', '--git-common-dir']);

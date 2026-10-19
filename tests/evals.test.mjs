@@ -234,7 +234,7 @@ test('every hook script has a guardrails case, and each case hook decides what t
     const seam = JSON.parse(readFileSync(path.join(c.dir, 'seam.json'), 'utf8'));
     covered.add(seam.script);
     const { work, base } = scaffold(c);
-    // A member-shaped seam names its project dir, a slice worktree under the workspace, as a member session has it.
+    // A seam may name its project dir, a slice worktree under the workspace, for a session whose project dir is a slice worktree.
     const projectDir = path.join(work, seam.projectDir ?? '');
     assert.ok(existsSync(projectDir), `${c.name}: seam projectDir ${seam.projectDir} does not exist`);
     const env = { ...process.env, CLAUDE_PROJECT_DIR: projectDir, CLAUDE_CONFIG_DIR: path.join(base, 'config') };

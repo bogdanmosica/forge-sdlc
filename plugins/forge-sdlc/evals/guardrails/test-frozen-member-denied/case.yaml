@@ -1,6 +1,6 @@
 schema_version: '1.1'
 name: test-frozen-member-denied
-description: With slice word-count-01 in fix mode, an Edit to a test file in its worktree is denied by the test-frozen guardrail, from the host or from a member whose project dir is the worktree
+description: With slice word-count-01 in fix mode, an Edit to a test file in its worktree is denied by the test-frozen guardrail, from the host or from a session whose project dir is a slice worktree
 tags: [guardrails, hooks]
 plugins: ['../../..']
 runs: 1

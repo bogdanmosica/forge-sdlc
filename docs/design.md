@@ -277,7 +277,7 @@ Skills advise, hooks enforce. Every hook is a Node script under `hooks/scripts/`
 
 Decision (test-frozen): fix mode belongs to a checkout, so a fix implementer on one slice freezes only that slice's tests while parallel implementers keep editing theirs ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
 
-Decision (test-frozen, spec-frozen): both read `.forge/state.json` from the host found through git, the parent of the edited file's checkout's git common dir, falling back to the project dir outside a repo. A member's project dir is its slice worktree, which holds no `.forge/`; reading state from it would leave a member's tests unfrozen in fix mode and its effort's artifacts editable. This is the fix ADR 0007's consequence names, the lookup `verified-before-stop` already makes; where the project dir is the main checkout, as for a subagent, the two dirs are the same and nothing changes ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
+Decision (test-frozen, spec-frozen): both read `.forge/state.json` from the host found through git, the parent of the edited file's checkout's git common dir, falling back to the project dir outside a repo. For a session whose project dir is a slice worktree, which holds no `.forge/`, reading state from the project dir would leave the slice's tests unfrozen in fix mode and its effort's artifacts editable. This is the fix ADR 0007's consequence names, the lookup `verified-before-stop` already makes; where the project dir is the main checkout, as for a subagent or a teammate pane (whose project dir is the lead's root), the two dirs are the same and nothing changes ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
 
 Decision (verified-before-stop): the hook does not go quiet on `stop_hook_active`, which the engine sets on the stop after a block and would make the gate one-shot. The count in `.forge/verify/<slug>-<nn>.denials` ends the loop instead: block until the record is fresh and green or three stops were refused, then allow one stop with the red reason and reset the count ([ADR 0014](adr/0014-stop-gate-counts-instead-of-stop-hook-active.md)).
 
@@ -320,9 +320,13 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 
 ## Test file globs
 - globs: **/*.test.*, **/*.spec.*, tests/**
+
+## Crew
+- theme: star-trek               # a preset id (warcraft, star-trek, star-wars, got, mario), none, or free text
+- names.implementer: Scotty, Miles O'Brien, Rom, Nog, Quark   # optional, one per overridden role
 ```
 
-Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse.
+Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section.
 
 CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup created, replaced in place on re-run:
 
@@ -338,7 +342,7 @@ Policy skills are the playbook's Design-stage idea: the spec-writer calls each l
 
 ```text
 .forge/                 # gitignored by init
-├── state.json          # { efforts: { <slug>: { stage, gate, mode, risk, branch, pr, slices: { <slug>-<nn>: { status, mode, ticket } } } } }
+├── state.json          # { efforts: { <slug>: { stage, gate, mode, risk, branch, pr, crew: { <role>: [names] }, slices: { <slug>-<nn>: { status, mode, ticket, member, agent } } } } }
 ├── worktrees/<slug>-<nn>/
 ├── verify/<slug>-<nn>.json   # + <slug>-<nn>.denials, the Stop hook's block count
 ├── review/<slug>-<nn>.md     # slice-review's record

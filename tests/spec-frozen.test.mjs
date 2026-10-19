@@ -77,7 +77,7 @@ function memberHost() {
   return { dir, worktree };
 }
 
-test('a member, whose project dir is the slice worktree, reads the host state through git: the spec is still frozen', () => {
+test('a session whose project dir is a slice worktree reads the host state through git: the spec is still frozen', () => {
   const { worktree } = memberHost();
   const r = hook('spec-frozen.mjs', edit(worktree, 'docs/efforts/x/spec.md'), { projectDir: worktree });
   assert.equal(r.status, 0, r.stderr);
