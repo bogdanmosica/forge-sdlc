@@ -186,3 +186,17 @@ test('prototyper: Opus, high, worktree isolation, everything but Agent, throwawa
   assert.match(a, /throwaway/i);
   assert.match(a, /verdict/);
 });
+
+/* Members (the member call of skills/build/MEMBERS.md) */
+
+const MEMBER_LINK = '[member call](../build/MEMBERS.md)';
+const agentRow = (agent) => skill.split('\n').find((l) => l.startsWith('|') && l.includes(`forge-sdlc:${agent}`));
+
+test('the researcher and prototyper are member calls naming their roles', () => {
+  for (const role of ['researcher', 'prototyper']) {
+    const row = agentRow(role);
+    assert.ok(row, `a table row for ${role}`);
+    assert.ok(row.includes(MEMBER_LINK), `${role} links the members reference`);
+    assert.ok(row.includes(`role \`${role}\``), `${role} names its role`);
+  }
+});
