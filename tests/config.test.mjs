@@ -95,6 +95,16 @@ test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in
   });
 });
 
+test('docs/contracts.md: the state shape has crew per effort, member and agent per slice, and the Names rows for crew-name.mjs and crew.json', () => {
+  const contracts = readFileSync(path.join(repoRoot, 'docs', 'contracts.md'), 'utf8');
+  const shape = /## `\.forge\/state\.json`[\s\S]*?```json\n([\s\S]*?)```/.exec(contracts)[1];
+  assert.match(shape, /"crew": \{ "<role>": \[/);
+  assert.match(shape, /"<slug>-01": \{[^\n]*"member": [^\n]*"agent": /);
+  const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(names, /^\| Member name \|[^\n]*bin\/crew-name\.mjs/m);
+  assert.match(names, /^\| Crew presets \|[^\n]*crew\.json/m);
+});
+
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {
   const { dir } = host();
   assert.equal(readState(dir), null);

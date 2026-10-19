@@ -17,6 +17,8 @@ The shapes every slice of the build order (design, section 15) agrees on, so sli
 | Review record | `.forge/review/<slug>-<nn>.md` |
 | Effort position | `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" [host] <slug>` prints `{ slug, stage, gate, next, why, source }` (`--list [host]` for every effort); `source` is `state`, or `artifacts` when re-derived from `feat/<slug>` |
 | Agent types | `forge-sdlc:researcher`, `forge-sdlc:prototyper`, `forge-sdlc:spec-writer`, `forge-sdlc:implementer`, `forge-sdlc:verifier`, `forge-sdlc:reviewer`, `forge-sdlc:merger` |
+| Member name | `node "${CLAUDE_PLUGIN_ROOT}/bin/crew-name.mjs" <role> --project <host> --effort <slug> [--slice <slug>-<nn>]` prints one line, the next name of the role's pool in handle form (letters, digits, `_`, `-`), and records it in state (exit 0; 2 on bad usage). Roles: `researcher`, `prototyper`, `spec-writer`, `implementer`, `verifier`, `reviewer`, `merger`, `general`. Pool: the host's `names.<role>` bullet under `## Crew`, else the preset its `theme` names, else the fallback `<slug>-<nn>` for an implementer with `--slice` and `<role>` otherwise; a pool run out restarts with `-2`, `-3` |
+| Crew presets | `crew.json` in the plugin root: the preset ids `warcraft`, `star-trek`, `star-wars`, `got`, `mario`, each with a label and one pool per role above, names in display form; read by `crew-name.mjs` and init |
 | Upstream skills | `mattpocock-skills:<name>` through the Skill tool; user-invoked ones by file through `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" <name>` |
 
 ## `.forge/state.json`
@@ -34,7 +36,8 @@ Written by the commands at every stage boundary, read by the hooks and `status`.
       "risk": "normal | high",
       "branch": "feat/<slug>",
       "pr": { "number": 12, "url": "https://..." } ,
-      "slices": { "<slug>-01": { "status": "open | building | verified | merged | red", "mode": "normal | fix", "ticket": "#45 or .scratch/<slug>/issues/01-x.md" } },
+      "slices": { "<slug>-01": { "status": "open | building | verified | merged | red", "mode": "normal | fix", "ticket": "#45 or .scratch/<slug>/issues/01-x.md", "member": "Scotty", "agent": "<id of its current implementer>" } },
+      "crew": { "<role>": ["Scotty", "Miles-OBrien"] },
       "updatedAt": "2026-10-17T10:00:00Z"
     }
   }
@@ -44,6 +47,7 @@ Written by the commands at every stage boundary, read by the hooks and `status`.
 - `stage` is the last stage that has an artifact; `gate` is the gate the effort waits at (`none` while a stage runs). `wayfinder <slug>` resumes from `stage` and `gate`.
 - `pr` is `null` on a host without a remote.
 - `mode` exists at two levels. The effort's `mode: fix` is for work in the main checkout (the `diagnosing-bugs` flow on `feat/<slug>`). A slice's `mode: fix` is set by the fix implementer for that slice only, so parallel implementers on other slices keep editing their tests. The `test-frozen` hook resolves the edited file's checkout: inside a slice worktree it reads that slice's `mode`; in the main checkout it reads the effort's.
+- `crew` holds, per role, the handle-form names `crew-name.mjs` has handed out in this effort; a slice's `member` is its implementer's name, kept across fix rounds and resumes, and written by `crew-name.mjs --slice`. A slice's `agent` is the id the Agent result named for its current implementer, written by the lead (or the merger, for a fix round) right after the call and cleared when the slice goes `merged` or `red`; the `verified-before-stop` hook reads it to find the slice a stopping subagent built. All three are additive: an absent field reads as none, and no migration runs.
 - The helper for reading and writing it is `hooks/scripts/lib.mjs`: `readState(projectDir)` (null when missing), `writeState(projectDir, state)` (atomic: temp file then rename), `effortOf(state, slug)`.
 
 ## `.forge/verify/<slug>-<nn>.json`
