@@ -95,7 +95,7 @@ function where(slug) {
   const derived = fromArtifacts(slug);
   if (!derived) return null;
   const [stage, gate] = derived;
-  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy };
+  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none' };
 }
 
 if (list) {

@@ -189,3 +189,11 @@ test('stop: no stop prints none and the stage line as why', () => {
   assert.equal(r.json.stop, 'none');
   assert.match(r.json.why, /^Gate 2: running this approves spec\.md$/);
 });
+
+test('stop: source artifacts prints none and the config policy', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  effortBranch(dir, 'x', { 'map.md': 'm', 'intent.md': 'i', 'spec.md': 's' });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual({ source: r.json.source, policy: r.json.policy, stop: r.json.stop }, { source: 'artifacts', policy: 'autonomous', stop: 'none' });
+});
