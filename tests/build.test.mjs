@@ -133,6 +133,19 @@ for (const name of ['implement-spec', 'pr']) {
   });
 }
 
+test("build: the lead ends a slice's implementer after its merger reports merged or red", () => {
+  const { body } = frontmatter(read(SKILL));
+  const step5 = body.split('\n').find((l) => l.includes('**Step 5**'));
+  assert.match(step5, /merged` or `red`[^\n]*end that slice's implementer/);
+  assert.match(step5, /shutdown request/);
+});
+
+test("build: the Gate 4 report names each slice's member", () => {
+  const { body } = frontmatter(read(SKILL));
+  const gate4 = body.slice(body.indexOf('## 4. Gate 4'));
+  assert.match(gate4, /one line per slice, `<slug>-<nn>: <member>`/);
+});
+
 /* The members reference */
 
 test('members: the reference beside build names the script, the name, the agent write, the wait and the shutdown', () => {
