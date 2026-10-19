@@ -52,7 +52,7 @@ Upstream's `Work through the map`, in this session, ticket after ticket, until t
 | --- | --- | --- |
 | `wayfinder:grilling` | this session, HITL | `mattpocock-skills:grilling` then `mattpocock-skills:domain-modeling`; the human answers, the agent asks |
 | `wayfinder:research` | `forge-sdlc:researcher`, a [member call](../build/MEMBERS.md), role `researcher`, in the background, all at once | prompt: the ticket pointer, the slug, the note path `docs/research/<slug>/<topic>.md` |
-| `wayfinder:prototype` | `forge-sdlc:prototyper`, a [member call](../build/MEMBERS.md), role `prototyper`, that passes `isolation: "worktree"` on the call, so it runs in its own worktree under any lead; one at a time | prompt: the ticket pointer and its question; the human reacts to the verdict before the ticket closes |
+| `wayfinder:prototype` | `forge-sdlc:prototyper`, a [member call](../build/MEMBERS.md), role `prototyper`, foreground under a plain lead, that passes `isolation: "worktree"` on the call, so it runs in its own worktree under any lead; one at a time | prompt: the ticket pointer and its question; the human reacts to the verdict before the ticket closes |
 | `wayfinder:task` | this session | done by the agent where it can, else a checklist the human works |
 
 Each resolution: the answer on the ticket, the ticket closed, its gist in the map's Decisions so far, fog graduated per upstream. Then re-commit `map.md` (and any research note): `map(<slug>): <ticket name>`.
