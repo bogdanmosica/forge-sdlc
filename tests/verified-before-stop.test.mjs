@@ -197,3 +197,63 @@ test('SubagentStop from the host with a matching agent_id: blocked without a rec
   assert.ok(r.decision.reason.includes(`--project "${realpathSync(dir)}"`));
   assert.ok(!r.decision.reason.includes(AGENT));
 });
+
+test('SubagentStop with a matching agent_id: a green record at the worktree HEAD lets it through and clears the denials', () => {
+  const { dir, worktree } = agentHost();
+  assert.equal(hook(HOOK, subagentStop(dir)).decision.decision, 'block');
+  record(dir, { head: gitIn(worktree, ['rev-parse', 'HEAD']) });
+  assert.deepEqual(hook(HOOK, subagentStop(dir)).decision, {});
+  assert.ok(!existsSync(path.join(verifyDir(dir), 'demo-01.denials')));
+});
+
+test('SubagentStop with a matching agent_id: three blocks, then the red pass marks the slice red and clears its agent', () => {
+  const { dir } = agentHost();
+  for (let i = 1; i <= 3; i += 1) {
+    const r = hook(HOOK, subagentStop(dir));
+    assert.equal(r.decision.decision, 'block', `denial ${i}`);
+    assert.match(r.decision.reason, new RegExp(`${i} of 3`));
+  }
+  const r = hook(HOOK, subagentStop(dir));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.decision.decision, undefined);
+  assert.match(r.decision.systemMessage, /Slice demo-01 stops red/);
+  assert.ok(!r.decision.systemMessage.includes(AGENT));
+  assert.deepEqual(readState(dir).efforts.demo.slices['demo-01'], { status: 'red', ticket: '#1' });
+});
+
+test('the agent-id branch allows: an unmatched agent_id, a Stop payload with an agent_id, a matched slice whose worktree is gone', () => {
+  const { dir } = agentHost();
+  assert.deepEqual(hook(HOOK, subagentStop(dir, 'someone-else')).decision, {}, 'unmatched');
+  assert.deepEqual(hook(HOOK, stop(dir, { agent_id: AGENT })).decision, {}, 'Stop with an agent_id');
+  assert.deepEqual(hook(HOOK, subagentStop(dir, '')).decision, {}, 'empty agent_id');
+  gitIn(dir, ['worktree', 'remove', '--force', path.join(dir, '.forge', 'worktrees', 'demo-01')]);
+  assert.deepEqual(hook(HOOK, subagentStop(dir)).decision, {}, 'worktree gone');
+  assert.ok(!existsSync(path.join(verifyDir(dir), 'demo-01.denials')));
+});
+
+test('the agent-id branch finds the host through git from a cwd inside it, whatever the project dir', () => {
+  const { dir, worktree } = agentHost();
+  const sub = path.join(dir, 'docs');
+  const r = hook(HOOK, subagentStop(sub), { projectDir: '/' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.decision.decision, 'block');
+  assert.ok(r.decision.reason.includes(`--worktree "${realpathSync(worktree)}"`));
+});
+
+test('the agent-id branch falls back to the project dir when the cwd is outside a repository', () => {
+  const { dir } = agentHost();
+  const r = hook(HOOK, subagentStop('/'), { projectDir: dir });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.decision.decision, 'block');
+  assert.match(r.decision.reason, /^Slice demo-01 /);
+});
+
+test('the cwd branch stays first: a slice checkout is gated on its own slice, whatever slice the agent_id names', () => {
+  const { dir, worktree } = agentHost({ status: 'building', ticket: '#1' });
+  gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-02', path.join(dir, '.forge', 'worktrees', 'demo-02')]);
+  const state = readState(dir);
+  state.efforts.demo.slices['demo-02'] = { status: 'building', ticket: '#2', agent: AGENT };
+  writeState(dir, state);
+  record(dir, { head: gitIn(worktree, ['rev-parse', 'HEAD']) });
+  assert.deepEqual(hook(HOOK, subagentStop(worktree), { projectDir: dir }).decision, {});
+});
