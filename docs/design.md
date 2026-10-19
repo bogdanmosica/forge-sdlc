@@ -286,6 +286,8 @@ Decision (verified-before-stop): the hook does not go quiet on `stop_hook_active
 
 Decision (verified-before-stop): a subagent's `SubagentStop` carries the lead's root as cwd, never the worktree it `cd`'d into, so the cwd branch never gated a subagent implementer. When the cwd names no slice, the hook finds the host through git from the cwd (falling back to the project dir), and gates the slice whose `agent` equals the payload's `agent_id` as a slice checkout; the lead records `agent` right after the implementer's Agent call, and the red pass clears it ([ADR 0016](adr/0016-stop-gate-finds-a-subagents-slice-by-its-agent-id.md)).
 
+Decision (verified-before-stop): a fix round's implementer runs in the foreground inside the merger, one Agent call whose report is its return, so no `agent` is recorded for it and the agent-id branch does not gate its stop; the merger's verify step after the fix is the gate of a fix round, and a record that is not green is an Important finding of the next round. A foreground call returns its id only after `SubagentStop` has fired, and a background call would leave the merger, itself a subagent, no way to wait for the report (owner decision at Gate 4, 2026-10-19; [ADR 0016](adr/0016-stop-gate-finds-a-subagents-slice-by-its-agent-id.md)).
+
 Not hooked, on purpose: anything a linter already enforces, and anything that would need the model's judgment (a hook decides from state and text only).
 
 ## 8. Host configuration

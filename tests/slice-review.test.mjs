@@ -190,3 +190,65 @@ test('slice-review: the verifier gets its own four pointers, the fix implementer
   assert.match(body, /in the verifier's order: `<slug>-<nn>`, the worktree, the project dir[^\n]*proof command/);
   assert.match(body, /implementer's build pointers plus the fix[^\n]*plan\.md` row `<nn>` and its proof line[^\n]*the round to fix/);
 });
+
+/* Members (the member call of skills/build/MEMBERS.md) */
+
+const MEMBER_LINK = '[member call](../build/MEMBERS.md)';
+/** The body line holding the Agent call for `forge-sdlc:<agent>`. */
+const callLine = (agent) => frontmatter(read(SKILL)).body.split('\n').find((l) => l.includes(`subagent_type: "forge-sdlc:${agent}"`));
+
+test('slice-review: the reviewer and verifier calls are member calls naming their roles', () => {
+  for (const role of ['reviewer', 'verifier']) {
+    const line = callLine(role);
+    assert.ok(line, `an Agent call for ${role}`);
+    assert.ok(line.includes(MEMBER_LINK), `${role} links the members reference`);
+    assert.ok(line.includes(`role \`${role}\``), `${role} names its role`);
+    assert.ok(line.includes('foreground under a plain lead'), `${role} runs in the foreground under a plain lead`);
+  }
+  assert.ok(callLine('reviewer').includes('role `reviewer` (one name run per call)'), 'each reviewer call takes its own name run');
+  assert.ok(existsSync(path.join(plugin, 'skills', 'build', 'MEMBERS.md')), 'the reference exists');
+});
+
+test('slice-review: the fix implementer is one foreground member call with --slice, with no agent write', () => {
+  const line = callLine('implementer');
+  assert.ok(line, 'an Agent call for the fix implementer');
+  assert.ok(line.includes(MEMBER_LINK), 'the fix links the members reference');
+  assert.ok(line.includes('role `implementer` with `--slice <slug>-<nn>`, foreground under a plain lead'), 'the fix reuses the slice name and runs in the foreground inside the merger');
+  assert.doesNotMatch(line, /background/, 'no background fix call');
+  assert.doesNotMatch(line, /slices\["<slug>-<nn>"\]\.agent/, 'no agent write before the wait');
+  assert.match(line, /skip the reference's Agent id step/, 'the reference\'s agent-id step does not apply to a foreground fix');
+});
+
+test('slice-review: the session running it is the lead of its member calls, reading the reference by path', () => {
+  const body = frontmatter(read(SKILL)).body;
+  const line = body.split('\n').find((l) => /plugin-root variable unresolved/.test(l));
+  assert.ok(line, 'the by-path sentence');
+  assert.match(line, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(read(SKILL), /teammate|task notification/i, 'the transport words stay in the reference');
+});
+
+test('slice-review: the fix step has one completion line, the report and a commit after the reviewed sha', () => {
+  const line = callLine('implementer');
+  assert.ok(line, 'an Agent call for the fix implementer');
+  const done = line.match(/Done when[^\n]*/g) ?? [];
+  assert.deepEqual(done, ['Done when the implementer reported and the slice branch has a commit after the reviewed sha.']);
+  const body = frontmatter(read(SKILL)).body;
+  assert.doesNotMatch(body, /verifier's record for it is fresh/, 'no second way to finish the fix');
+  assert.doesNotMatch(body, /end your turn|only when that slice record exists/, 'no wait on a background report, no guarded agent write');
+});
+
+test('slice-review: design section 7 records the foreground fix round with a Decision line, and ADR 0016 agrees', () => {
+  const repo = path.resolve(plugin, '..', '..');
+  const lines = readFileSync(path.join(repo, 'docs', 'design.md'), 'utf8').split('\n');
+  const at = lines.findIndex((l) => /the lead records `agent` right after the implementer's Agent call/.test(l));
+  assert.ok(at >= 0, 'the agent-id Decision line');
+  const next = lines.slice(at + 1).find((l) => l.trim() !== '');
+  assert.match(next, /^Decision \(verified-before-stop\)/, 'a Decision line follows it');
+  assert.match(next, /fix round/);
+  assert.match(next, /foreground inside the merger/);
+  assert.match(next, /verify step/);
+  assert.match(next, /\]\(adr\/0016-stop-gate-finds-a-subagents-slice-by-its-agent-id\.md\)/, 'links ADR 0016');
+  const adr = readFileSync(path.join(repo, 'docs', 'adr', '0016-stop-gate-finds-a-subagents-slice-by-its-agent-id.md'), 'utf8');
+  assert.doesNotMatch(adr, /fix round starts its implementer in the background/, 'no background fix round');
+  assert.match(adr, /fix round[^\n]*foreground inside the merger[^\n]*verify step/, 'the consequence names the foreground fix and its gate');
+});
