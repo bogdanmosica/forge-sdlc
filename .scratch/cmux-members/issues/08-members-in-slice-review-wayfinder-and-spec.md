@@ -21,3 +21,9 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Comments
 
 red 2026-10-19: blocked by a red slice. Slice 05 (crew-name.mjs) ended red after two fix rounds with one Important finding left (a missing test for the `updatedAt` write, see `.forge/review/cmux-members-05.md`); this slice was not started. The next build run retries 05 first.
+
+building 2026-10-19: the red note above is superseded; slices 05 and 07 merged on `feat/cmux-members` and this slice was built on `slice/cmux-members-08`.
+
+- recommended: slice-review, wayfinder and spec each carry build's by-path sentence at their member calls and name the session running the skill as the lead (the merger, or the owner by hand, for slice-review) (source: spec, Implementation Decisions, "Here the merger is the lead of the reference"; MEMBERS.md, "read by path and keeps its plugin-root variable unresolved")
+- recommended: the reviewer, verifier and spec-writer calls keep "foreground under a plain lead", as build's do, since the reference makes every member background under a teams lead (source: spec, "Under a plain lead a call is foreground or background as the skill says")
+- recommended: the "no teammate or task notification" guard is repeated in each of the three skills' own tests, so the slice's proof checks it; `tests/build.test.mjs` still guards every skill (source: ticket 08, fourth criterion)
