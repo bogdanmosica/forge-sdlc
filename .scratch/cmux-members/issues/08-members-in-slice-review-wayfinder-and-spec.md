@@ -24,9 +24,10 @@ red 2026-10-19: blocked by a red slice. Slice 05 (crew-name.mjs) ended red after
 
 building 2026-10-19: the red note above is superseded; slices 05 and 07 merged on `feat/cmux-members` and this slice was built on `slice/cmux-members-08`.
 
+red: slice-review ended red after 2 fix rounds (Standards, Spec, Bugs and security). One cause: step 4.1 of slice-review/SKILL.md accepts "or the verifier's record for it is fresh" as a second way to finish waiting, which contradicts its Done line and spec line 107. Findings: .forge/review/cmux-members-08.md
+
+## Assumptions
 - recommended: slice-review, wayfinder and spec each carry build's by-path sentence at their member calls and name the session running the skill as the lead (the merger, or the owner by hand, for slice-review) (source: spec, Implementation Decisions, "Here the merger is the lead of the reference"; MEMBERS.md, "read by path and keeps its plugin-root variable unresolved")
 - recommended: the reviewer, verifier and spec-writer calls keep "foreground under a plain lead", as build's do, since the reference makes every member background under a teams lead (source: spec, "Under a plain lead a call is foreground or background as the skill says")
 - recommended: the "no teammate or task notification" guard is repeated in each of the three skills' own tests, so the slice's proof checks it; `tests/build.test.mjs` still guards every skill (source: ticket 08, fourth criterion)
-
-## Assumptions
 - recommended: slice-review keeps the fix implementer as one foreground Agent call inside the merger, as before this effort; the background call with the `agent` write before the wait is dropped, and the clause "or the verifier's record for it is fresh" goes with it, so step 4.1 has one completion line: the implementer reported and the slice branch has a commit after the reviewed sha. The agent-id Stop gate therefore does not hold for fix rounds; the merger's verifier step stays the gate there. (source: owner decision at Gate 4, 2026-10-19, option 1, overriding spec "Slice-review skill"; .forge/review/cmux-members-08.md rounds 1 and 2)

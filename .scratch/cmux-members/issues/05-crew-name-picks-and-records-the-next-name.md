@@ -1,7 +1,7 @@
 # 05: cmux-members-05: crew-name.mjs picks and records the next name
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
@@ -30,3 +30,5 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
 ## Comments
 - red (merger): Bugs and security has one Important finding left after two fix rounds: the `record.updatedAt` refresh in crew-name.mjs has no test that fails when it is removed. Findings: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-05.md. Slice branch and worktree stay for the implementer.
+
+merged: review record /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-05.md, merge 7edae55
