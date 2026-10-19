@@ -153,3 +153,13 @@ test('policy: autonomous prints autonomous', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.json.policy, 'autonomous');
 });
+
+test('policy: an unknown value prints attended', () => {
+  for (const value of ['maybe', 'Autonomous', 'autonomous-ish']) {
+    const { dir } = host({ config: withPolicy(value) });
+    writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+    const r = run([dir, 'x']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.policy, 'attended', value);
+  }
+});
