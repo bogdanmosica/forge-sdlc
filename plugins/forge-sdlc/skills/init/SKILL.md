@@ -27,10 +27,13 @@ One section per AskUserQuestion call, derived value first, `(Recommended)` on it
 4. **Gates**: `spec` is `always` (the owner approves every spec) or `only-on-open` (a spec with no `open:` assumption flows into plan). Lead with `always`. `max_parallel_slices`, lead with 3.
 5. **Risk globs**: paths that make an effort `risk: high` (auth, payments, migrations, infra), or none.
 6. **Policy skills**: skills the spec-writer and reviewer apply by name (`security-review`, a host skill), or none.
+7. **Crew**: the crew theme that names every agent the loop starts, display only. Derived from nothing, so always asked; a re-run leads with the current theme. Header `Crew`, question `Crew theme: which theme names the agents while they run?`, options `None` (agents keep their role names; maps to `none`), `A preset`, `My own theme`.
+   `A preset` asks again through the same dialog, header `Crew`, question `Crew preset: which preset names the agents?`, one page per call: `Warcraft`, `Star Trek`, `Star Wars`, `More presets`; after `More presets`, `Game of Thrones`, `Super Mario`. Ids, the presets of the plugin's `crew.json`: `Warcraft` to `warcraft`, `Star Trek` to `star-trek`, `Star Wars` to `star-wars`, `Game of Thrones` to `got`, `Super Mario` to `mario`.
+   Free text at any Crew step is a theme. Free text that names a preset, in any case (`mario`, `Star trek`), maps to its id. Any other free text is the theme as typed, and init writes a `names.<role>` bullet for each of the eight roles, `researcher`, `prototyper`, `spec-writer`, `implementer`, `verifier`, `reviewer`, `merger` and `general`, with characters of that theme in display form, each name once: at least five for `implementer` and three for every other role. `My own theme` with nothing typed asks again. A dismissed Crew question or preset page keeps the current theme, `none` on a fresh host.
 
 ## 4. Write
 
-- `docs/agents/forge.md` from the template, every section present, every bullet one `- key: value` line, a trailing `# comment` only where the template has one. Re-run: rewrite the file whole from the answers; it holds nothing a human adds by hand.
+- `docs/agents/forge.md` from the template, every section present, every bullet one `- key: value` line, a trailing `# comment` only where the template has one. Re-run: rewrite the file whole from the answers; the one thing a human adds by hand, a `names.<role>` bullet under `## Crew`, is kept while the theme stays and replaced when the theme changes.
 - The `### Delivery loop` sub-block under `## Agent skills` in whichever of CLAUDE.md or AGENTS.md Matt's setup edited, replaced in place when present:
 
   ```markdown
