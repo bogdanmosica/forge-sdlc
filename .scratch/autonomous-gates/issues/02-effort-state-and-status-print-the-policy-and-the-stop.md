@@ -17,3 +17,8 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 ## Proof
 
 `node --test tests/effort-state.test.mjs tests/status.test.mjs` → passes with the seven policy and stop cases
+
+## Assumptions
+
+- recommended: a state `stop` outside the closed set (`open`, `flagged`, `risk-high`) prints `stop: none` and the stage's `why` (source: spec.md, effort-state "stop is the state's stop, or none when absent"; State schema "stop: open | flagged | risk-high")
+- recommended: status puts `, stopped: <stop>` on the first line after `policy <policy>`, left out when `stop` is `none` (source: spec.md, status "Each effort's first line gains `policy <policy>` and, when set, `stopped: <stop>`")

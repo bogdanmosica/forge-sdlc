@@ -1,6 +1,6 @@
 ---
 name: status
-description: Print where forge-sdlc efforts stand (stage, gate, next command, ticket frontier, red slices, slice worktrees) for one effort or every effort on the host. Read-only.
+description: Print where forge-sdlc efforts stand (stage, gate, next command, gate policy and what stopped the run, ticket frontier, red slices, slice worktrees) for one effort or every effort on the host. Read-only.
 disable-model-invocation: true
 argument-hint: "[slug]"
 ---
@@ -11,7 +11,7 @@ argument-hint: "[slug]"
 
 `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" . <slug>` for one effort, `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" --list .` for all. Exit 1 prints its line and ends the run.
 
-Done when you hold `stage`, `gate`, `next` and `source` for each effort (an empty list: print `no effort in progress` and end).
+Done when you hold `stage`, `gate`, `next`, `source`, `policy` and `stop` for each effort (an empty list: print `no effort in progress` and end).
 
 ## 2. Per effort
 
@@ -26,12 +26,12 @@ Done when every effort has a frontier, red slices and worktrees, each a list or 
 One block per effort:
 
 ```text
-<slug>: stage <stage>, gate <gate>, next <next> (<why>)
+<slug>: stage <stage>, gate <gate>, next <next>, policy <policy>, stopped: <stop> (<why>)
   frontier: <ticket> <title>, ... | none
   red: <slug>-<nn> <ticket> <verdict> | none
   worktrees: .forge/worktrees/<slug>-<nn> <branch> | none
 ```
 
-Any `next` but `none` resumes with `/forge-sdlc:wayfinder <slug>`; print that line under the block. `source: artifacts` adds `(state lost; re-derived from feat/<slug>)` to the first line.
+Any `next` but `none` resumes with `/forge-sdlc:wayfinder <slug>`; print that line under the block. Leave out `, stopped: <stop>` when `stop` is `none`. `source: artifacts` adds `(state lost; re-derived from feat/<slug>)` to the first line.
 
 Done when every effort's block is printed.

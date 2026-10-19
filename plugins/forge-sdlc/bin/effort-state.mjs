@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Where an effort stands and which command runs next: `node bin/effort-state.mjs [host-dir] <slug>`
-// prints `{ slug, stage, gate, next, why, source }`; `--list [host-dir]` prints every effort as an array.
+// prints `{ slug, stage, gate, next, why, source, policy, stop }`; `--list [host-dir]` prints every effort as an array.
 // One argument is the slug, the host is cwd. Read-only.
+//   policy: attended | autonomous (the host's `## Gates` policy key, read on each call; anything but `autonomous` is attended)
+//   stop:   open | flagged | risk-high (the state's stop; `why` then names it) | none (also always with source artifacts)
 //   next:   map (work the map: wayfinder step 4 on) | spec | plan | build | none (Gate 4 is the code owner's)
 //   source: state (.forge/state.json) | artifacts (re-derived from docs/efforts/<slug>/ on the effort
 //           branch, and whether PR.md carries ## Evidence or the GitHub PR is ready; design section 9)
@@ -24,6 +26,13 @@ const WHY = {
   built: 'Gate 4: the PR is ready for the code owner',
 };
 
+/** Why the run stopped, by the state's `stop` (the closed set of the gate policy reference); it replaces the stage's line. */
+const STOP_WHY = {
+  open: 'an open line waits for the owner',
+  flagged: 'a flagged concern waits for the owner',
+  'risk-high': 'risk high, the effort runs attended',
+};
+
 const args = process.argv.slice(2);
 const list = args.includes('--list');
 const positional = args.filter((a) => a !== '--list');
@@ -32,9 +41,12 @@ if ((list && positional.length > 1) || (!list && (positional.length < 1 || posit
   process.exit(2);
 }
 const dir = path.resolve(list || positional.length === 2 ? positional[0] ?? '.' : '.');
-const shape = readHostConfig(dir)?.branches?.effort || DEFAULT_BRANCHES.effort;
+const config = readHostConfig(dir);
+const shape = config?.branches?.effort || DEFAULT_BRANCHES.effort;
 const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
+/** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
+const policy = config?.gates?.policy === 'autonomous' ? 'autonomous' : 'attended';
 
 /** The first ref of the effort branch that exists: local, then origin's. */
 function refOf(slug) {
@@ -78,12 +90,14 @@ function fromArtifacts(slug) {
 function where(slug) {
   const record = state?.efforts?.[slug];
   if (record?.stage in NEXT) {
-    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why: WHY[record.stage], source: 'state' };
+    const stop = Object.hasOwn(STOP_WHY, record.stop ?? '') ? record.stop : 'none';
+    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop];
+    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop };
   }
   const derived = fromArtifacts(slug);
   if (!derived) return null;
   const [stage, gate] = derived;
-  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts' };
+  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none' };
 }
 
 if (list) {
