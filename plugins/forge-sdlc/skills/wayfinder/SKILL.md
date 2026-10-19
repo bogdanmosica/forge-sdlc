@@ -46,7 +46,7 @@ Done when `git log --oneline feat/<slug>` shows the map commit first and every s
 
 ## 4. Work the map
 
-Upstream's `Work through the map`, in this session, ticket after ticket, until the frontier is empty; the frame lifts its per-session ticket limit. Who resolves each type:
+Upstream's `Work through the map`, in this session, ticket after ticket, until the frontier is empty; the frame lifts its per-session ticket limit. An agent below is a [member call](../build/MEMBERS.md) and this session its lead: read that file by path, which keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`. Who resolves each type:
 
 | Label | Resolved by | How |
 | --- | --- | --- |

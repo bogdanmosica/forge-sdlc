@@ -205,3 +205,10 @@ test('the prototyper call passes isolation on the call itself, so it keeps its o
   assert.match(agentRow('prototyper'), /passes `isolation: "worktree"` on the call/);
   assert.doesNotMatch(agentRow('researcher'), /isolation/);
 });
+
+test('this session is the lead of its member calls, reading the reference by path; no transport words', () => {
+  const line = skill.split('\n').find((l) => /\(\.\.\/build\/MEMBERS\.md\)[^\n]*plugin-root variable unresolved/.test(l));
+  assert.ok(line, 'the by-path sentence at the member calls');
+  assert.match(line, /lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(skill, /teammate|task notification/i);
+});
