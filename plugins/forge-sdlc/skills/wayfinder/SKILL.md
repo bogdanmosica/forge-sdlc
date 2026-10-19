@@ -1,6 +1,6 @@
 ---
 name: wayfinder
-description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug.
+description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug. Under the autonomous gate policy one run goes on through spec, plan and build to the first stop or Gate 4.
 disable-model-invocation: true
 argument-hint: "<idea> | #issue | <slug>"
 ---

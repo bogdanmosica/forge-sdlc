@@ -273,3 +273,15 @@ test('Resume continues past every Gate <n> passed to the first stop or Gate 4, r
   assert.match(step3, /`only-on-open`[^\n]*same rule/);
   assert.doesNotMatch(step3, /After `spec`, a report of `Gate 2 passed` continues into `plan`/, 'the Gate 2 special case is folded into the rule');
 });
+
+test('the description names the autonomous run; the skill stays user-invoked', () => {
+  const fm = frontmatter(skill);
+  assert.match(fm, /^description: [^\n]*autonomous[^\n]*Gate 4/m);
+  assert.match(fm, /^disable-model-invocation: true$/m);
+});
+
+test('every numbered step of the skill ends on a Done line', () => {
+  const steps = skill.split(/^## (?=\d+\. |Resume$)/m).slice(1, -1);
+  assert.equal(steps.length, 7);
+  for (const step of steps) assert.match(step.trim().split('\n').pop(), /Done when [^\n]+\.$/, step.slice(0, 30));
+});
