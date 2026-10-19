@@ -31,10 +31,23 @@ Confirm, before the spec is written, the four hypotheses ticket 08 left: (a) a n
    cat ~/Desktop/personal/videobot/.forge/live-check/stop.log
    ```
 
-4. **Paste** all three under `## Results` below, then run `/forge-sdlc:wayfinder cmux-members` in the forge-sdlc lead. The resolution records: (a) how the lead was told; (b) which events the log shows for the teammate, with `hook_event_name`, `cwd` and `CLAUDE_PROJECT_DIR`; (c) whether the teammate reported the two tools missing; (d) whether the name survived with its space and apostrophe.
+4. **Paste** all three under `## Results
 
-5. **Clean up** (the agent can do this at resolution): in videobot, `git worktree remove .forge/live-check/wt && git branch -D live-check/teammate`, delete `.claude/settings.local.json` and `.forge/live-check/`. The plugin install stays: videobot is the next host.
+### Run 1, 2026-10-19 05:48 UTC: not a teams lead
 
-## Results
+cmux's session record shows the lead was launched as `/Users/mosica.bogdan/.local/bin/claude` with no arguments, so agent teams were off: no `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` in any hook's environment, no roster under `~/.claude/teams/`, and the Agent tool offered no `name` parameter, so the lead's call carried `subagent_type`, `prompt` and `description` only. The teammate hypotheses (a) to (d) are therefore not exercised. The run did settle the plain subagent path:
 
-(paste here)
+- The implementer ran as a background subagent and its report reached the lead as a hand-back message ("Another Claude session sent a message"), the same way this harness delivers every subagent report.
+- The hook fired as `SubagentStop`, `agent_type: forge-sdlc:implementer`, with `cwd` equal to the lead's project directory (`videobot`), not the worktree the subagent had `cd`'d into. In the same log a subagent started with `isolation: worktree` carried its harness worktree (`.claude/worktrees/agent-…`) as cwd. So a subagent's `cwd` is the directory the harness assigned it, never the directory of its last `cd`. This settles the open item from the first build, and it means `verified-before-stop` cannot see a slice branch for a subagent implementer today: it reads the lead's branch and allows the stop. The guard has only been holding through the implementer's own discipline.
+- `disallowedTools` held: the subagent reported AskUserQuestion and Agent absent from both its loaded and deferred tool lists.
+- Output of the subagent, verbatim: `pwd` printed the live-check worktree path and `git branch --show-current` printed `live-check/teammate`.
+
+### Rerun needed, from a real teams lead
+
+In a terminal of the videobot cmux workspace start the lead by hand, so the launch is certain:
+
+```sh
+cd ~/Desktop/personal/videobot && cmux claude-teams --permission-mode auto
+```
+
+Before pasting the prompt, confirm teams are on: ask the lead to run `echo ${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-unset}` in Bash and to say whether its Agent tool has a `name` parameter. Only then paste step 2. The hook file still holds the three entries; the log keeps appending.
