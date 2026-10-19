@@ -18,3 +18,12 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/verified-before-stop.test.mjs tests/evals.test.mjs` → passes with the agent-id cases
+
+## Assumptions
+
+- recommended: the red pass clears the slice's `agent` on the cwd branch too, not only the agent-id branch, since an `agent` is cleared whenever its slice goes red; a slice without `agent` is written exactly as before (source: docs/contracts.md, state, "cleared when the slice goes `merged` or `red`")
+- recommended: the agent-id branch names the slice's branch from the host's slice shape with `<slug>-<nn>` filled in, not from the worktree's checkout, so a detached worktree still gets `slice/<slug>-<nn>` in the reason (source: spec, Hook, "The reason names the slice and its branch `slice/<slug>-<nn>`")
+- recommended: a `SubagentStop` with an empty `agent_id` allows, as an absent one does (source: spec, Hook, "carries an `agent_id`")
+- recommended: the eval fixture writes the slice's `agent` with one inline `node -e`, beside `worktree 01`, rather than a new `host.sh` helper (source: spec, Testing Decisions, guardrail eval case "the slice's `agent` in state")
+- recommended: the new ADR is 0016; slice 07's "Agents as named members" takes the next number (source: plan, order of work, "07 after 05 and 06")
+- recommended: the README hooks table's `verified-before-stop` row notes the agent-id branch in this slice, the slice that changes the hook (source: spec, Design record, "the hooks table notes the agent-id branch")
