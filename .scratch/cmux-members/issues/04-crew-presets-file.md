@@ -17,3 +17,9 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/crew-presets.test.mjs` → passes the structural checks
+
+## Assumptions
+
+- recommended: `crew.json` keeps prior-sdlc's shape, `{ "_comment", "presets": { "<id>": { "label", "names": { "<role>": [...] } } } }`, with the eight forge roles as the `names` keys (source: spec, Implementation Decisions, "The presets file": "each with a label and the eight forge pools")
+- recommended: the `general` pool lists prior-sdlc's implementer-markup names first, then its general names (source: spec, "The presets file": "implementer-markup together with prior-sdlc's general to general")
+- recommended: the added same-world names are Tirion Fordring, Kira Nerys, Hera Syndulla, Catelyn Stark and Dixie Kong (merger pools) and Toadsworth (Super Mario spec-writer) (source: spec, "The presets file": "names from the same world are added")
