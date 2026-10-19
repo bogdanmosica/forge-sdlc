@@ -190,3 +190,19 @@ test('slice-review: the verifier gets its own four pointers, the fix implementer
   assert.match(body, /in the verifier's order: `<slug>-<nn>`, the worktree, the project dir[^\n]*proof command/);
   assert.match(body, /implementer's build pointers plus the fix[^\n]*plan\.md` row `<nn>` and its proof line[^\n]*the round to fix/);
 });
+
+/* Members (the member call of skills/build/MEMBERS.md) */
+
+const MEMBER_LINK = '[member call](../build/MEMBERS.md)';
+/** The body line holding the Agent call for `forge-sdlc:<agent>`. */
+const callLine = (agent) => frontmatter(read(SKILL)).body.split('\n').find((l) => l.includes(`subagent_type: "forge-sdlc:${agent}"`));
+
+test('slice-review: the reviewer and verifier calls are member calls naming their roles', () => {
+  for (const role of ['reviewer', 'verifier']) {
+    const line = callLine(role);
+    assert.ok(line, `an Agent call for ${role}`);
+    assert.ok(line.includes(MEMBER_LINK), `${role} links the members reference`);
+    assert.ok(line.includes(`role \`${role}\``), `${role} names its role`);
+  }
+  assert.ok(existsSync(path.join(plugin, 'skills', 'build', 'MEMBERS.md')), 'the reference exists');
+});
