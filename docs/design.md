@@ -141,6 +141,8 @@ Decision (`intent`): it reshapes a Destination only once the map is charted; wit
 
 Decision (chaining): inside the loop a forge-sdlc command runs another by reading its `SKILL.md` (wayfinder's resume, the merger's slice-review), since every command is user-invoked and the Skill tool refuses it ([ADR 0009](adr/0009-forge-commands-chained-by-file.md)).
 
+Decision (members): every Agent call the commands make is a **member call**, defined once in `skills/build/MEMBERS.md` and linked with the member's role at each call in build, slice-review, wayfinder and spec. Before the call the lead runs `bin/crew-name.mjs <role>` (`--slice` for an implementer) and passes its line as `name`; after an implementer's call it writes the id the Agent result names as the slice's `agent`; it waits for the member's report and, under a lead with agent teams enabled, ends the teammate with the shutdown request once its work is settled. Agent teams is the transport, not crew.sh, and nothing detects it: a teams lead shows each member as a named pane, a plain lead runs the same call as a subagent. Names are display only ([ADR 0017](adr/0017-agents-as-named-members.md)).
+
 ### `init` (once per host)
 
 1. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/mattpocock-skills:setup-matt-pocock-skills` first and stop. It owns the tracker, triage labels and domain-docs layout; `init` never duplicates those questions.
@@ -188,10 +190,11 @@ Shapes or reshapes one map's Destination through a short grilling, without chart
 `implement-spec` is the procedure, read from its file and followed step by step under this frame:
 
 - **Integration branch** = `feat/<slug>`. Fetch, switch, never create a second one.
+- **Members**: every agent below is a member call (`skills/build/MEMBERS.md`) with its role, named from the host's crew theme; the Gate 4 report gives `<slug>-<nn>: <member>` per slice.
 - **Exploration subagent** (step 2) = the researcher agent, notes under `.forge/notes/<slug>/`, outside every worktree, readable by all.
-- **Implementer subagents** (step 4) = the implementer agent, `subagent_type: "forge-sdlc:implementer"`, one worktree per slice under `.forge/worktrees/<slug>-<nn>` on a local branch `slice/<slug>-<nn>` cut from the tip of `feat/<slug>`, prompt is pointers only: ticket, spec, plan, effort branch, worktree path, proof line. It calls `mattpocock-skills:tdd`. It never reviews.
+- **Implementer subagents** (step 4) = the implementer agent, `subagent_type: "forge-sdlc:implementer"`, one worktree per slice under `.forge/worktrees/<slug>-<nn>` on a local branch `slice/<slug>-<nn>` cut from the tip of `feat/<slug>`, prompt is pointers only: ticket, spec, plan, effort branch, worktree path, proof line. It calls `mattpocock-skills:tdd`. It never reviews. It starts in the background and the lead records its id as the slice's `agent`, which the Stop hook gates on.
 - **Verifier** runs when an implementer reports done: the verifier agent runs the slice's proof and the host's proof commands in the worktree and writes `.forge/verify/<slug>-<nn>.json` (commands, exit codes, trimmed output, timestamp, HEAD). The implementer's Stop hook reads this record: no green record, no stop (section 7).
-- **Merger** (step 5) = the merger agent, one foreground call per finished slice. It reads the evidence record, runs `/forge-sdlc:slice-review`, merges the slice branch `--no-ff` into `feat/<slug>`, pushes `feat/<slug>`, deletes the slice branch and its worktree, resolves the ticket. Two fix rounds at most; then the slice is **red**: its branch and worktree stay for its implementer, it is listed in the PR and never merged, and never pushed. A slice blocked by a red slice is red too.
+- **Merger** (step 5) = the merger agent, one member call per finished slice. It reads the evidence record, runs `/forge-sdlc:slice-review`, merges the slice branch `--no-ff` into `feat/<slug>`, pushes `feat/<slug>`, deletes the slice branch and its worktree, resolves the ticket, and clears the slice's `agent`. Two fix rounds at most; then the slice is **red**: its branch and worktree stay for its implementer, it is listed in the PR and never merged, and never pushed. A slice blocked by a red slice is red too. Once the merger reports `merged` or `red`, the lead ends that slice's implementer and the merger.
 - **Frontier** (step 6): after every merge, start implementers for every ticket now unblocked, in the background, as many as the host config allows (`max_parallel_slices`, default 3; the playbook says start with two or three and add only while review keeps pace).
 - **Step 7 replaced**: every slice was reviewed on merge, so the end-of-run `code-review` does not run again. In its place the PR body is written with the `pr` template, evidence per slice from the verify records, `## Flagged concerns` carried from the spec, `## Red slices`.
 - **Step 8**: mark the PR ready (GitHub), or print the branch and the red slices (local). Stop: Gate 4.
@@ -205,11 +208,11 @@ The merger's review, callable by hand. Spawns three **reviewer** agents in paral
 2. **Spec**: Matt's `code-review` spec axis against `spec.md` and the ticket.
 3. **Bugs and security**: the plugin's `review/REVIEW.md` rubric (null paths, floating promises, tautological tests, injection, trust boundaries, secrets), extended by the host's `docs/agents/REVIEW.md` when present. The host file extends, never relaxes.
 
-Findings are **Important** (blocks the merge) or **Nit** (listed, five at most, never blocks). The axes are reported side by side, never reranked (Matt's "why two axes"). Important findings go to a single fix implementer in the same worktree; the verifier reruns; the axes rerun. Two rounds, then `red`.
+Findings are **Important** (blocks the merge) or **Nit** (listed, five at most, never blocks). The axes are reported side by side, never reranked (Matt's "why two axes"). Important findings go to a single fix implementer in the same worktree; the verifier reruns; the axes rerun. Two rounds, then `red`. The reviewers, the fix implementer (which keeps the slice's name) and the verifier are member calls whose lead is the merger.
 
 ## 6. The agents
 
-Each is a file in `agents/` with `name`, `description`, `model`, `effort`, tool scoping, and a brief that fits on one screen. Prompts to agents are pointers, never pasted artifacts.
+Each is a file in `agents/` with `name`, `description`, `model`, `effort`, tool scoping, and a brief that fits on one screen. Prompts to agents are pointers, never pasted artifacts. Every agent runs as a **member** (section 5, Decision (members)): named from the host's crew theme, a visible pane under a lead with agent teams enabled and a subagent under a plain lead, with the same brief, tools and proof either way; no brief learns its name.
 
 | Agent | Stage | Model, effort | Tools | Role in one line |
 | --- | --- | --- | --- | --- |
@@ -383,13 +386,14 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── intent/SKILL.md       # Destination by hand
 │   │   ├── spec/SKILL.md         # + SPEC-EXTRAS.md (the three added sections)
 │   │   ├── plan/SKILL.md         # + PLAN-TEMPLATE.md
-│   │   ├── build/SKILL.md
+│   │   ├── build/SKILL.md        # + MEMBERS.md (the member call every dispatching skill links)
 │   │   ├── slice-review/SKILL.md
 │   │   └── status/SKILL.md
 │   ├── agents/
 │   │   ├── researcher.md  prototyper.md  spec-writer.md
 │   │   ├── implementer.md verifier.md    reviewer.md    merger.md
 │   ├── review/REVIEW.md          # the bugs-and-security rubric, generic
+│   ├── crew.json                 # the crew theme presets: five themes, one name pool per role
 │   ├── hooks/
 │   │   ├── hooks.json
 │   │   └── scripts/              # one file per hook (section 7), lib.mjs for stdin, config, state, git, decisions
@@ -398,7 +402,8 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── skill-path.mjs        # resolver for user-invoked upstream skills; --check is the lock verdict
 │   │   ├── upstream.mjs          # registry, lock and verdict, shared by skill-path and skills-version
 │   │   ├── effort-state.mjs      # an effort's stage, gate and next command, from state or its artifacts
-│   │   └── verify-record.mjs     # runs a slice's proof and the host's commands, writes .forge/verify/<slug>-<nn>.json
+│   │   ├── verify-record.mjs     # runs a slice's proof and the host's commands, writes .forge/verify/<slug>-<nn>.json
+│   │   └── crew-name.mjs         # a member's next name from the host's crew theme, recorded in .forge/state.json
 │   ├── evals/                    # claude plugin eval suites (section 12)
 │   │   ├── triggering/  guardrails/  frame/  upstream/   # one folder per case: case.yaml, fixture.sh, graders/
 │   │   ├── fixtures/word-count/  # the three-ticket fixture effort the frame suite builds

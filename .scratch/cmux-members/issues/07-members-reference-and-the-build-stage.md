@@ -21,3 +21,10 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Comments
 
 red 2026-10-19: blocked by a red slice. Slice 05 (crew-name.mjs) ended red after two fix rounds with one Important finding left (a missing test for the `updatedAt` write, see `.forge/review/cmux-members-05.md`); this slice was not started. The next build run retries 05 first.
+
+build 2026-10-19 (blocker 05 merged; the red note above is stale):
+- recommended: the members reference is `skills/build/MEMBERS.md`, so slice 08 links it as `../build/MEMBERS.md` (source: spec, "The member call, written once": "A members reference beside the build skill")
+- recommended: build's verifier and merger calls say "foreground under a plain lead" rather than dropping the word, since the reference leaves foreground or background to the skill; "one foreground Agent call" is gone (source: spec, "The member call, written once", third bullet; "Build skill", last sentence)
+- recommended: the reference names the shutdown as "a `SendMessage` shutdown request addressed to the member's name" and spells no fields, which the docs leave undocumented (source: spec, "The member call, written once", fourth bullet; notes, agent-teams section 4)
+- recommended: the merger clears `agent` by deleting the key, as an absent field reads as none (source: spec, "State schema": "an absent field reads as none")
+- recommended: the design and ADR checks live in `tests/build.test.mjs`, the proof's file, and design section 11 gains `MEMBERS.md`, `crew.json` and `crew-name.mjs` (source: spec, "Design record": "section 11 the presets file and the script")

@@ -43,6 +43,8 @@ Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sd
 
 Build is unattended: each slice is built test-first in its own worktree, verified (`.forge/verify/<slug>-<nn>.json`), reviewed on three axes (Standards, Spec, Bugs and security), and merged `--no-ff` into `feat/<slug>` only when clean. Two fix rounds at most, then the slice is red: it stays local and is listed in the PR. Only `feat/<slug>` is ever pushed.
 
+Every agent the loop starts is a named member, its name drawn from the crew theme `init` asks for. A lead launched with agent teams enabled (as `cmux claude-teams` does) is what makes the names visible: each member opens as a named pane, listed in cmux's Crew panel, and closes once its work is settled. A plain lead runs the same calls as subagents, and the names show only in the Gate 4 report.
+
 ## Hooks
 
 Reminders for the agent, not a sandbox: the git host's branch protection stays the enforcement of record. State comes from `.forge/state.json`, `docs/agents/forge.md` and git, never from the conversation.
