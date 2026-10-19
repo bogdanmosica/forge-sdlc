@@ -114,6 +114,16 @@ test('docs/contracts.md: the state shape has crew per effort, member and agent p
   assert.match(names, /^\| Crew presets \|[^\n]*crew\.json/m);
 });
 
+test('docs/contracts.md: the effort record has the optional stop, and the effort-position row prints policy and stop', () => {
+  const contracts = readFileSync(path.join(repoRoot, 'docs', 'contracts.md'), 'utf8');
+  const shape = /## `\.forge\/state\.json`[\s\S]*?```json\n([\s\S]*?)```/.exec(contracts)[1];
+  assert.match(shape, /"gate": [^\n]*\n\s*"stop": "open \| flagged \| risk-high"/, 'stop beside gate');
+  const state = /## `\.forge\/state\.json`\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(state, /^- `stop`[^\n]*additive[^\n]*absent[^\n]*none/m, 'stop is additive, absent reads as none');
+  const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(names, /^\| Effort position \|[^\n]*\{ slug, stage, gate, next, why, source, policy, stop \}/m);
+});
+
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {
   const { dir } = host();
   assert.equal(readState(dir), null);
