@@ -10,7 +10,7 @@
         "implementer": ["Peon", "Peasant", "Wisp", "Acolyte", "Grunt"],
         "verifier": ["Medivh", "Chromie", "Nozdormu"],
         "reviewer": ["Illidan Stormrage", "Sylvanas Windrunner", "Garrosh Hellscream", "Varian Wrynn"],
-        "merger": ["Malfurion Stormrage", "Uther the Lightbringer"],
+        "merger": ["Malfurion Stormrage", "Uther the Lightbringer", "Tirion Fordring"],
         "general": ["Tyrande Whisperwind", "Alexstrasza", "Ysera", "Murloc", "Kobold", "Harvest Golem"]
       }
     },
@@ -23,7 +23,7 @@
         "implementer": ["Scotty", "O'Brien", "Rom", "Barclay", "Tom Paris"],
         "verifier": ["Data", "Tuvok", "T'Pol"],
         "reviewer": ["Spock", "Odo", "Seven of Nine", "Worf"],
-        "merger": ["Riker", "Chakotay"],
+        "merger": ["Riker", "Chakotay", "Kira Nerys"],
         "general": ["Troi", "Guinan", "Kes", "Ensign Kim", "Nog", "Ezri Dax"]
       }
     },
@@ -36,7 +36,7 @@
         "implementer": ["R2-D2", "BB-8", "Chopper", "K-2SO", "Chewbacca"],
         "verifier": ["Yoda", "Obi-Wan Kenobi", "Lor San Tekka"],
         "reviewer": ["Mace Windu", "Qui-Gon Jinn", "Kanan Jarrus", "Luke Skywalker"],
-        "merger": ["Han Solo", "Poe Dameron"],
+        "merger": ["Han Solo", "Poe Dameron", "Hera Syndulla"],
         "general": ["C-3PO", "Padmé Amidala", "Lando Calrissian", "Wedge Antilles", "Biggs Darklighter", "Mouse Droid"]
       }
     },
@@ -49,7 +49,7 @@
         "implementer": ["Jon Snow", "Arya Stark", "Brienne of Tarth", "Jaime Lannister", "Sandor Clegane"],
         "verifier": ["Maester Aemon", "Bran Stark", "Old Nan"],
         "reviewer": ["Ned Stark", "Stannis Baratheon", "Jorah Mormont", "Barristan Selmy"],
-        "merger": ["Tywin Lannister", "Robert Baratheon"],
+        "merger": ["Tywin Lannister", "Robert Baratheon", "Catelyn Stark"],
         "general": ["Sansa Stark", "Margaery Tyrell", "Daenerys Targaryen", "Hodor", "Hot Pie", "Lommy Greenhands"]
       }
     },
@@ -58,11 +58,11 @@
       "names": {
         "researcher": ["Toad", "Captain Toad", "Toadette"],
         "prototyper": ["Luigi", "Wario", "Waluigi"],
-        "spec-writer": ["Princess Peach", "Princess Daisy"],
+        "spec-writer": ["Princess Peach", "Princess Daisy", "Toadsworth"],
         "implementer": ["Mario", "Yoshi", "Donkey Kong", "Diddy Kong", "Birdo"],
         "verifier": ["Professor E. Gadd", "Cranky Kong", "Rosalina"],
         "reviewer": ["Bowser", "Bowser Jr.", "King Boo", "Kamek"],
-        "merger": ["Pauline", "Funky Kong"],
+        "merger": ["Pauline", "Funky Kong", "Dixie Kong"],
         "general": ["Lakitu", "Shy Guy", "Koopa Troopa", "Goomba", "Boo", "Bob-omb"]
       }
     }

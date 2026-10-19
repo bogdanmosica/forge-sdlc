@@ -30,3 +30,12 @@ test('crew.json holds exactly the five presets, each with its label and the eigh
     }
   }
 });
+
+test('every pool holds at least three names and every implementer pool at least five', () => {
+  for (const [id, preset] of Object.entries(presets())) {
+    for (const role of ROLES) {
+      const min = role === 'implementer' ? 5 : 3;
+      assert.ok(preset.names[role].length >= min, `${id}.${role} has ${preset.names[role].length}, needs ${min}`);
+    }
+  }
+});
