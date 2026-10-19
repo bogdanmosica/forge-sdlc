@@ -159,3 +159,22 @@ test('plan step 3: the dialog quiz under attended or risk high; under autonomous
   assert.match(step3, /`recommended:`[^\n]*`\(source: policy autonomous\)`/);
   assert.match(step3, /Done when /);
 });
+
+test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, written under the autonomous policy only, four recommended lines', () => {
+  assert.match(template, /^## Quiz$/m);
+  assert.ok(template.indexOf('## Quiz') > template.indexOf('## Prefactoring'), '## Quiz comes after ## Prefactoring');
+  const quiz = template.slice(template.indexOf('## Quiz'));
+  assert.match(quiz, /autonomous/);
+  const lines = quiz.split('\n').filter((l) => l.startsWith('- recommended: '));
+  assert.equal(lines.length, 4);
+  QUIZ.forEach((q, k) => assert.ok(lines[k].startsWith(`- recommended: ${q}: `), q));
+  for (const l of lines) assert.match(l, /\(source: policy autonomous\)$/);
+});
+
+test('plan steps 1, 5, 6 and 7: a policy-passed Gate 2, the Quiz block in plan.md and the PR body, the Gate 3 passed line', () => {
+  assert.match(step(1), /policy[^\n]*Gate 2|Gate 2[^\n]*policy/);
+  assert.match(step(5), /`## Quiz`[^\n]*after `## Prefactoring`[^\n]*`autonomous` only/);
+  assert.match(step(6), /`## Plan`[^\n]*Quiz[^\n]*under the slice table|under the slice table[^\n]*Quiz/);
+  assert.match(step(6), /drop(s|ping)? `stop`/);
+  assert.match(step(7), /`Gate 3 passed: policy autonomous, nothing open`/);
+});
