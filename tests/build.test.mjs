@@ -270,6 +270,16 @@ test('merger: red merges nothing, keeps branch and worktree, findings on the tic
   assert.match(body, /findings/);
 });
 
+test('merger: a member the lead starts, clearing the slice\'s agent when it writes merged or red', () => {
+  const { fields, body } = frontmatter(read(MERGER));
+  assert.doesNotMatch(fields.description, /foreground/);
+  const merge = body.slice(body.indexOf('3. **Merge**'), body.indexOf('4. **Red**'));
+  const red = body.slice(body.indexOf('4. **Red**'), body.indexOf('5. **Report**'));
+  for (const [step, text] of [['merge', merge], ['red', red]]) {
+    assert.match(text, /clear[^\n]*`agent`/, `${step} clears agent`);
+  }
+});
+
 test('seams: the implementer works from its worktree, and a by-file chain names the resolved plugin root', () => {
   assert.match(frontmatter(read(IMPLEMENTER)).body, /first Bash call is `cd <worktree>`/);
   assert.match(frontmatter(read(MERGER)).body, /plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
