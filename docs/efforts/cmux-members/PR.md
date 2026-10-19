@@ -89,6 +89,4 @@ Tickets, frontier first (03, 04):
 - `.scratch/cmux-members/issues/05-crew-name-picks-and-records-the-next-name.md`
 - `.scratch/cmux-members/issues/06-stop-gate-finds-a-subagent-slice-by-agent-id.md`
 - `.scratch/cmux-members/issues/07-members-reference-and-the-build-stage.md`
-- `.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md`
 - `.scratch/cmux-members/issues/08-members-in-slice-review-wayfinder-and-spec.md`
-- `.scratch/cmux-members/issues/08-named-teammates-under-a-teams-lead.md`
