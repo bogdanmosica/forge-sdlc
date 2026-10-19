@@ -14,5 +14,6 @@ The cwd branch stays first and unchanged. When the payload is `SubagentStop`, ca
 
 - A subagent implementer cannot stop without a green record, under a plain lead as in a pane.
 - No match, a `Stop` payload, or a matched slice whose worktree is gone allows as before, so a stale or unknown id never blocks a stop that is not an implementer's.
-- The gate depends on the lead recording `agent` before the subagent can stop. A foreground Agent call returns its id only after `SubagentStop` has fired, so the fix round starts its implementer in the background; a lost `agent` write costs one ungated stop, which the merger's evidence step still catches.
+- The gate depends on the lead recording `agent` before the subagent can stop, and a foreground Agent call returns its id only after `SubagentStop` has fired; a lost `agent` write costs one ungated stop, which the merger's evidence step still catches.
+- A fix round's implementer runs in the foreground inside the merger, with no `agent` recorded, so this gate does not hold for it; the merger's verify step after the fix is the gate of a fix round (amended 2026-10-19, owner decision at Gate 4: a background call left the merger, itself a subagent, no way to wait for the report).
 - The red pass clears `agent` on either branch, so a later stop with the same id is never gated on a slice already red.
