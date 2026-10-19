@@ -1,8 +1,8 @@
 # 06: cmux-members-06: Stop gate finds a subagent's slice by agent id
 
 Type: slice
-Status: ready-for-agent
-Labels: ready-for-agent
+Status: resolved
+Labels: resolved
 Risk: high (touches plugins/forge-sdlc/hooks/**)
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
@@ -27,3 +27,7 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 - recommended: the eval fixture writes the slice's `agent` with one inline `node -e`, beside `worktree 01`, rather than a new `host.sh` helper (source: spec, Testing Decisions, guardrail eval case "the slice's `agent` in state")
 - recommended: the new ADR is 0016; slice 07's "Agents as named members" takes the next number (source: plan, order of work, "07 after 05 and 06")
 - recommended: the README hooks table's `verified-before-stop` row notes the agent-id branch in this slice, the slice that changes the hook (source: spec, Design record, "the hooks table notes the agent-id branch")
+
+## Comments
+
+merged: review record .forge/review/cmux-members-06.md, merge 057a11a

@@ -18,3 +18,6 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/crew-name.test.mjs` → passes against the shipped presets over fixture hosts
+
+## Comments
+- red (merger): Bugs and security has one Important finding left after two fix rounds: the `record.updatedAt` refresh in crew-name.mjs has no test that fails when it is removed. Findings: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-05.md. Slice branch and worktree stay for the implementer.
