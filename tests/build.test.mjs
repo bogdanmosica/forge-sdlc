@@ -151,6 +151,25 @@ test('members: the reference beside build names the script, the name, the agent 
   for (const link of relativeLinks(text)) assert.ok(existsSync(path.join(plugin, 'skills', 'build', link)), link);
 });
 
+test('build: every Agent call is a member call linking the reference with its role', () => {
+  const { body } = frontmatter(read(SKILL));
+  const lines = body.split('\n');
+  for (const role of ['researcher', 'implementer', 'verifier', 'merger']) {
+    const line = lines.find((l) => l.includes(`subagent_type: "forge-sdlc:${role}"`));
+    assert.ok(line, `an Agent call for ${role}`);
+    assert.match(line, /\[member call\]\(MEMBERS\.md\)/, `${role} links the reference`);
+    assert.ok(line.includes(`role \`${role}\``), `${role} names its role`);
+  }
+  assert.doesNotMatch(body, /foreground Agent call/);
+  assert.match(body, /role `implementer` with `--slice <slug>-<nn>`/);
+});
+
+test("build: step 4 records the implementer's agent id on its slice", () => {
+  const { body } = frontmatter(read(SKILL));
+  const step4 = body.split('\n').find((l) => l.includes('**Step 4**'));
+  assert.match(step4, /slices\["<slug>-<nn>"\]\.agent/);
+});
+
 /* The implementer */
 
 test('implementer: Opus high, everything but Agent and AskUserQuestion', () => {
