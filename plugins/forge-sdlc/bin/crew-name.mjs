@@ -27,7 +27,15 @@ const pool = JSON.parse(readFileSync(PRESETS, 'utf8')).presets[theme].names[role
 const state = readState(dir);
 const record = state.efforts[slug];
 const used = record.crew?.[role] ?? [];
-const pick = pool.find((n) => !used.includes(n));
+
+/** The first name of the pool not in `used`; a pool run out starts again with `-2`, then `-3`. */
+function nextName(pool, used) {
+  for (let round = 1; ; round += 1) {
+    const free = pool.map((n) => (round === 1 ? n : `${n}-${round}`)).find((n) => !used.includes(n));
+    if (free) return free;
+  }
+}
+const pick = nextName(pool, used);
 
 record.crew = { ...record.crew, [role]: [...used, pick] };
 record.updatedAt = new Date().toISOString();

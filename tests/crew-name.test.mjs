@@ -39,3 +39,10 @@ test('a preset theme prints the role\'s first name and records it; a second call
   assert.equal(printed(name(dir, 'implementer')), 'OBrien');
   assert.deepEqual(effort(dir).crew, { implementer: ['Scotty', 'OBrien'] });
 });
+
+test('a pool run out restarts with -2, then -3', () => {
+  const { dir } = crewHost(['- theme: star-trek']);
+  const names = Array.from({ length: 7 }, () => printed(name(dir, 'verifier')));
+  assert.deepEqual(names, ['Data', 'Tuvok', 'TPol', 'Data-2', 'Tuvok-2', 'TPol-2', 'Data-3']);
+  assert.deepEqual(effort(dir).crew.verifier, names);
+});
