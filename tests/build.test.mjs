@@ -142,6 +142,12 @@ test("build: the lead ends a slice's implementer after its merger reports merged
   assert.match(step5, /merged` or `red`[^\n]*end that slice's implementer/);
   assert.match(step5, /shutdown request/);
   assert.match(step5, /end the researcher and a verifier/);
+  assert.match(step5, /end that slice's implementer, then the merger/);
+});
+
+test('build: one merger at a time, the next started only after the previous one reports', () => {
+  const step5 = stepLine(frontmatter(read(SKILL)).body, 'Step 5');
+  assert.match(step5, /one merger at a time[^\n]*start the next only after the previous merger's report arrives/i);
 });
 
 test("build: the Gate 4 report names each slice's member", () => {
@@ -156,7 +162,7 @@ test("build: the Gate 4 report names each slice's member", () => {
 test('members: the reference beside build names the script, the name, the agent write, the wait and the shutdown', () => {
   assert.ok(existsSync(path.join(plugin, MEMBERS)), MEMBERS);
   const text = read(MEMBERS);
-  assert.match(text, /node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/crew-name\.mjs" <role> --project [^\n]*--effort <slug>/);
+  assert.match(text, /node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/crew-name\.mjs" <role> --project "<project dir>" --effort <slug>/);
   assert.match(text, /--slice <slug>-<nn>/);
   assert.match(text, /as the call's `name`/);
   assert.match(text, /slices\["<slug>-<nn>"\]\.agent/);
@@ -212,6 +218,24 @@ test('members: design section 5 records the member call with a Decision line to 
   assert.ok(existsSync(file), adr[1]);
   assert.match(readFileSync(file, 'utf8'), /^# 17\. Agents as named members$/m);
   assert.match(section5, /skills\/build\/MEMBERS\.md/);
+});
+
+test('members: the glossary lead covers the merger starting slice-review\'s members', () => {
+  const glossary = readFileSync(path.join(repo, 'GLOSSARY.md'), 'utf8');
+  const lead = glossary.split('\n').find((l) => l.startsWith('- **lead**:'));
+  assert.ok(lead, 'a lead line');
+  assert.match(lead, /forge-sdlc command/);
+  assert.match(lead, /merger[^\n]*slice-review/);
+  const member = glossary.split('\n').find((l) => l.startsWith('- **member**:'));
+  assert.match(member, /an agent a lead starts/);
+});
+
+test('members: ADR 0017 lists the agent_id hypothesis and the status among lost concurrent writes', () => {
+  const adr = readFileSync(path.join(repo, 'docs', 'adr', '0017-agents-as-named-members.md'), 'utf8');
+  assert.match(adr, /hypothes[ie]s[^\n]*`agent_id`|`agent_id`[^\n]*hypothes[ie]s/);
+  const lost = adr.split('\n').find((l) => /can lose an update/.test(l));
+  assert.ok(lost, 'a lost-update consequence');
+  assert.match(lost, /`status`/);
 });
 
 /* The implementer */
