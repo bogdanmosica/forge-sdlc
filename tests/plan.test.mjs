@@ -144,3 +144,18 @@ test('plan: each slice enters state with status open and mode normal (docs/contr
   const body = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'skills', 'plan', 'SKILL.md'), 'utf8');
   assert.match(body, /"status": "open", "mode": "normal", "ticket"/);
 });
+
+/* Gate policy (skills/wayfinder/GATE-POLICY.md) */
+
+const step = (n) => new RegExp(`^## ${n}\\. .*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(skill)?.[1] ?? '';
+const QUIZ = ['granularity', 'blocking edges', 'merge or split', 'proofs'];
+
+test('plan step 3: the dialog quiz under attended or risk high; under autonomous the drafted breakdown answers it', () => {
+  const step3 = step(3);
+  assert.ok(step3.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
+  assert.match(step3, /`attended`[^\n]*`risk: high`[^\n]*AskUserQuestion|AskUserQuestion[^\n]*`attended`/);
+  assert.match(step3, /`autonomous`[^\n]*`risk: normal`[^\n]*drafted breakdown/);
+  assert.ok(step3.includes(`quiz's order: ${QUIZ.join(', ')}`), 'the four answers in the quiz order');
+  assert.match(step3, /`recommended:`[^\n]*`\(source: policy autonomous\)`/);
+  assert.match(step3, /Done when /);
+});

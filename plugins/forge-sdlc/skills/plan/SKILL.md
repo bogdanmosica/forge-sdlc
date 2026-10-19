@@ -28,9 +28,12 @@ Done when every slice has `nn`, title, blocked by, delivers and a proof the host
 
 ## 3. Gate 3: the quiz
 
-To-tickets' `Quiz the user` is Gate 3. Through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
+To-tickets' `Quiz the user` is Gate 3, passed as the [gate policy](../wayfinder/GATE-POLICY.md) says, with `gates.policy` from the host config (`node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"`) and `risk` from spec.md.
 
-Done when the engineer has answered that the breakdown is approved.
+- Under `attended`, or for a `risk: high` effort: through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
+- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer, approved as drafted. Write its four answers as `recommended:` lines ending `(source: policy autonomous)`, one per question in the quiz's order: granularity, blocking edges, merge or split, proofs (`- recommended: granularity: <n> slices, each fits one context window (source: policy autonomous)`). Steps 5 and 6 record them.
+
+Done when the engineer has answered that the breakdown is approved, or, under `autonomous` with `risk: normal`, the four `recommended:` lines are written.
 
 ## 4. Publish the tickets
 
