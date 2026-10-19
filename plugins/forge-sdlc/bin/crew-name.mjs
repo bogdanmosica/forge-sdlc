@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readHostConfig, readState, writeState } from '../hooks/scripts/lib.mjs';
+import { listOf, readHostConfig, readState, writeState } from '../hooks/scripts/lib.mjs';
 
 const PRESETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'crew.json');
 
@@ -21,8 +21,13 @@ for (let i = 0; i < rest.length; i += 2) flags[rest[i].replace(/^--/, '')] = res
 const dir = path.resolve(flags.project);
 const slug = flags.effort;
 
-const theme = readHostConfig(dir)?.crew?.theme;
-const pool = JSON.parse(readFileSync(PRESETS, 'utf8')).presets[theme].names[role].map(handleOf);
+/** The role's pool in display form: the host's `names.<role>` bullet, else the preset its theme names. */
+function poolOf(crew) {
+  const override = listOf(crew?.[`names.${role}`]);
+  if (override.length) return override;
+  return JSON.parse(readFileSync(PRESETS, 'utf8')).presets[crew?.theme].names[role];
+}
+const pool = poolOf(readHostConfig(dir)?.crew).map(handleOf);
 
 const state = readState(dir);
 const record = state.efforts[slug];

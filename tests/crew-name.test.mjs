@@ -60,3 +60,11 @@ test('--slice picks a name and writes it as the slice\'s member; the same slice 
   assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-02')), 'OBrien', 'another slice takes the next name');
   assert.equal(effort(dir).slices['demo-02'].member, 'OBrien');
 });
+
+test('a names.<role> override replaces that role\'s pool and leaves the others on the preset', () => {
+  const { dir } = crewHost(['- theme: star-trek', "- names.implementer: Seven of Nine, Miles O'Brien"]);
+  assert.equal(printed(name(dir, 'implementer')), 'Seven-of-Nine');
+  assert.equal(printed(name(dir, 'implementer')), 'Miles-OBrien');
+  assert.equal(printed(name(dir, 'implementer')), 'Seven-of-Nine-2');
+  assert.equal(printed(name(dir, 'verifier')), 'Data');
+});
