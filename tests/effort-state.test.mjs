@@ -197,3 +197,16 @@ test('stop: source artifacts prints none and the config policy', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual({ source: r.json.source, policy: r.json.policy, stop: r.json.stop }, { source: 'artifacts', policy: 'autonomous', stop: 'none' });
 });
+
+test('--list entries carry policy and stop', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  effortBranch(dir, 'b-branch-only', { 'map.md': 'm', 'intent.md': 'i' });
+  writeState(dir, { efforts: { a: effort('spec', 'spec', { stop: 'flagged' }), c: effort('plan', 'plan') } });
+  const r = run(['--list', dir]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(r.json.map((e) => [e.slug, e.policy, e.stop]), [
+    ['a', 'autonomous', 'flagged'],
+    ['b-branch-only', 'autonomous', 'none'],
+    ['c', 'autonomous', 'none'],
+  ]);
+});
