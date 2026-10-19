@@ -30,10 +30,10 @@ Done when every slice has `nn`, title, blocked by, delivers and a proof the host
 
 To-tickets' `Quiz the user` is Gate 3, passed as the [gate policy](../wayfinder/GATE-POLICY.md) says, with `gates.policy` from the host config (`node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"`) and `risk` from spec.md.
 
-- Under `attended`, or for a `risk: high` effort: through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
-- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer, approved as drafted. Write its four answers as `recommended:` lines ending `(source: policy autonomous)`, one per question in the quiz's order: granularity, blocking edges, merge or split, proofs (`- recommended: granularity: <n> slices, each fits one context window (source: policy autonomous)`). Steps 5 and 6 record them.
+- Under `attended`, or for a `risk: high` effort, which runs attended: through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
+- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer. Write the four lines of the template's `## Quiz` ([PLAN-TEMPLATE.md](PLAN-TEMPLATE.md)), each a `recommended:` line ending `(source: policy autonomous)`, or an `open:` line for an answer the draft cannot give (a proof the host cannot run, a slice that may not fit one context window). They are plan.md's lines, so the policy reads them: with no `open:` line it passes Gate 3 and the breakdown is approved as drafted; with one it stops Gate 3 with `stop: open`, and the owner settles that line in plan.md before resuming. Steps 5 and 6 record the lines either way.
 
-Done when the engineer has answered that the breakdown is approved, or, under `autonomous` with `risk: normal`, the four `recommended:` lines are written.
+Done when the engineer has answered that the breakdown is approved, or, under `autonomous` with `risk: normal`, the four Quiz lines are written and Gate 3 has passed or stopped on `open`.
 
 ## 4. Publish the tickets
 
@@ -43,7 +43,7 @@ Done when the tracker lists one ticket per slice and every blocking edge is on i
 
 ## 5. Write plan.md and commit
 
-Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four `recommended:` lines, under `autonomous` only; under `attended` the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
+Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines, under `autonomous` only; under `attended` the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
 
 Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 

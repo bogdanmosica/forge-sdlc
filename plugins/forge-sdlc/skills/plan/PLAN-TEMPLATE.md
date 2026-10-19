@@ -32,8 +32,6 @@ Spec: [spec.md](spec.md). Tickets: <`#n`…`#m` on the tracker, or `.scratch/<sl
 
 ## Quiz
 
-Written under the `autonomous` gate policy only, when the drafted breakdown answered Gate 3; under `attended` this section is left out.
-
 - recommended: granularity: <n slices, and why that size> (source: policy autonomous)
 - recommended: blocking edges: <the edges, as drafted> (source: policy autonomous)
 - recommended: merge or split: <none, or the merge or split the draft made> (source: policy autonomous)
