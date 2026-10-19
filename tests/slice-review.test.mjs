@@ -206,3 +206,14 @@ test('slice-review: the reviewer and verifier calls are member calls naming thei
   }
   assert.ok(existsSync(path.join(plugin, 'skills', 'build', 'MEMBERS.md')), 'the reference exists');
 });
+
+test('slice-review: the fix implementer is a background member call with --slice, its agent written before the wait', () => {
+  const line = callLine('implementer');
+  assert.ok(line, 'an Agent call for the fix implementer');
+  assert.ok(line.includes(MEMBER_LINK), 'the fix links the members reference');
+  assert.ok(line.includes('role `implementer` with `--slice <slug>-<nn>`'), 'the fix reuses the slice name');
+  assert.match(line, /in the background/);
+  assert.match(line, /slices\["<slug>-<nn>"\]\.agent`[^\n]*then wait for its report/, 'the agent write comes before the wait');
+  assert.match(line, /Done when the implementer reported and the slice branch has a commit after the reviewed sha/);
+  assert.doesNotMatch(frontmatter(read(SKILL)).body, /foreground Agent call/);
+});
