@@ -163,3 +163,20 @@ test('policy: an unknown value prints attended', () => {
     assert.equal(r.json.policy, 'attended', value);
   }
 });
+
+test('stop: each reason prints that stop and a why naming it, next unchanged', () => {
+  const cases = [
+    ['open', /open line waits for the owner/],
+    ['flagged', /flagged concern waits for the owner/],
+    ['risk-high', /risk high, the effort runs attended/],
+  ];
+  for (const [stop, why] of cases) {
+    const { dir } = host({ config: withPolicy('autonomous') });
+    writeState(dir, { efforts: { x: effort('spec', 'spec', { stop }) } });
+    const r = run([dir, 'x']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.stop, stop);
+    assert.match(r.json.why, why, stop);
+    assert.equal(r.json.next, 'plan', stop);
+  }
+});

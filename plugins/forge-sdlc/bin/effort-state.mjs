@@ -24,6 +24,13 @@ const WHY = {
   built: 'Gate 4: the PR is ready for the code owner',
 };
 
+/** Why the run stopped, by the state's `stop` (the closed set of the gate policy reference); it replaces the stage's line. */
+const STOP_WHY = {
+  open: 'an open line waits for the owner',
+  flagged: 'a flagged concern waits for the owner',
+  'risk-high': 'risk high, the effort runs attended',
+};
+
 const args = process.argv.slice(2);
 const list = args.includes('--list');
 const positional = args.filter((a) => a !== '--list');
@@ -81,7 +88,9 @@ function fromArtifacts(slug) {
 function where(slug) {
   const record = state?.efforts?.[slug];
   if (record?.stage in NEXT) {
-    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why: WHY[record.stage], source: 'state', policy };
+    const stop = Object.hasOwn(STOP_WHY, record.stop ?? '') ? record.stop : 'none';
+    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop];
+    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop };
   }
   const derived = fromArtifacts(slug);
   if (!derived) return null;
