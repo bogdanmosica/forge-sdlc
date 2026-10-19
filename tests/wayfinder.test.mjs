@@ -245,3 +245,18 @@ test('GATE-POLICY.md beside wayfinder: the four stops, the three reasons in orde
   assert.match(ref, /Gate 4 writes none/);
   assert.match(ref, /runs attended from here/);
 });
+
+test('step 1 keeps the gate policy with the default branch and the risk globs', () => {
+  const step1 = section('1\\. Resolve the input');
+  assert.match(step1, /default branch[^\n]*`risk\.high` globs[^\n]*`gates\.policy`/);
+});
+
+test('step 7 applies the gate policy: attended stops, a policy pass continues into spec, a stop writes stop', () => {
+  const step7 = section('7\\. [^\\n]*');
+  assert.ok(step7.includes(GATE_LINK), 'step 7 links the gate policy');
+  assert.match(step7, /`attended`[^\n]*this run ends here/);
+  assert.match(step7, /`Gate 1 passed: policy autonomous, nothing open`[^\n]*\[Resume\]\(#resume\) step 3[^\n]*`spec`/);
+  assert.match(step7, /`stop: <reason>`[^\n]*reasons/);
+  assert.match(step7, /`risk-high`[^\n]*runs attended from here/);
+  assert.match(step7, /Done when [^\n]+\.\s*$/);
+});

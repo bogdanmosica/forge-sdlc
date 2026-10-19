@@ -11,7 +11,7 @@ argument-hint: "<idea> | #issue | <slug>"
 
 - A slug: `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" . <slug>` exits 0 for an existing effort: go to [Resume](#resume). Exit 1 means no such effort: the words are an idea.
 - `#123`: fetch the issue as `docs/agents/issue-tracker.md` says; its title and body are the idea. Words: they are the idea.
-- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; exit 1 stops with its line (run `/forge-sdlc:init`). Keep the default branch and the `risk.high` globs.
+- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; exit 1 stops with its line (run `/forge-sdlc:init`). Keep the default branch, the `risk.high` globs and `gates.policy` (`autonomous` when it reads exactly that, else `attended`).
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" wayfinder` prints the procedure's file; read it whole. Exit 1 stops with the install line it printed.
 
 Done when the idea is in hand, the config printed and the upstream file read.
@@ -81,9 +81,15 @@ Done when every template heading has content or `none`, and every gap is an assu
 
 Done when the PR (or PR.md) shows both sections and `.forge/state.json` reads back `gate: intent`.
 
-## 7. Stop at Gate 1
+## 7. Gate 1
 
-Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the next move: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`. Done when the report is printed; this run ends here.
+Apply the [gate policy](GATE-POLICY.md) to intent.md. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line by policy:
+
+- `attended`: the next move: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`; this run ends here.
+- `autonomous`, passed: `Gate 1 passed: policy autonomous, nothing open`, then continue as [Resume](#resume) step 3 with `spec` as next, in this run.
+- `autonomous`, stopped: write `stop: <reason>` to the effort as step 6 writes state; the gate line names all the reasons and `/forge-sdlc:wayfinder <slug>`, and for `risk-high` says the effort runs attended from here; this run ends here.
+
+Done when the report is printed and the run has ended at Gate 1 or gone on into `spec`.
 
 ## Resume
 
