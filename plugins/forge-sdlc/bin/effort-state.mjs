@@ -32,9 +32,12 @@ if ((list && positional.length > 1) || (!list && (positional.length < 1 || posit
   process.exit(2);
 }
 const dir = path.resolve(list || positional.length === 2 ? positional[0] ?? '.' : '.');
-const shape = readHostConfig(dir)?.branches?.effort || DEFAULT_BRANCHES.effort;
+const config = readHostConfig(dir);
+const shape = config?.branches?.effort || DEFAULT_BRANCHES.effort;
 const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
+/** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
+const policy = 'attended';
 
 /** The first ref of the effort branch that exists: local, then origin's. */
 function refOf(slug) {
@@ -78,12 +81,12 @@ function fromArtifacts(slug) {
 function where(slug) {
   const record = state?.efforts?.[slug];
   if (record?.stage in NEXT) {
-    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why: WHY[record.stage], source: 'state' };
+    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why: WHY[record.stage], source: 'state', policy };
   }
   const derived = fromArtifacts(slug);
   if (!derived) return null;
   const [stage, gate] = derived;
-  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts' };
+  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy };
 }
 
 if (list) {

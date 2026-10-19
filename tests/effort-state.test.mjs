@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
-import { host } from './support/host.mjs';
+import { forgeMd, host } from './support/host.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'effort-state.mjs');
 
@@ -133,4 +133,15 @@ test('--list on a host with no effort prints an empty list', () => {
   const r = run(['--list', dir]);
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(r.json, []);
+});
+
+/** forge.md text with `- policy: <value>` under ## Gates. */
+const withPolicy = (value) => forgeMd().replace('- spec: always', `- policy: ${value}\n- spec: always`);
+
+test('policy: no policy key prints attended', () => {
+  const { dir } = host();
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.policy, 'attended');
 });
