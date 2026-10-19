@@ -200,3 +200,8 @@ test('the researcher and prototyper are member calls naming their roles', () => 
     assert.ok(row.includes(`role \`${role}\``), `${role} names its role`);
   }
 });
+
+test('the prototyper call passes isolation on the call itself, so it keeps its own worktree under any lead', () => {
+  assert.match(agentRow('prototyper'), /passes `isolation: "worktree"` on the call/);
+  assert.doesNotMatch(agentRow('researcher'), /isolation/);
+});
