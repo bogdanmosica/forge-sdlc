@@ -17,3 +17,10 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/config.test.mjs tests/init.test.mjs` → passes with `crew.theme` parsed and the Crew question with its five presets
+
+## Assumptions
+
+- recommended: this repo's `docs/agents/forge.md` takes `theme: star-trek`, the preset the live check's names came from (source: spec, Testing Decisions, "Miles O'Brien" is `Miles-OBrien`; Assumptions, live check run 2, (d))
+- recommended: a re-run of init keeps hand-written `names.<role>` bullets while the theme stays and replaces them when the theme changes (source: spec user stories 24 and 26; init section 4 "rewrite the file whole")
+- recommended: a dismissed Crew question or preset page keeps the current theme, `none` on a fresh host, as prior-sdlc's init does (source: spec, Init, "This is prior-sdlc's question 8, minus its flags and script")
+- recommended: the contracts test sits in `tests/config.test.mjs` beside the state round-trip, so the slice proof covers it (source: plan row 03, proof line)
