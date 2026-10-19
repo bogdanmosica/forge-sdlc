@@ -117,3 +117,22 @@ test('spec/SKILL.md: the spec-writer is a member call naming its role, the refer
   assert.match(body, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.doesNotMatch(skill, /teammate|task notification/i);
 });
+
+/* Gate policy (skills/wayfinder/GATE-POLICY.md) */
+
+const step = (n) => new RegExp(`^## ${n}\\. .*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(split(skill).body)?.[1] ?? '';
+
+test('spec step 7: applies the stop rule through the gate policy reference, the spec: key set aside under autonomous', () => {
+  const step7 = step(7);
+  assert.ok(step7.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
+  assert.match(step7, /autonomous[^\n]*`spec:` key[^\n]*not consulted/);
+  assert.match(step7, /`?attended`?[^\n]*`spec:` key|`spec:` key[^\n]*`?attended`?/, 'the spec: key keeps its meaning under attended');
+  assert.match(step7, /Gate 2 passed: policy autonomous, nothing open/);
+  assert.match(step7, /Gate 2 passed: only-on-open, nothing open/);
+  assert.match(step7, /Done when /);
+});
+
+test('spec: risk high stops at Gate 2 with the needs-tech-lead label under both policies', () => {
+  assert.match(step(7), /risk: high[^\n]*both policies|both policies[^\n]*risk: high/);
+  assert.match(step(5), /needs-tech-lead/);
+});
