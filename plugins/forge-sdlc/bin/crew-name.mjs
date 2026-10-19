@@ -91,7 +91,8 @@ function main(argv) {
     process.stdout.write(`${member}\n`);
     return 0;
   }
-  const used = record?.crew?.[role] ?? [];
+  const listed = record?.crew?.[role];
+  const used = Array.isArray(listed) ? listed : [];
   const pick = nextName(poolOf(readHostConfig(dir)?.crew, role, slice), used);
   if (record) {
     record.crew = { ...record.crew, [role]: [...used, pick] };
