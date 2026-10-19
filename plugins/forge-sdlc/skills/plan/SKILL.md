@@ -43,17 +43,22 @@ Done when the tracker lists one ticket per slice and every blocking edge is on i
 
 ## 5. Write plan.md and commit
 
-Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines, under `autonomous` only; under `attended` the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
+Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines when step 3 wrote them (`autonomous` only); otherwise the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
 
 Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 
 ## 6. Gate record and state
 
 - PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by, proof) and each ticket's link, and under `autonomous` step 3's four Quiz lines under the slice table; every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
-- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now, dropping `stop`.
+- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now. Under `autonomous`, the stop goes beside `gate` as the reference's State write says: for a `risk: high` effort `stop: risk-high`, otherwise `stop: open` when step 3 stopped on an `open:` line; when the policy passed Gate 3, or under `attended`, the write drops `stop`.
 
-Done when `.forge/state.json` reads back `stage: plan`, `gate: plan` and one open slice per row of the table.
+Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop` as written or absent.
 
 ## 7. Report
 
-Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`). Under `autonomous` with `risk: normal` a fourth line ends it, `Gate 3 passed: policy autonomous, nothing open`, on which wayfinder's Resume continues into build. Done when the state reads back and the report is printed.
+Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`). Under `autonomous` a fourth line ends it:
+
+- passed: `Gate 3 passed: policy autonomous, nothing open`, on which wayfinder's Resume continues into build.
+- stopped: the reasons (each `open:` Quiz line verbatim, or `risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+
+Done when the state reads back and the report is printed.
