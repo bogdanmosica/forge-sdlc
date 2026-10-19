@@ -1,7 +1,7 @@
 # 01: autonomous-gates-01: Policy in the config, init and contracts
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 
@@ -17,3 +17,7 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 ## Proof
 
 `node --test tests/config.test.mjs tests/init.test.mjs` → passes with `gates.policy` parsed from a host written from the template and the policy asked first
+
+## Comments
+
+merged c005552: review record .forge/review/autonomous-gates-01.md, clean.
