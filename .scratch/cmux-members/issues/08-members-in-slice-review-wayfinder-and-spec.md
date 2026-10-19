@@ -21,3 +21,5 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Comments
 
 red 2026-10-19: blocked by a red slice. Slice 05 (crew-name.mjs) ended red after two fix rounds with one Important finding left (a missing test for the `updatedAt` write, see `.forge/review/cmux-members-05.md`); this slice was not started. The next build run retries 05 first.
+
+red: slice-review ended red after 2 fix rounds (Standards, Spec, Bugs and security). One cause: step 4.1 of slice-review/SKILL.md accepts "or the verifier's record for it is fresh" as a second way to finish waiting, which contradicts its Done line and spec line 107. Findings: .forge/review/cmux-members-08.md

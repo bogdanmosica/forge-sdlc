@@ -96,41 +96,44 @@ Tickets, frontier first (03, 04):
 ```text
 plugins/forge-sdlc/
 ├── crew.json                       # five crew themes, eight forge pools each (04)
-├── bin/crew-name.mjs               # next name of a role's pool, recorded in state (05, red: one test missing)
+├── bin/crew-name.mjs               # next name of a role's pool, recorded in state (05)
 ├── hooks/scripts/
 │   ├── lib.mjs                     # hostDirOf: the host from any checkout's git common dir (02)
 │   ├── test-frozen.mjs, spec-frozen.mjs   # read the host state through git (02)
 │   └── verified-before-stop.mjs    # SubagentStop gated by the slice's agent id, cwd branch first (06)
-├── skills/init/                    # the Crew theme question, ## Crew in the template (03)
+├── skills/
+│   ├── init/                       # the Crew theme question, ## Crew in the template (03)
+│   └── build/MEMBERS.md, SKILL.md  # the member call: name before, agent after, the wait, the shutdown (07)
+├── agents/merger.md                # a member call; clears the slice's agent on merged or red (07)
 └── evals/guardrails/               # *-member-denied (02), verified-before-stop-agent-blocks (06)
 docs/
 ├── contracts.md                    # state: crew, member, agent; Names rows (03)
-├── adr/0016-…agent-id.md           # the Stop gate finds a subagent's slice by its agent id (06)
+├── adr/0016-…agent-id.md, 0017-agents-as-named-members.md
 └── efforts/cmux-members/           # map, two intents, two specs, two plans, tickets
 ```
 
-Not yet on the branch, red by blocker: the members reference and the build stage (07), members in slice-review, wayfinder and spec (08). No agent is named yet; the pieces under them are.
+Red, kept in its worktree: 08, the member calls in slice-review, wayfinder and spec. Until it lands, build names its members and the other three stages do not.
 
 ## Evidence
 
 - `cmux-members-02`: `node --test tests/test-frozen.test.mjs tests/spec-frozen.test.mjs tests/verified-before-stop.test.mjs tests/evals.test.mjs` exit 0; `npm test` exit 0; head `eed51be`, at 2026-10-18T16:29:27.287Z
 - `cmux-members-03`: `node --test tests/config.test.mjs tests/init.test.mjs` exit 0; `npm test` exit 0; head `1842ecb`, at 2026-10-19T07:35:20.565Z
 - `cmux-members-04`: `node --test tests/crew-presets.test.mjs` exit 0; `npm test` exit 0; head `de922bd`, at 2026-10-19T07:16:06.618Z
-- `cmux-members-05`: `node --test tests/crew-name.test.mjs` exit 0; `npm test` exit 0; head `c639f3b`, at 2026-10-19T08:17:33.191Z (green at its last fix round; the slice is red on review, not on proof)
+- `cmux-members-05`: `node --test tests/crew-name.test.mjs` exit 0; `npm test` exit 0; head `b21998b`, at 2026-10-19T10:11:55.671Z
 - `cmux-members-06`: `node --test tests/verified-before-stop.test.mjs tests/evals.test.mjs` exit 0; `npm test` exit 0; head `fbf6940`, at 2026-10-19T07:52:57.711Z
+- `cmux-members-07`: `node --test tests/build.test.mjs tests/agents.test.mjs` exit 0; `npm test` exit 0; head `54db55d`, at 2026-10-19T10:52:24.328Z
+- `cmux-members-08`: `node --test tests/slice-review.test.mjs tests/wayfinder.test.mjs tests/spec.test.mjs` exit 0; `npm test` exit 0; head `dda074a`, at 2026-10-19T11:22:13.354Z
 
 ## Merge Danger
 
 **Door:** two-way
 
-Every change is additive: new fields read as absent, the hook's new branch runs only on a `SubagentStop` whose cwd names no slice, and the init question defaults to `none`.
+Every change is additive: new state fields read as absent, the hook's new branch runs only on a `SubagentStop` whose cwd names no slice, and the init question defaults to `none`. Build's member calls pass `name`, which a plain lead ignores.
 
-**Blast Radius:** hooks
+**Blast Radius:** hooks and the build stage
 
-`verified-before-stop` now blocks a subagent implementer's stop when its slice has an `agent` in state and no fresh green record. Nothing writes `agent` until slice 07 lands, so the branch is dormant on this PR; the eval case and 30 hook tests cover it.
+`verified-before-stop` blocks a subagent implementer's stop when its slice has an `agent` in state and no fresh green record; build now writes that field. From a lead with agent teams enabled, build opens one pane per member and ends each through a shutdown request; that path has one live check behind it (ticket 09) and no full build yet.
 
 ## Red slices
 
-- `cmux-members-05` `.scratch/cmux-members/issues/05-crew-name-picks-and-records-the-next-name.md`: red after two fix rounds; one Important finding left (Bugs and security): the `updatedAt` refresh in `crew-name.mjs` has no test that fails when it is removed. Fix: assert in `tests/crew-name.test.mjs` that `updatedAt` changes after a recording call and stays after the `--slice` reuse call. Review: `.forge/review/cmux-members-05.md`. Worktree and branch kept.
-- `cmux-members-07` `.scratch/cmux-members/issues/07-members-reference-and-the-build-stage.md`: not started, blocked by 05.
-- `cmux-members-08` `.scratch/cmux-members/issues/08-members-in-slice-review-wayfinder-and-spec.md`: not started, blocked by 07.
+- `cmux-members-08` `.scratch/cmux-members/issues/08-members-in-slice-review-wayfinder-and-spec.md`: red after two fix rounds, verify green at `dda074a`. One cause on all three axes: the second fix added "or the verifier's record for it is fresh" to slice-review step 4.1, a second way to finish waiting that contradicts the step's Done line and spec line 107, and would let verify and the next review round run while the background fix implementer is still committing. Underneath: a merger leading a background fix implementer has no stated way to wait for its report (round 1, Bugs and security), and ADR 0017's runtime premise for it is unconfirmed. Review: `.forge/review/cmux-members-08.md`. Worktree and branch kept.
