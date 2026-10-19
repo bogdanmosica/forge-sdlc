@@ -1,7 +1,8 @@
 // The build skill and its two agents, structurally: frontmatter and tool scoping, the
 // implement-spec steps under the frame of design section 5, step 7 replaced, no AskUserQuestion,
 // the verifier script named with its real flags, linked files present, the upstream procedure
-// pointed at rather than pasted.
+// pointed at rather than pasted. Then the members reference (the member call each Agent call
+// links, the only file naming the transport), design section 5's Decision line and ADR 0017.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -33,6 +34,8 @@ function frontmatter(text) {
 const relativeLinks = (text) =>
   [...text.matchAll(/\[[^\]]*\]\(([^)#\s]+)\)/g)].map((m) => m[1]).filter((t) => !/^[a-z]+:/.test(t));
 const toolsOf = (value) => (value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+/** The line of a skill body holding the bullet `**<label>**`. */
+const stepLine = (body, label) => body.split('\n').find((l) => l.includes(`**${label}**`));
 
 /* The skill */
 
@@ -135,15 +138,17 @@ for (const name of ['implement-spec', 'pr']) {
 
 test("build: the lead ends a slice's implementer after its merger reports merged or red", () => {
   const { body } = frontmatter(read(SKILL));
-  const step5 = body.split('\n').find((l) => l.includes('**Step 5**'));
+  const step5 = stepLine(body, 'Step 5');
   assert.match(step5, /merged` or `red`[^\n]*end that slice's implementer/);
   assert.match(step5, /shutdown request/);
+  assert.match(step5, /end the researcher and a verifier/);
 });
 
 test("build: the Gate 4 report names each slice's member", () => {
   const { body } = frontmatter(read(SKILL));
   const gate4 = body.slice(body.indexOf('## 4. Gate 4'));
   assert.match(gate4, /one line per slice, `<slug>-<nn>: <member>`/);
+  assert.match(gate4, /`<member>`[^\n]*or `none` when the slice holds no member/);
 });
 
 /* The members reference */
@@ -179,7 +184,7 @@ test('build: every Agent call is a member call linking the reference with its ro
 
 test("build: step 4 records the implementer's agent id on its slice", () => {
   const { body } = frontmatter(read(SKILL));
-  const step4 = body.split('\n').find((l) => l.includes('**Step 4**'));
+  const step4 = stepLine(body, 'Step 4');
   assert.match(step4, /slices\["<slug>-<nn>"\]\.agent/);
 });
 
@@ -187,7 +192,7 @@ test('members: only the reference speaks of the transport (teammate, task notifi
   const skills = path.join(plugin, 'skills');
   const files = readdirSync(skills, { recursive: true })
     .filter((f) => f.endsWith('.md'))
-    .filter((f) => path.join('skills', f) !== MEMBERS);
+    .filter((f) => `skills/${f.split(path.sep).join('/')}` !== MEMBERS);
   assert.ok(files.length > 1);
   for (const f of files) {
     const text = readFileSync(path.join(skills, f), 'utf8');
@@ -309,4 +314,11 @@ test('merger: a member the lead starts, clearing the slice\'s agent when it writ
 test('seams: the implementer works from its worktree, and a by-file chain names the resolved plugin root', () => {
   assert.match(frontmatter(read(IMPLEMENTER)).body, /first Bash call is `cd <worktree>`/);
   assert.match(frontmatter(read(MERGER)).body, /plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+});
+
+test('seams: the members reference is read by path, so build hands it the resolved plugin root', () => {
+  const line = frontmatter(read(SKILL)).body.split('\n').find((l) => /plugin-root variable unresolved/.test(l));
+  assert.ok(line, 'build has the by-path sentence');
+  assert.match(line, /\(MEMBERS\.md\)[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.match(read(MEMBERS), /read by path[^\n]*plugin-root variable unresolved[^\n]*plugin root the linking skill resolved/);
 });
