@@ -316,6 +316,7 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 - dependency_dir: node_modules   # symlinked into each slice worktree; or .venv, vendor, none
 
 ## Gates
+- policy: attended               # or: autonomous
 - spec: always                   # or: only-on-open
 - max_parallel_slices: 3
 
@@ -333,7 +334,7 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 - names.implementer: Scotty, Miles O'Brien, Rom, Nog, Quark   # optional, one per overridden role
 ```
 
-Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section.
+Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is set aside.
 
 CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup created, replaced in place on re-run:
 
@@ -349,14 +350,14 @@ Policy skills are the playbook's Design-stage idea: the spec-writer calls each l
 
 ```text
 .forge/                 # gitignored by init
-├── state.json          # { efforts: { <slug>: { stage, gate, mode, risk, branch, pr, crew: { <role>: [names] }, slices: { <slug>-<nn>: { status, mode, ticket, member, agent } } } } }
+├── state.json          # { efforts: { <slug>: { stage, gate, stop, mode, risk, branch, pr, crew: { <role>: [names] }, slices: { <slug>-<nn>: { status, mode, ticket, member, agent } } } } }
 ├── worktrees/<slug>-<nn>/
 ├── verify/<slug>-<nn>.json   # + <slug>-<nn>.denials, the Stop hook's block count
 ├── review/<slug>-<nn>.md     # slice-review's record
 └── notes/<slug>/       # researcher's exploration notes for the build
 ```
 
-`state.json` is the only cross-session memory the hooks read. The commands write it at each stage boundary; `status` prints it. Losing it is recoverable: `wayfinder` re-derives the stage from which artifacts exist on `feat/<slug>` and whether the PR is draft or ready.
+`state.json` is the only cross-session memory the hooks read. The commands write it at each stage boundary; `status` prints it. `stop`, optional, names why a run under the `autonomous` gate policy stopped at `gate` (`open`, `flagged` or `risk-high`); every other stage write drops it. Losing it is recoverable: `wayfinder` re-derives the stage from which artifacts exist on `feat/<slug>` and whether the PR is draft or ready.
 
 ## 10. Depending on `mattpocock-skills@claude-plugins-official`
 

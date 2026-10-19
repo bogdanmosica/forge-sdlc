@@ -124,6 +124,14 @@ test('docs/contracts.md: the effort record has the optional stop, and the effort
   assert.match(names, /^\| Effort position \|[^\n]*\{ slug, stage, gate, next, why, source, policy, stop \}/m);
 });
 
+test('docs/design.md: section 8 shows the policy bullet first under Gates, section 9 shows stop beside gate', () => {
+  const design = readFileSync(path.join(repoRoot, 'docs', 'design.md'), 'utf8');
+  const config = /^## 8\. Host configuration\n([\s\S]*?)^## 9\. /m.exec(design)[1];
+  assert.match(config, /^## Gates\n- policy: attended\b[^\n]*autonomous\n- spec: always\b/m);
+  const state = /^## 9\. State in the host\n([\s\S]*?)^## 10\. /m.exec(design)[1];
+  assert.match(state, /state\.json[^\n]*\{ stage, gate, stop, mode,/);
+});
+
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {
   const { dir } = host();
   assert.equal(readState(dir), null);
