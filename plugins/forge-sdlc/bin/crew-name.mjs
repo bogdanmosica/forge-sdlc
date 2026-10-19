@@ -1,15 +1,22 @@
 #!/usr/bin/env node
-// A member's name: `node bin/crew-name.mjs <role> --project <host> --effort <slug>` prints the next
-// name of the role's pool, and records it under the effort's `crew.<role>` in .forge/state.json
-// (docs/contracts.md, "Member name"). Exit 0; 2 on bad usage.
+// A member's name: `node bin/crew-name.mjs <role> --project <host> --effort <slug> [--slice <slug>-<nn>]`
+// prints one line, the next name of the role's pool in handle form, and records it under the
+// effort's `crew.<role>` in .forge/state.json; with `--slice` (an implementer), also as the slice's
+// `member`, which a later call for that slice prints again (docs/contracts.md, "Member name").
+// An effort absent from state gets a name and nothing is recorded. Exit 0; 2 on bad usage.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 import { listOf, readHostConfig, readState, writeState } from '../hooks/scripts/lib.mjs';
 
 const PRESETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'crew.json');
+
+const ROLES = ['researcher', 'prototyper', 'spec-writer', 'implementer', 'verifier', 'reviewer', 'merger', 'general'];
+
+const USAGE = `usage: crew-name.mjs <role> --project <host> --effort <slug> [--slice <slug>-<nn>]; role: ${ROLES.join(', ')}; --slice for an implementer only\n`;
 
 /**
  * A display name in the form the Agent tool accepts: diacritics folded, spaces to `-`, only
@@ -18,12 +25,6 @@ const PRESETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..',
 export const handleOf = (name) =>
   name.normalize('NFD').replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
 
-const [role, ...rest] = process.argv.slice(2);
-const flags = {};
-for (let i = 0; i < rest.length; i += 2) flags[rest[i].replace(/^--/, '')] = rest[i + 1];
-const dir = path.resolve(flags.project);
-const slug = flags.effort;
-
 /** Display names in handle form, dropping any with nothing left. */
 const handlesOf = (names) => (names ?? []).map(handleOf).filter(Boolean);
 
@@ -31,19 +32,14 @@ const handlesOf = (names) => (names ?? []).map(handleOf).filter(Boolean);
  * The role's pool in handle form: the host's `names.<role>` bullet, else the preset its theme
  * names, else the fallback (`<slug>-<nn>` for an implementer with `--slice`, `<role>` otherwise).
  */
-function poolOf(crew) {
+function poolOf(crew, role, slice) {
   const override = handlesOf(listOf(crew?.[`names.${role}`]));
   if (override.length) return override;
   const presets = JSON.parse(readFileSync(PRESETS, 'utf8')).presets;
   const preset = Object.hasOwn(presets, crew?.theme ?? '') ? handlesOf(presets[crew.theme].names[role]) : [];
   if (preset.length) return preset;
-  return [role === 'implementer' && flags.slice ? flags.slice : role];
+  return [slice ?? role];
 }
-const pool = poolOf(readHostConfig(dir)?.crew);
-
-const state = readState(dir);
-const record = state.efforts[slug];
-const used = record.crew?.[role] ?? [];
 
 /** The first name of the pool not in `used`; a pool run out starts again with `-2`, then `-3`. */
 function nextName(pool, used) {
@@ -52,15 +48,54 @@ function nextName(pool, used) {
     if (free !== undefined) return free;
   }
 }
-const member = flags.slice ? record.slices?.[flags.slice]?.member : undefined;
-if (member) {
-  process.stdout.write(`${member}\n`);
-  process.exit(0);
-}
-const pick = nextName(pool, used);
 
-record.crew = { ...record.crew, [role]: [...used, pick] };
-if (flags.slice) record.slices = { ...record.slices, [flags.slice]: { ...record.slices?.[flags.slice], member: pick } };
-record.updatedAt = new Date().toISOString();
-writeState(dir, state);
-process.stdout.write(`${pick}\n`);
+/** `{ role, project, effort, slice }`, or null on bad usage. */
+function usageOf(argv) {
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args: argv,
+      allowPositionals: true,
+      options: { project: { type: 'string' }, effort: { type: 'string' }, slice: { type: 'string' } },
+    });
+  } catch {
+    return null;
+  }
+  const { positionals, values } = parsed;
+  const [role] = positionals;
+  if (positionals.length !== 1 || !ROLES.includes(role) || !values.project || !values.effort) return null;
+  if (values.slice !== undefined && (role !== 'implementer' || !values.slice)) return null;
+  return { role, ...values };
+}
+
+function main(argv) {
+  const usage = usageOf(argv);
+  if (!usage) {
+    process.stderr.write(USAGE);
+    return 2;
+  }
+  const { role, effort, slice } = usage;
+  const dir = path.resolve(usage.project);
+  const state = readState(dir);
+  const record = state?.efforts?.[effort];
+  const member = slice ? record?.slices?.[slice]?.member : undefined;
+  if (member) {
+    process.stdout.write(`${member}\n`);
+    return 0;
+  }
+  const used = record?.crew?.[role] ?? [];
+  const pick = nextName(poolOf(readHostConfig(dir)?.crew, role, slice), used);
+  if (record) {
+    record.crew = { ...record.crew, [role]: [...used, pick] };
+    if (slice) record.slices = { ...record.slices, [slice]: { ...record.slices?.[slice], member: pick } };
+    record.updatedAt = new Date().toISOString();
+    writeState(dir, state);
+  }
+  process.stdout.write(`${pick}\n`);
+  return 0;
+}
+
+// Run only as a script: a test imports `handleOf` without running it.
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = main(process.argv.slice(2));
+}

@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -102,6 +102,39 @@ test('an override with no name left in handle form counts as none: the preset, e
   assert.equal(printed(name(dir, 'reviewer')), 'Spock');
   const free = crewHost(['- theme: Discworld', '- names.reviewer: !!!, 日本']);
   assert.equal(printed(name(free.dir, 'reviewer')), 'reviewer');
+});
+
+test('an effort absent from state prints a name and leaves the state file unchanged', () => {
+  const { dir } = crewHost(['- theme: star-trek']);
+  const before = stateText(dir);
+  const r = spawnSync(process.execPath, [script, 'implementer', '--project', dir, '--effort', 'other', '--slice', 'other-01'], { encoding: 'utf8' });
+  assert.equal(printed(r), 'Scotty');
+  assert.equal(stateText(dir), before);
+  const bare = host({ config: withCrew(['- theme: star-trek']) });
+  assert.equal(printed(name(bare.dir, 'verifier')), 'Data', 'no state file at all');
+  assert.equal(existsSync(path.join(bare.dir, '.forge', 'state.json')), false);
+});
+
+test('an unknown role, a missing or unknown flag, or --slice off an implementer exits 2 and records nothing', () => {
+  const { dir } = crewHost(['- theme: star-trek']);
+  const before = stateText(dir);
+  const run = (args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
+  for (const args of [
+    ['captain', '--project', dir, '--effort', 'demo'],
+    ['--project', dir, '--effort', 'demo'],
+    ['verifier', '--effort', 'demo'],
+    ['verifier', '--project', dir],
+    ['verifier', '--project', dir, '--effort'],
+    ['implementer', '--project', dir, '--effort', 'demo', '--slice'],
+    ['verifier', '--project', dir, '--effort', 'demo', '--slot', 'x'],
+    ['verifier', '--project', dir, '--effort', 'demo', '--slice', 'demo-01'],
+  ]) {
+    const r = run(args);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /usage: crew-name\.mjs/);
+  }
+  assert.equal(stateText(dir), before);
 });
 
 test('every shipped preset pool prints each of its names once, in handle form, before restarting with -2', async () => {
