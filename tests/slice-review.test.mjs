@@ -227,3 +227,20 @@ test('slice-review: the session running it is the lead of its member calls, read
   assert.match(line, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.doesNotMatch(read(SKILL), /teammate|task notification/i, 'the transport words stay in the reference');
 });
+
+test('slice-review: the lead of the background fix holds its turn until the report, and a fix commit alone is never done', () => {
+  const line = callLine('implementer');
+  assert.ok(line, 'an Agent call for the fix implementer');
+  assert.match(line, /do not end your turn until the implementer's report arrives/, 'a subagent lead waits for the report');
+  assert.match(
+    line,
+    /commit after the reviewed sha counts as done only once the report arrives or the verifier's record for it is fresh, never earlier/,
+    'without a report, a fix commit is done only on the report or a fresh verifier record',
+  );
+});
+
+test('slice-review: the fix writes agent only when the slice record exists', () => {
+  const line = callLine('implementer');
+  assert.ok(line, 'an Agent call for the fix implementer');
+  assert.match(line, /only when that slice record exists/, 'no agent write on a missing slice record');
+});
