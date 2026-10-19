@@ -1,6 +1,6 @@
 # 6. Unattended between gates
 
-Status: accepted, 2026-10-17
+Status: superseded by 0018
 
 ## Context
 
