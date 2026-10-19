@@ -35,10 +35,13 @@ function printed(r) {
   return r.stdout.trim();
 }
 
-test('a preset theme prints the role\'s first name and records it; a second call prints the next', () => {
+test('a preset theme prints the role\'s first name and records it with updatedAt now; a second call prints the next', () => {
   const { dir } = crewHost(['- theme: star-trek']);
+  const start = Date.now();
   assert.equal(printed(name(dir, 'implementer')), 'Scotty');
   assert.deepEqual(effort(dir).crew, { implementer: ['Scotty'] });
+  const at = Date.parse(effort(dir).updatedAt);
+  assert.ok(at >= start - 1000 && at <= Date.now(), `updatedAt is now, not the fixture's: ${effort(dir).updatedAt}`);
   assert.equal(printed(name(dir, 'implementer')), 'OBrien');
   assert.deepEqual(effort(dir).crew, { implementer: ['Scotty', 'OBrien'] });
 });
@@ -56,7 +59,10 @@ test('--slice picks a name and writes it as the slice\'s member; the same slice 
   assert.deepEqual(effort(dir).slices['demo-01'], { status: 'building', mode: 'normal', member: 'Scotty' });
   assert.deepEqual(effort(dir).crew.implementer, ['Scotty']);
   const before = stateText(dir);
+  const at = effort(dir).updatedAt;
+  assert.notEqual(at, '2026-10-17T10:00:00Z', 'a recording call refreshes updatedAt');
   assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'Scotty');
+  assert.equal(effort(dir).updatedAt, at, 'a reused member leaves updatedAt as it was');
   assert.equal(stateText(dir), before);
   assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-02')), 'OBrien', 'another slice takes the next name');
   assert.equal(effort(dir).slices['demo-02'].member, 'OBrien');
