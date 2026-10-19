@@ -18,3 +18,11 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/crew-name.test.mjs` → passes against the shipped presets over fixture hosts
+
+## Assumptions
+
+- recommended: the handle form also drops a `-` at either end and skips a name with nothing left (`- Kes -` is `Kes`, `!!!` is skipped); prior-sdlc's 64-character cap is not kept, as no shipped name nears it (source: spec, Implementation Decisions, "The name script", handle form; notes 1.4)
+- recommended: a `names.<role>` override with no name left in handle form counts as no override, so the preset applies, else the fallback (source: spec, "A `names.<role>` override comes first. Otherwise it takes the preset the `theme` names")
+- recommended: `--slice` with a role other than `implementer` exits 2, since a slice's `member` is its implementer's name (source: spec, "Each slice gains `member` (its implementer's name, or absent)"; "with `--slice` for an implementer")
+- recommended: `--slice` on a slice absent from the effort's `slices` writes `{ member }` there; the build publishes slices before it names implementers (source: spec, "it picks as above and writes the name to both `crew.<role>` and the slice's `member`")
+- recommended: the presets test imports `handleOf` from `crew-name.mjs` (the script runs only as a script, not on import) and drops its own copy and examples test, whose cases moved to `tests/crew-name.test.mjs` (source: .forge/review/cmux-members-04.md, Standards and Spec nits)
