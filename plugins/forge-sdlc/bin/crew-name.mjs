@@ -16,7 +16,7 @@ const PRESETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..',
 
 const ROLES = ['researcher', 'prototyper', 'spec-writer', 'implementer', 'verifier', 'reviewer', 'merger', 'general'];
 
-const USAGE = `usage: crew-name.mjs <role> --project <host> --effort <slug> [--slice <slug>-<nn>]; role: ${ROLES.join(', ')}; --slice for an implementer only\n`;
+const USAGE = `usage: crew-name.mjs <role> --project <host> --effort <slug> [--slice <slug>-<nn>]; role: ${ROLES.join(', ')}; --slice for an implementer only, <slug> the --effort\n`;
 
 /**
  * A display name in the form the Agent tool accepts: diacritics folded, spaces to `-`, only
@@ -49,6 +49,10 @@ function nextName(pool, used) {
   }
 }
 
+/** Whether `slice` is one of the effort's slice ids, `<effort>-<nn>`. */
+const isSliceOf = (effort, slice) =>
+  slice.length === effort.length + 3 && slice.startsWith(`${effort}-`) && /^\d{2}$/.test(slice.slice(-2));
+
 /** `{ role, project, effort, slice }`, or null on bad usage. */
 function usageOf(argv) {
   let parsed;
@@ -64,7 +68,7 @@ function usageOf(argv) {
   const { positionals, values } = parsed;
   const [role] = positionals;
   if (positionals.length !== 1 || !ROLES.includes(role) || !values.project || !values.effort) return null;
-  if (values.slice !== undefined && (role !== 'implementer' || !values.slice)) return null;
+  if (values.slice !== undefined && (role !== 'implementer' || !isSliceOf(values.effort, values.slice))) return null;
   return { role, ...values };
 }
 
@@ -77,7 +81,7 @@ function main(argv) {
   const { role, effort, slice } = usage;
   const dir = path.resolve(usage.project);
   const state = readState(dir);
-  const record = state?.efforts?.[effort];
+  const record = state?.efforts && Object.hasOwn(state.efforts, effort) ? state.efforts[effort] : undefined;
   const member = slice ? record?.slices?.[slice]?.member : undefined;
   if (member) {
     process.stdout.write(`${member}\n`);
