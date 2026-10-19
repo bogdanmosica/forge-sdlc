@@ -21,11 +21,16 @@ for (let i = 0; i < rest.length; i += 2) flags[rest[i].replace(/^--/, '')] = res
 const dir = path.resolve(flags.project);
 const slug = flags.effort;
 
-/** The role's pool in display form: the host's `names.<role>` bullet, else the preset its theme names. */
+/**
+ * The role's pool in display form: the host's `names.<role>` bullet, else the preset its theme
+ * names, else the fallback (`<slug>-<nn>` for an implementer with `--slice`, `<role>` otherwise).
+ */
 function poolOf(crew) {
   const override = listOf(crew?.[`names.${role}`]);
   if (override.length) return override;
-  return JSON.parse(readFileSync(PRESETS, 'utf8')).presets[crew?.theme].names[role];
+  const presets = JSON.parse(readFileSync(PRESETS, 'utf8')).presets;
+  if (Object.hasOwn(presets, crew?.theme ?? '')) return presets[crew.theme].names[role];
+  return [role === 'implementer' && flags.slice ? flags.slice : role];
 }
 const pool = poolOf(readHostConfig(dir)?.crew).map(handleOf);
 

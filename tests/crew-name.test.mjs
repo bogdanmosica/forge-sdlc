@@ -68,3 +68,24 @@ test('a names.<role> override replaces that role\'s pool and leaves the others o
   assert.equal(printed(name(dir, 'implementer')), 'Seven-of-Nine-2');
   assert.equal(printed(name(dir, 'verifier')), 'Data');
 });
+
+test('a free-text theme uses its names bullets, and a role it does not name falls back to <role>', () => {
+  const { dir } = crewHost(['- theme: Discworld', '- names.implementer: Rincewind, Twoflower', '- names.verifier: Granny Weatherwax']);
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'Rincewind');
+  assert.equal(printed(name(dir, 'verifier')), 'Granny-Weatherwax');
+  assert.equal(printed(name(dir, 'reviewer')), 'reviewer');
+  assert.equal(printed(name(dir, 'reviewer')), 'reviewer-2');
+});
+
+for (const [label, crew] of [['no ## Crew', null], ['theme: none', ['- theme: none']]]) {
+  test(`${label}: an implementer with --slice is <slug>-<nn>, two verifier calls are verifier then verifier-2`, () => {
+    const { dir } = crewHost(crew, { slices: { 'demo-01': { status: 'building' } } });
+    assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'demo-01');
+    assert.equal(effort(dir).slices['demo-01'].member, 'demo-01');
+    assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'demo-01');
+    assert.equal(printed(name(dir, 'verifier')), 'verifier');
+    assert.equal(printed(name(dir, 'verifier')), 'verifier-2');
+    assert.equal(printed(name(dir, 'implementer')), 'implementer', 'an implementer without --slice is <role>');
+    assert.deepEqual(effort(dir).crew, { implementer: ['demo-01', 'implementer'], verifier: ['verifier', 'verifier-2'] });
+  });
+}
