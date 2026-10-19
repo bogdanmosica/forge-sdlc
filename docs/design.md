@@ -183,7 +183,7 @@ Shapes or reshapes one map's Destination through a short grilling, without chart
 ### `plan` (Build, the engineer's gate)
 
 1. Precondition: `spec.md` committed and the gate passed.
-2. Follow `to-tickets` (read its file): tracer-bullet slices, blocking edges, prefactoring first, expand–contract for wide refactors. Its quiz step **is Gate 3**: present the breakdown, iterate until the engineer approves. Under `autonomous` with `risk: normal` the quiz's answer is the drafted breakdown: its four answers are `recommended:` lines in a `## Quiz` block of `plan.md` after `## Prefactoring` and under the PR body's slice table, and the report says `Gate 3 passed`.
+2. Follow `to-tickets` (read its file): tracer-bullet slices, blocking edges, prefactoring first, expand–contract for wide refactors. Its quiz step **is Gate 3**: present the breakdown, iterate until the engineer approves. Under `autonomous` with `risk: normal` the quiz's answer is the drafted breakdown: its four answers are `recommended:` lines in a `## Quiz` block of `plan.md` after `## Prefactoring` and under the PR body's slice table, and the report says `Gate 3 passed`; a Quiz answer the draft cannot give is an `open:` line, on which Gate 3 stops with `stop: open`.
 3. Each slice gets a **proof** line: the command and the observable that show it done (a test file, an e2e tag, a build target). This is the playbook's "proof" column and what the verifier runs.
 4. Publish the tickets to the tracker (blockers first, native blocking edges on GitHub, `Blocked by` text locally), label `ready-for-agent`. Write `docs/efforts/<slug>/plan.md` from the approved breakdown: the slice table, order of work (the initial frontier), risks, prefactoring. Commit. Update the PR body.
 

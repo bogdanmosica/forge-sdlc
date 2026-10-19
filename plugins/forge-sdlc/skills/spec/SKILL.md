@@ -53,12 +53,12 @@ With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.
 
 ## 7. Gate 2
 
-Apply the [gate policy](../wayfinder/GATE-POLICY.md) kept in step 1 to spec.md, with the spec gate kept in step 1. A passed gate lets `/forge-sdlc:wayfinder` continue into plan.
+Apply the [gate policy](../wayfinder/GATE-POLICY.md) kept in step 1 to spec.md, with the spec gate kept in step 1. A passed gate lets `/forge-sdlc:wayfinder` continue into plan. A stop under `autonomous` writes `stop: <reason>` to the effort as step 6 writes state.
 
 Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line:
 
 - stopped under `attended`: `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>`.
-- stopped under `autonomous`: write `stop: <reason>` to the effort as step 6 writes state; the line names the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+- stopped under `autonomous`: the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
 - passed under `attended` (`only-on-open`): `Gate 2 passed: only-on-open, nothing open`.
 - passed under `autonomous`: `Gate 2 passed: policy autonomous, nothing open`.
 

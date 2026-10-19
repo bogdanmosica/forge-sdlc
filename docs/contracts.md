@@ -111,7 +111,7 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | `## Assumptions to confirm` | wayfinder, then spec | the assumption lines, `open` first |
 | `## Spec` | spec | a link to `spec.md` and the user-story count |
 | `## Flagged concerns` | spec | the spec's bullets, verbatim |
-| `## Plan` | plan | the slice table: nn, title, blocked by, proof; the four Quiz lines of plan.md's `## Quiz` under it, under `autonomous` only |
+| `## Plan` | plan | the slice table: nn, title, blocked by, proof; below it, plan.md's four Quiz lines (its `## Quiz`) under `autonomous` with `risk: normal` only |
 | `## Summary`, `## Evidence`, `## Merge Danger` | build | the `pr` template, Evidence one bullet per slice from its verify record |
 | `## Red slices` | build | one line per red slice with its ticket and reason, or `none` |
 

@@ -31,7 +31,7 @@ Done when every slice has `nn`, title, blocked by, delivers and a proof the host
 To-tickets' `Quiz the user` is Gate 3, passed as the [gate policy](../wayfinder/GATE-POLICY.md) says, with `gates.policy` from the host config (`node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"`) and `risk` from spec.md.
 
 - Under `attended`, or for a `risk: high` effort, which runs attended: through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
-- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer. Write the four lines of the template's `## Quiz` ([PLAN-TEMPLATE.md](PLAN-TEMPLATE.md)), each a `recommended:` line ending `(source: policy autonomous)`, or an `open:` line for an answer the draft cannot give (a proof the host cannot run, a slice that may not fit one context window). They are plan.md's lines, so the policy reads them: with no `open:` line it passes Gate 3 and the breakdown is approved as drafted; with one it stops Gate 3 with `stop: open`, and the owner settles that line in plan.md before resuming. Steps 5 and 6 record the lines either way.
+- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer. Write the four lines of the template's `## Quiz` ([PLAN-TEMPLATE.md](PLAN-TEMPLATE.md)), each a `recommended:` line ending `(source: policy autonomous)`, or an `open:` line for an answer the draft cannot give (a proof the host cannot run, a slice that may not fit one context window). They are plan.md's lines, so the policy reads them at Gate 3: when it passes Gate 3 the breakdown is approved as drafted; when an `open:` line stops it (`stop: open`), the owner settles that line in plan.md before resuming. Steps 5 and 6 record the lines either way.
 
 Done when the engineer has answered that the breakdown is approved, or, under `autonomous` with `risk: normal`, the four Quiz lines are written and Gate 3 has passed or stopped on `open`.
 
@@ -50,15 +50,15 @@ Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 ## 6. Gate record and state
 
 - PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by, proof) and each ticket's link, and step 3's four Quiz lines under the slice table when step 3 wrote them (`autonomous` only); every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
-- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now. Under `autonomous`, the stop goes beside `gate` as the reference's State write says: for a `risk: high` effort `stop: risk-high`, otherwise `stop: open` when step 3 stopped on an `open:` line; when the policy passed Gate 3, or under `attended`, the write drops `stop`.
+- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now. Under `autonomous`, a Gate 3 stop (step 3's, or the effort's risk) goes beside `gate` as the reference's State write says.
 
 Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop` as written or absent.
 
 ## 7. Report
 
-Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`). Under `autonomous` a fourth line ends it:
+Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>`; a stopped Gate 3 under `autonomous` names its own on the fourth line instead. Under `autonomous` a fourth line ends it:
 
 - passed: `Gate 3 passed: policy autonomous, nothing open`, on which wayfinder's Resume continues into build.
-- stopped: the reasons (each `open:` Quiz line verbatim, or `risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+- stopped: the reasons (each `open:` Quiz line verbatim, or `risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says; when the settled answer changes the breakdown, `/forge-sdlc:plan <slug>` reruns first, so the tickets and slices follow it.
 
 Done when the state reads back and the report is printed.
