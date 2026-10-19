@@ -48,3 +48,12 @@ test('read-only: names no write', () => {
 test('under one screen', () => {
   assert.ok(skill.split('\n').length < 50);
 });
+
+test('prints the policy on each effort first line and the stop when set', () => {
+  assert.match(skill, /`policy`/);
+  assert.match(skill, /`stop`/);
+  const first = /```text\n([^\n]+)\n/.exec(skill)?.[1] ?? '';
+  assert.match(first, /policy <policy>/);
+  assert.match(skill, /stopped: <stop>/);
+  assert.match(skill, /stop[^\n]*none/);
+});
