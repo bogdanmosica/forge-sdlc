@@ -236,3 +236,19 @@ test('slice-review: the fix step has one completion line, the report and a commi
   assert.doesNotMatch(body, /verifier's record for it is fresh/, 'no second way to finish the fix');
   assert.doesNotMatch(body, /end your turn|only when that slice record exists/, 'no wait on a background report, no guarded agent write');
 });
+
+test('slice-review: design section 7 records the foreground fix round with a Decision line, and ADR 0016 agrees', () => {
+  const repo = path.resolve(plugin, '..', '..');
+  const lines = readFileSync(path.join(repo, 'docs', 'design.md'), 'utf8').split('\n');
+  const at = lines.findIndex((l) => /the lead records `agent` right after the implementer's Agent call/.test(l));
+  assert.ok(at >= 0, 'the agent-id Decision line');
+  const next = lines.slice(at + 1).find((l) => l.trim() !== '');
+  assert.match(next, /^Decision \(verified-before-stop\)/, 'a Decision line follows it');
+  assert.match(next, /fix round/);
+  assert.match(next, /foreground inside the merger/);
+  assert.match(next, /verify step/);
+  assert.match(next, /\]\(adr\/0016-stop-gate-finds-a-subagents-slice-by-its-agent-id\.md\)/, 'links ADR 0016');
+  const adr = readFileSync(path.join(repo, 'docs', 'adr', '0016-stop-gate-finds-a-subagents-slice-by-its-agent-id.md'), 'utf8');
+  assert.doesNotMatch(adr, /fix round starts its implementer in the background/, 'no background fix round');
+  assert.match(adr, /fix round[^\n]*foreground inside the merger[^\n]*verify step/, 'the consequence names the foreground fix and its gate');
+});
