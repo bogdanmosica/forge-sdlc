@@ -1,7 +1,7 @@
 # 02: autonomous-gates-02: effort-state and status print the policy and the stop
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 
@@ -22,3 +22,7 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 
 - recommended: a state `stop` outside the closed set (`open`, `flagged`, `risk-high`) prints `stop: none` and the stage's `why` (source: spec.md, effort-state "stop is the state's stop, or none when absent"; State schema "stop: open | flagged | risk-high")
 - recommended: status puts `, stopped: <stop>` on the first line after `policy <policy>`, left out when `stop` is `none` (source: spec.md, status "Each effort's first line gains `policy <policy>` and, when set, `stopped: <stop>`")
+
+## Comments
+
+clean: review record .forge/review/autonomous-gates-02.md, merged 7d14ecd into feat/autonomous-gates.
