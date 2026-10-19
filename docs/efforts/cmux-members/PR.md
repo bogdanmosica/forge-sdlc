@@ -68,3 +68,27 @@ none
 - recommended: the `crew-name.mjs` tests run against the shipped `crew.json`, which a structural test also checks, so the script takes no presets-path flag (source: intent Constraints, proof by node tests)
 - recommended: the member transport gets a `Decision:` line in design section 5 and an ADR, the agent-id gate a `Decision:` line in section 7 and its own ADR, and CLAUDE.md's Commands list a line for `crew-name.mjs` (source: CLAUDE.md Conventions)
 - recommended: the frame eval scaffold carries no `## Crew` pin, because the eval harness runs non-interactively, where a named call is a subagent even with agent teams enabled (source: docs/research/cmux-members/named-teammates-under-a-teams-lead.md, Q1, `-p` and the Agent SDK)
+
+## Plan
+
+[plan.md](plan.md): 6 slices (03 to 08; slice 02 of the first plan is merged).
+
+| nn | title | blocked by | delivers | proof |
+| --- | --- | --- | --- | --- |
+| 03 | Crew theme in the contracts, config and init | none | `crew`, `member`, `agent` and the Names rows in the contracts; `## Crew` (`theme`, `names.<role>`) in the init template, this repo's forge.md and design sections 8 and 9; init's Crew question with the five presets; slice 02's rationale reworded | `node --test tests/config.test.mjs tests/init.test.mjs` → passes with `crew.theme` parsed and the Crew question with its five presets |
+| 04 | Crew presets file | none | `crew.json`: five themes, eight forge pools each, rebuilt from prior-sdlc, at least three names per pool and five implementers, unique handles | `node --test tests/crew-presets.test.mjs` → passes the structural checks |
+| 05 | crew-name.mjs picks and records the next name | 03, 04 | The script at its process boundary: pools, overrides, free text, fallbacks, `--slice` reuse, handle form, `-2` numbering, exit codes; CLAUDE.md Commands line | `node --test tests/crew-name.test.mjs` → passes against the shipped presets over fixture hosts |
+| 06 | Stop gate finds a subagent's slice by agent id | 03 | `verified-before-stop` gates `SubagentStop` by the slice's `agent` when the cwd names no slice; the red pass clears it; eval case `verified-before-stop-agent-blocks`; design section 7 Decision line and the ADR. Risk high | `node --test tests/verified-before-stop.test.mjs tests/evals.test.mjs` → passes with the agent-id cases |
+| 07 | Members reference and the build stage | 05, 06 | The members reference; build's agents as member calls, `agent` recorded, the Gate 4 member line, the shutdown after merged or red; the merger clears `agent`; design section 5 Decision line and the ADR "Agents as named members"; README line | `node --test tests/build.test.mjs tests/agents.test.mjs` → passes with the member calls and the reference |
+| 08 | Members in slice-review, wayfinder and spec | 07 | Reviewers, verifier and the background fix implementer with `--slice` and the `agent` write; researchers and the isolated prototyper; the spec-writer | `node --test tests/slice-review.test.mjs tests/wayfinder.test.mjs tests/spec.test.mjs` → passes with the member calls |
+
+Tickets, frontier first (03, 04):
+
+- `.scratch/cmux-members/issues/03-crew-theme-in-the-contracts-config-and-init.md`
+- `.scratch/cmux-members/issues/04-crew-presets-file.md`
+- `.scratch/cmux-members/issues/05-crew-name-picks-and-records-the-next-name.md`
+- `.scratch/cmux-members/issues/06-stop-gate-finds-a-subagent-slice-by-agent-id.md`
+- `.scratch/cmux-members/issues/07-members-reference-and-the-build-stage.md`
+- `.scratch/cmux-members/issues/07-transport-agent-teams-and-crew-theme.md`
+- `.scratch/cmux-members/issues/08-members-in-slice-review-wayfinder-and-spec.md`
+- `.scratch/cmux-members/issues/08-named-teammates-under-a-teams-lead.md`

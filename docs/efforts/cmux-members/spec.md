@@ -1,7 +1,7 @@
 ---
 effort: cmux-members
 stage: spec
-status: draft
+status: accepted
 risk: high
 updated: 2026-10-19
 ---

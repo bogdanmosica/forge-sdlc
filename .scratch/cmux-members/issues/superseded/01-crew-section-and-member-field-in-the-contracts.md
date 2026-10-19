@@ -1,7 +1,7 @@
 # 01: cmux-members-01: Crew section and member field in the contracts
 
 Type: slice
-Status: ready-for-agent
+Status: withdrawn (superseded: the crew.sh plan; the contracts slice is 03 of the second plan)
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
