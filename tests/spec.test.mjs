@@ -136,3 +136,14 @@ test('spec: risk high stops at Gate 2 with the needs-tech-lead label under both 
   assert.match(step(7), /risk: high[^\n]*both policies|both policies[^\n]*risk: high/);
   assert.match(step(5), /needs-tech-lead/);
 });
+
+test('spec step 1: Gate 1 is accepted by the human typing the command or by the policy passing it; the policy is kept', () => {
+  const step1 = step(1);
+  assert.match(step1, /gates\.policy/);
+  assert.match(step1, /accepts Gate 1[^\n]*policy[^\n]*`status: accepted`|policy[^\n]*accepts Gate 1[^\n]*`status: accepted`/);
+});
+
+test('spec step 6: the state write drops stop, so a stop is written only by step 7', () => {
+  assert.match(step(6), /drop(s|ping)? `stop`/);
+  assert.match(step(6), /Done when /);
+});
