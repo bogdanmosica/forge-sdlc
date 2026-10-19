@@ -115,7 +115,7 @@ test('an effort absent from state prints a name and leaves the state file unchan
   assert.equal(existsSync(path.join(bare.dir, '.forge', 'state.json')), false);
 });
 
-test('an unknown role, a missing or unknown flag, --slice off an implementer, or a --slice not <effort>-<nn> exits 2 and records nothing', () => {
+test('an unknown role, a missing or unknown flag, --slice off an implementer, a --slice not <effort>-<nn>, or an --effort not a kebab slug exits 2 and records nothing', () => {
   const { dir } = crewHost(['- theme: star-trek']);
   const before = stateText(dir);
   const run = (args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
@@ -134,6 +134,13 @@ test('an unknown role, a missing or unknown flag, --slice off an implementer, or
     ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'demo-01x'],
     ['implementer', '--project', dir, '--effort', 'demo', '--slice', 'Data Two'],
     ['implementer', '--project', dir, '--effort', 'd.mo', '--slice', 'demo-01'],
+    ['implementer', '--project', dir, '--effort', '../x', '--slice', '../x-01'],
+    ['implementer', '--project', dir, '--effort', 'a b', '--slice', 'a b-01'],
+    ['implementer', '--project', dir, '--effort', 'Demo', '--slice', 'Demo-01'],
+    ['verifier', '--project', dir, '--effort', '-demo'],
+    ['verifier', '--project', dir, '--effort', 'demo-'],
+    ['verifier', '--project', dir, '--effort', 'de--mo'],
+    ['verifier', '--project', dir, '--effort', '__proto__'],
   ]) {
     const r = run(args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.stderr}`);
@@ -141,6 +148,22 @@ test('an unknown role, a missing or unknown flag, --slice off an implementer, or
     assert.match(r.stderr, /usage: crew-name\.mjs/);
   }
   assert.equal(stateText(dir), before);
+});
+
+test('a stored member is printed in handle form, and one with nothing left is picked again', () => {
+  const { dir } = crewHost(['- theme: star-trek'], { slices: { 'demo-01': { member: 'Seven of Nine' }, 'demo-02': { member: '!!!' } } });
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-01')), 'Seven-of-Nine');
+  assert.equal(printed(name(dir, 'implementer', '--slice', 'demo-02')), 'Scotty');
+  assert.equal(effort(dir).slices['demo-02'].member, 'Scotty');
+});
+
+test('a crew.<role> in state that is not a list counts as no names used', () => {
+  const { dir } = crewHost(['- theme: star-trek']);
+  const state = readState(dir);
+  state.efforts.demo.crew = { verifier: 'Data' };
+  writeState(dir, state);
+  assert.equal(printed(name(dir, 'verifier')), 'Data');
+  assert.deepEqual(effort(dir).crew.verifier, ['Data']);
 });
 
 test('every shipped preset pool prints each of its names once, in handle form, before restarting with -2', async () => {
