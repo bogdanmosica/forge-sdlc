@@ -39,3 +39,25 @@ test('every pool holds at least three names and every implementer pool at least 
     }
   }
 });
+
+// The handle form as the spec states it: diacritics folded to ASCII, a space becomes `-`, every
+// other character outside letters, digits, `_` and `-` dropped, runs of `-` collapsed.
+const handle = (name) =>
+  name.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ /g, '-').replace(/[^A-Za-z0-9_-]/g, '').replace(/-+/g, '-');
+
+test('the handle form matches the spec examples', () => {
+  assert.equal(handle('Seven of Nine'), 'Seven-of-Nine');
+  assert.equal(handle("Miles O'Brien"), 'Miles-OBrien');
+  assert.equal(handle('Bowser Jr.'), 'Bowser-Jr');
+  assert.equal(handle('Padmé Amidala'), 'Padme-Amidala');
+});
+
+test('no two names in a pool share a handle form', () => {
+  for (const [id, preset] of Object.entries(presets())) {
+    for (const role of ROLES) {
+      const handles = preset.names[role].map(handle);
+      for (const h of handles) assert.ok(h, `${id}.${role}: a name with an empty handle`);
+      assert.equal(new Set(handles).size, handles.length, `${id}.${role}: two names share a handle`);
+    }
+  }
+});
