@@ -260,3 +260,16 @@ test('step 7 applies the gate policy: attended stops, a policy pass continues in
   assert.match(step7, /`risk-high`[^\n]*runs attended from here/);
   assert.match(step7, /Done when [^\n]+\.\s*$/);
 });
+
+test('Resume continues past every Gate <n> passed to the first stop or Gate 4, reading each next stage by file', () => {
+  const r = section('Resume');
+  assert.ok(r.includes(GATE_LINK), 'Resume links the gate policy');
+  assert.match(r, /\{ slug, stage, gate, next, why, source, policy, stop \}/);
+  const step3 = /^3\. \*\*Run the next stage\.\*\*[^\n]*/m.exec(r)?.[0] ?? '';
+  assert.match(step3, /`Gate <n> passed`[^\n]*1, 2 or 3/);
+  assert.match(step3, /next stage from `effort-state\.mjs`/);
+  assert.match(step3, /first stop or (at )?Gate 4/);
+  assert.match(step3, /SKILL\.md` when (that|the) stage starts/);
+  assert.match(step3, /`only-on-open`[^\n]*same rule/);
+  assert.doesNotMatch(step3, /After `spec`, a report of `Gate 2 passed` continues into `plan`/, 'the Gate 2 special case is folded into the rule');
+});
