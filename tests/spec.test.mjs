@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { readLock } from '../plugins/forge-sdlc/bin/upstream.mjs';
+import { stepOf } from './support/skill.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc');
 const skillDir = path.join(root, 'skills', 'spec');
@@ -120,21 +121,33 @@ test('spec/SKILL.md: the spec-writer is a member call naming its role, the refer
 
 /* Gate policy (skills/wayfinder/GATE-POLICY.md) */
 
-const step = (n) => new RegExp(`^## ${n}\\. .*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(split(skill).body)?.[1] ?? '';
+const step = (n) => stepOf(split(skill).body, n);
 
-test('spec step 7: applies the stop rule through the gate policy reference, the spec: key set aside under autonomous', () => {
+test('spec step 7: applies the gate policy reference and leaves its rules there', () => {
   const step7 = step(7);
   assert.ok(step7.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
-  assert.match(step7, /autonomous[^\n]*`spec:` key[^\n]*not consulted/);
-  assert.match(step7, /`?attended`?[^\n]*`spec:` key|`spec:` key[^\n]*`?attended`?/, 'the spec: key keeps its meaning under attended');
-  assert.match(step7, /Gate 2 passed: policy autonomous, nothing open/);
-  assert.match(step7, /Gate 2 passed: only-on-open, nothing open/);
-  assert.match(step7, /Done when /);
+  for (const restated of [/not consulted/, /both policies/, /the spec gate is `always`/, /keeps its meaning/]) {
+    assert.doesNotMatch(step7, restated, `restates the reference: ${restated}`);
+  }
 });
 
-test('spec: risk high stops at Gate 2 with the needs-tech-lead label under both policies', () => {
-  assert.match(step(7), /risk: high[^\n]*both policies|both policies[^\n]*risk: high/);
-  assert.match(step(5), /needs-tech-lead/);
+test('spec step 7: the report is a short list, one gate line per policy and outcome', () => {
+  const lines = step(7).split('\n').filter((l) => l.startsWith('- '));
+  assert.equal(lines.length, 4);
+  assert.ok(lines.some((l) => l.includes('`attended`') && l.includes('/forge-sdlc:plan <slug>')), 'attended stop');
+  assert.ok(lines.some((l) => l.includes('`autonomous`') && l.includes('/forge-sdlc:wayfinder <slug>')), 'autonomous stop resumes through wayfinder');
+  assert.ok(lines.some((l) => l.includes('`Gate 2 passed: only-on-open, nothing open`')), 'attended pass');
+  assert.ok(lines.some((l) => l.includes('`Gate 2 passed: policy autonomous, nothing open`')), 'autonomous pass');
+});
+
+test('spec step 7: a stop under autonomous writes stop: <reason>, and the Done line reads it back', () => {
+  const step7 = step(7);
+  assert.match(step7, /`autonomous`[^\n]*`stop: <reason>`/);
+  assert.match(step7, /Done when [^\n]*`stop: <reason>`/);
+});
+
+test('spec: risk high keeps the needs-tech-lead label in step 5', () => {
+  assert.match(step(5), /`risk: high`[^\n]*needs-tech-lead/);
 });
 
 test('spec step 1: Gate 1 is accepted by the human typing the command or by the policy passing it; the policy is kept', () => {

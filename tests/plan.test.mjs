@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedUpstream, readLock, skillFile } from '../plugins/forge-sdlc/bin/upstream.mjs';
+import { stepOf } from './support/skill.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dir = path.join(repo, 'plugins', 'forge-sdlc', 'skills', 'plan');
@@ -147,7 +148,7 @@ test('plan: each slice enters state with status open and mode normal (docs/contr
 
 /* Gate policy (skills/wayfinder/GATE-POLICY.md) */
 
-const step = (n) => new RegExp(`^## ${n}\\. .*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(skill)?.[1] ?? '';
+const step = (n) => stepOf(skill, n);
 const QUIZ = ['granularity', 'blocking edges', 'merge or split', 'proofs'];
 
 test('plan step 3: the dialog quiz under attended or risk high; under autonomous the drafted breakdown answers it', () => {
@@ -155,35 +156,54 @@ test('plan step 3: the dialog quiz under attended or risk high; under autonomous
   assert.ok(step3.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
   assert.match(step3, /`attended`[^\n]*`risk: high`[^\n]*AskUserQuestion|AskUserQuestion[^\n]*`attended`/);
   assert.match(step3, /`autonomous`[^\n]*`risk: normal`[^\n]*drafted breakdown/);
-  assert.ok(step3.includes(`quiz's order: ${QUIZ.join(', ')}`), 'the four answers in the quiz order');
+  assert.match(step3, /`## Quiz`/, 'the four lines are the template\'s ## Quiz lines');
   assert.match(step3, /`recommended:`[^\n]*`\(source: policy autonomous\)`/);
   assert.match(step3, /Done when /);
 });
 
-test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, written under the autonomous policy only, four recommended lines', () => {
-  assert.match(template, /^## Quiz$/m);
-  assert.ok(template.indexOf('## Quiz') > template.indexOf('## Prefactoring'), '## Quiz comes after ## Prefactoring');
-  const quiz = template.slice(template.indexOf('## Quiz'));
-  assert.match(quiz, /autonomous/);
-  const lines = quiz.split('\n').filter((l) => l.startsWith('- recommended: '));
-  assert.equal(lines.length, 4);
-  QUIZ.forEach((q, k) => assert.ok(lines[k].startsWith(`- recommended: ${q}: `), q));
-  for (const l of lines) assert.match(l, /\(source: policy autonomous\)$/);
+test('plan step 3: an open: line among the Quiz lines stops Gate 3 under autonomous with stop: open', () => {
+  const step3 = step(3);
+  assert.match(step3, /`open:` line/);
+  assert.match(step3, /`stop: open`/);
+  assert.match(step3, /passes Gate 3|Gate 3 passes/);
 });
 
-test('plan steps 1, 5, 6 and 7: a policy-passed Gate 2, the Quiz block in plan.md and the PR body, the Gate 3 passed line', () => {
+test('plan step 6: a policy stop writes stop (open, or risk-high for a risk-high effort under autonomous); a pass drops it', () => {
+  const step6 = step(6);
+  assert.match(step6, /`stop: open`/);
+  assert.match(step6, /`autonomous`[^\n]*`risk: high`[^\n]*`stop: risk-high`|`stop: risk-high`[^\n]*`autonomous`[^\n]*`risk: high`/);
+  assert.match(step6, /pass(ed)?[^\n]*drop(s|ping)? `stop`|drop(s|ping)? `stop`[^\n]*pass/);
+  assert.match(step6, /Done when [^\n]*`stop`/);
+});
+
+test('plan step 7: under autonomous a stopped Gate 3 reports its reasons and resumes through wayfinder', () => {
+  const step7 = step(7);
+  assert.match(step7, /`Gate 3 passed: policy autonomous, nothing open`/);
+  assert.match(step7, /stopped[^\n]*reasons[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
+});
+
+test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, four recommended lines, no author instruction in it', () => {
+  assert.match(template, /^## Quiz$/m);
+  assert.ok(template.indexOf('## Quiz') > template.indexOf('## Prefactoring'), '## Quiz comes after ## Prefactoring');
+  const quiz = template.slice(template.indexOf('## Quiz') + '## Quiz'.length).split('\n').filter((l) => l.trim());
+  assert.equal(quiz.length, 4, 'only the four lines, nothing that would leak into plan.md');
+  QUIZ.forEach((q, k) => assert.ok(quiz[k].startsWith(`- recommended: ${q}: `), q));
+  for (const l of quiz) assert.match(l, /\(source: policy autonomous\)$/);
+});
+
+test('plan steps 1, 5 and 6: a policy-passed Gate 2, the Quiz block in plan.md and the PR body', () => {
   assert.match(step(1), /policy[^\n]*Gate 2|Gate 2[^\n]*policy/);
   assert.match(step(5), /`## Quiz`[^\n]*after `## Prefactoring`[^\n]*`autonomous` only/);
   assert.match(step(6), /`## Plan`[^\n]*Quiz[^\n]*under the slice table|under the slice table[^\n]*Quiz/);
-  assert.match(step(6), /drop(s|ping)? `stop`/);
-  assert.match(step(7), /`Gate 3 passed: policy autonomous, nothing open`/);
 });
 
-test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous', () => {
+test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; the stop bullet\'s open reason covers plan.md', () => {
   const contracts = readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8');
   const row = contracts.split('\n').find((l) => l.startsWith('| `## Plan` |'));
   assert.ok(row, 'a ## Plan row');
   assert.match(row, /Quiz lines[^|]*`autonomous`/);
+  const stop = contracts.split('\n').find((l) => l.startsWith('- `stop` is optional'));
+  assert.match(stop, /`open` \([^)]*plan\.md\)/);
 });
 
 test('the gate policy reference: the open reason covers plan.md, the artifact Gate 3 checks', () => {
