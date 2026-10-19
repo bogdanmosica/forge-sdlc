@@ -188,7 +188,7 @@ A good test crosses the module's own seam and checks only what a caller sees: th
 
 ## Flagged concerns
 
-- writing-for-agents: the user-level `cmux-crew` skill's always-loaded description triggers on a "cmux team or crew" and "visible" sessions, and names "slice-review", "implementer/merger" and "crew theme" as prior-sdlc's own. forge-sdlc now uses the same leading words (member, crew theme) for its named Agent calls. On a teams lead, that pointer can pull the lead toward crew.sh, or toward keeping plain subagents, when the owner asks to watch a build. It lives in cmux-config, which is out of scope, so the spec cannot sharpen its wording (section: Out of Scope).
+- writing-for-agents: the user-level `cmux-crew` skill's always-loaded description triggers on a "cmux team or crew" and "visible" sessions, and names "slice-review", "implementer/merger" and "crew theme" as prior-sdlc's own. forge-sdlc now uses the same leading words (member, crew theme) for its named Agent calls. On a teams lead, that pointer can pull the lead toward crew.sh, or toward keeping plain subagents, when the owner asks to watch a build. It lives in cmux-config, which is out of scope, so the spec cannot sharpen its wording (section: Out of Scope). Settled on 2026-10-19: cmux-config commit f762734 names each pipeline and says forge-sdlc's members are Agent calls, never crew.sh.
 
 ## Assumptions to confirm
 
