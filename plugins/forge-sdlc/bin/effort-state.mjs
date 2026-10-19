@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Where an effort stands and which command runs next: `node bin/effort-state.mjs [host-dir] <slug>`
-// prints `{ slug, stage, gate, next, why, source }`; `--list [host-dir]` prints every effort as an array.
+// prints `{ slug, stage, gate, next, why, source, policy, stop }`; `--list [host-dir]` prints every effort as an array.
 // One argument is the slug, the host is cwd. Read-only.
+//   policy: attended | autonomous (the host's `## Gates` policy key, read on each call; anything but `autonomous` is attended)
+//   stop:   open | flagged | risk-high (the state's stop; `why` then names it) | none (also always with source artifacts)
 //   next:   map (work the map: wayfinder step 4 on) | spec | plan | build | none (Gate 4 is the code owner's)
 //   source: state (.forge/state.json) | artifacts (re-derived from docs/efforts/<slug>/ on the effort
 //           branch, and whether PR.md carries ## Evidence or the GitHub PR is ready; design section 9)
