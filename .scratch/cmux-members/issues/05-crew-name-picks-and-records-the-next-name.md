@@ -19,5 +19,14 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
 `node --test tests/crew-name.test.mjs` → passes against the shipped presets over fixture hosts
 
+## Assumptions
+
+- recommended: the handle form also drops a `-` at either end and skips a name with nothing left (`- Kes -` is `Kes`, `!!!` is skipped); prior-sdlc's 64-character cap is not kept, as no shipped name nears it (source: spec, Implementation Decisions, "The name script", handle form; notes 1.4)
+- recommended: a `names.<role>` override with no name left in handle form counts as no override, so the preset applies, else the fallback (source: spec, "A `names.<role>` override comes first. Otherwise it takes the preset the `theme` names")
+- recommended: `--slice` with a role other than `implementer` exits 2, since a slice's `member` is its implementer's name (source: spec, "Each slice gains `member` (its implementer's name, or absent)"; "with `--slice` for an implementer")
+- recommended: `--slice` on a slice absent from the effort's `slices` writes `{ member }` there; the build publishes slices before it names implementers (source: spec, "it picks as above and writes the name to both `crew.<role>` and the slice's `member`")
+- recommended: the presets test imports `handleOf` from `crew-name.mjs` (the script runs only as a script, not on import) and drops its own copy and examples test, whose cases moved to `tests/crew-name.test.mjs` (source: .forge/review/cmux-members-04.md, Standards and Spec nits)
+- recommended: `--effort` must be a slug, `^[a-z0-9]+(-[a-z0-9]+)*$`, else exit 2, so the `<slug>-<nn>` fallback is always in handle form; a stored `member` is printed in handle form, one with nothing left is picked again, and a `crew.<role>` that is not a list counts as none used (source: spec, "The name script", handle form; .forge/review/cmux-members-05.md Round 1)
+
 ## Comments
 - red (merger): Bugs and security has one Important finding left after two fix rounds: the `record.updatedAt` refresh in crew-name.mjs has no test that fails when it is removed. Findings: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-05.md. Slice branch and worktree stay for the implementer.

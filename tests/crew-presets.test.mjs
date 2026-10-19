@@ -1,10 +1,13 @@
 // The shipped crew presets, structurally: the five prior-sdlc themes, the eight forge pools in
-// each, the pool sizes, and no two names of a pool that collapse to one handle.
+// each, the pool sizes, and no two names of a pool that collapse to one handle (crew-name.mjs's
+// handle form, whose examples tests/crew-name.test.mjs checks at the script's seam).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { handleOf as handle } from '../plugins/forge-sdlc/bin/crew-name.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const file = path.join(repo, 'plugins', 'forge-sdlc', 'crew.json');
@@ -38,18 +41,6 @@ test('every pool holds at least three names and every implementer pool at least 
       assert.ok(preset.names[role].length >= min, `${id}.${role} has ${preset.names[role].length}, needs ${min}`);
     }
   }
-});
-
-// The handle form as the spec states it: diacritics folded to ASCII, a space becomes `-`, every
-// other character outside letters, digits, `_` and `-` dropped, runs of `-` collapsed.
-const handle = (name) =>
-  name.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ /g, '-').replace(/[^A-Za-z0-9_-]/g, '').replace(/-+/g, '-');
-
-test('the handle form matches the spec examples', () => {
-  assert.equal(handle('Seven of Nine'), 'Seven-of-Nine');
-  assert.equal(handle("Miles O'Brien"), 'Miles-OBrien');
-  assert.equal(handle('Bowser Jr.'), 'Bowser-Jr');
-  assert.equal(handle('Padmé Amidala'), 'Padme-Amidala');
 });
 
 test('no two names in a pool share a handle form', () => {
