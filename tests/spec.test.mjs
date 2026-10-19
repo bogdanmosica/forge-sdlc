@@ -112,6 +112,7 @@ test('spec/SKILL.md: the spec-writer is a member call naming its role, the refer
   assert.ok(line, 'an Agent call for the spec-writer');
   assert.ok(line.includes('[member call](../build/MEMBERS.md)'), 'links the members reference');
   assert.ok(line.includes('role `spec-writer`'), 'names its role');
+  assert.ok(line.includes('foreground under a plain lead'), 'runs in the foreground under a plain lead');
   assert.doesNotMatch(body, /foreground Agent call/);
   assert.match(body, /\(\.\.\/build\/MEMBERS\.md\)[^\n]*lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.doesNotMatch(skill, /teammate|task notification/i);

@@ -201,6 +201,11 @@ test('the researcher and prototyper are member calls naming their roles', () => 
   }
 });
 
+test('each member row says how it runs: researchers in the background at once, the prototyper in the foreground', () => {
+  assert.ok(agentRow('researcher').includes('in the background, all at once'), 'researchers run in the background, all at once');
+  assert.ok(agentRow('prototyper').includes('foreground under a plain lead'), 'the prototyper runs in the foreground under a plain lead');
+});
+
 test('the prototyper call passes isolation on the call itself, so it keeps its own worktree under any lead', () => {
   assert.match(agentRow('prototyper'), /passes `isolation: "worktree"` on the call/);
   assert.doesNotMatch(agentRow('researcher'), /isolation/);

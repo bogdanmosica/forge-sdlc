@@ -203,7 +203,9 @@ test('slice-review: the reviewer and verifier calls are member calls naming thei
     assert.ok(line, `an Agent call for ${role}`);
     assert.ok(line.includes(MEMBER_LINK), `${role} links the members reference`);
     assert.ok(line.includes(`role \`${role}\``), `${role} names its role`);
+    assert.ok(line.includes('foreground under a plain lead'), `${role} runs in the foreground under a plain lead`);
   }
+  assert.ok(callLine('reviewer').includes('role `reviewer` (one name run per call)'), 'each reviewer call takes its own name run');
   assert.ok(existsSync(path.join(plugin, 'skills', 'build', 'MEMBERS.md')), 'the reference exists');
 });
 
