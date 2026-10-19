@@ -1,7 +1,7 @@
 # 07: cmux-members-07: Members reference and the build stage
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
@@ -28,3 +28,6 @@ build 2026-10-19 (blocker 05 merged; the red note above is stale):
 - recommended: the reference names the shutdown as "a `SendMessage` shutdown request addressed to the member's name" and spells no fields, which the docs leave undocumented (source: spec, "The member call, written once", fourth bullet; notes, agent-teams section 4)
 - recommended: the merger clears `agent` by deleting the key, as an absent field reads as none (source: spec, "State schema": "an absent field reads as none")
 - recommended: the design and ADR checks live in `tests/build.test.mjs`, the proof's file, and design section 11 gains `MEMBERS.md`, `crew.json` and `crew-name.mjs` (source: spec, "Design record": "section 11 the presets file and the script")
+
+## Answer
+merged 9579953 into feat/cmux-members. Review record: .forge/review/cmux-members-07.md (clean after 2 fix rounds).
