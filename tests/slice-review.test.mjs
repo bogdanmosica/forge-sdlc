@@ -209,15 +209,14 @@ test('slice-review: the reviewer and verifier calls are member calls naming thei
   assert.ok(existsSync(path.join(plugin, 'skills', 'build', 'MEMBERS.md')), 'the reference exists');
 });
 
-test('slice-review: the fix implementer is a background member call with --slice, its agent written before the wait', () => {
+test('slice-review: the fix implementer is one foreground member call with --slice, with no agent write', () => {
   const line = callLine('implementer');
   assert.ok(line, 'an Agent call for the fix implementer');
   assert.ok(line.includes(MEMBER_LINK), 'the fix links the members reference');
-  assert.ok(line.includes('role `implementer` with `--slice <slug>-<nn>`'), 'the fix reuses the slice name');
-  assert.match(line, /in the background/);
-  assert.match(line, /slices\["<slug>-<nn>"\]\.agent`[^\n]*then wait for its report/, 'the agent write comes before the wait');
-  assert.match(line, /Done when the implementer reported and the slice branch has a commit after the reviewed sha/);
-  assert.doesNotMatch(frontmatter(read(SKILL)).body, /foreground Agent call/);
+  assert.ok(line.includes('role `implementer` with `--slice <slug>-<nn>`, foreground under a plain lead'), 'the fix reuses the slice name and runs in the foreground inside the merger');
+  assert.doesNotMatch(line, /background/, 'no background fix call');
+  assert.doesNotMatch(line, /slices\["<slug>-<nn>"\]\.agent/, 'no agent write before the wait');
+  assert.match(line, /skip the reference's Agent id step/, 'the reference\'s agent-id step does not apply to a foreground fix');
 });
 
 test('slice-review: the session running it is the lead of its member calls, reading the reference by path', () => {
@@ -228,19 +227,12 @@ test('slice-review: the session running it is the lead of its member calls, read
   assert.doesNotMatch(read(SKILL), /teammate|task notification/i, 'the transport words stay in the reference');
 });
 
-test('slice-review: the lead of the background fix holds its turn until the report, and a fix commit alone is never done', () => {
+test('slice-review: the fix step has one completion line, the report and a commit after the reviewed sha', () => {
   const line = callLine('implementer');
   assert.ok(line, 'an Agent call for the fix implementer');
-  assert.match(line, /do not end your turn until the implementer's report arrives/, 'a subagent lead waits for the report');
-  assert.match(
-    line,
-    /commit after the reviewed sha counts as done only once the report arrives or the verifier's record for it is fresh, never earlier/,
-    'without a report, a fix commit is done only on the report or a fresh verifier record',
-  );
-});
-
-test('slice-review: the fix writes agent only when the slice record exists', () => {
-  const line = callLine('implementer');
-  assert.ok(line, 'an Agent call for the fix implementer');
-  assert.match(line, /only when that slice record exists/, 'no agent write on a missing slice record');
+  const done = line.match(/Done when[^\n]*/g) ?? [];
+  assert.deepEqual(done, ['Done when the implementer reported and the slice branch has a commit after the reviewed sha.']);
+  const body = frontmatter(read(SKILL)).body;
+  assert.doesNotMatch(body, /verifier's record for it is fresh/, 'no second way to finish the fix');
+  assert.doesNotMatch(body, /end your turn|only when that slice record exists/, 'no wait on a background report, no guarded agent write');
 });
