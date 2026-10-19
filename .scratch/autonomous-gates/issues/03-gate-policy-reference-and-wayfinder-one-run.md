@@ -1,7 +1,7 @@
 # 03: autonomous-gates-03: Gate policy reference and wayfinder's one run
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 
@@ -25,3 +25,7 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 - recommended: wayfinder step 7 is renamed `## 7. Gate 1`, since under `autonomous` it no longer always stops (source: spec "Step 7, under `autonomous` with a policy-passed Gate 1 ... continue as Resume step 3")
 - recommended: the ADR, design and README checks live in `tests/wayfinder.test.mjs`, the slice's proof file (source: plan row 03 proof)
 - recommended: the carried nits of review 01 are taken here: ADR 0018 covers design sections 8 and 9 (linked from both), section 8 says "ignored", and init item 4 names `attended` by the glossary instead of "today's loop" (source: .forge/review/autonomous-gates-01.md)
+
+## Comments
+
+clean. Review record: .forge/review/autonomous-gates-03.md. Merged as 5438d91.
