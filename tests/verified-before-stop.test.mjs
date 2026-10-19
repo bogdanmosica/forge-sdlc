@@ -171,3 +171,29 @@ test('quiet outside a repository and on an empty payload', () => {
   // An empty payload falls back to the process cwd: run it outside a repo, not in the checkout running the tests.
   assert.deepEqual(hook(HOOK, {}, { projectDir: '/', cwd: '/' }).decision, {});
 });
+
+// The agent-id branch: a subagent's SubagentStop carries the lead's root as cwd, never the
+// worktree it cd-ed into, so the slice is found by the `agent` the lead recorded on it.
+const AGENT = 'a7f3c9e2b1d04';
+
+/** A host on feat/demo with a slice worktree for demo-01 whose `agent` is AGENT; `{ dir, worktree }`. */
+function agentHost(slice = { status: 'building', ticket: '#1', agent: AGENT }) {
+  const { dir } = host({ branch: 'feat/demo', config: forgeMd() });
+  const worktree = path.join(dir, '.forge', 'worktrees', 'demo-01');
+  gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-01', worktree]);
+  writeState(dir, { efforts: { demo: { stage: 'build', gate: 'none', slices: { 'demo-01': slice } } } });
+  return { dir, worktree };
+}
+
+const subagentStop = (cwd, agent_id = AGENT, extra = {}) => stop(cwd, { hook_event_name: 'SubagentStop', agent_id, ...extra });
+
+test('SubagentStop from the host with a matching agent_id: blocked without a record, naming the worktree and the host, never the agent id', () => {
+  const { dir, worktree } = agentHost();
+  const r = hook(HOOK, subagentStop(dir));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.decision.decision, 'block');
+  assert.match(r.decision.reason, /^Slice demo-01 \(branch slice\/demo-01\) has no green verify record at HEAD [0-9a-f]{12}: no record/);
+  assert.ok(r.decision.reason.includes(`--worktree "${realpathSync(worktree)}"`));
+  assert.ok(r.decision.reason.includes(`--project "${realpathSync(dir)}"`));
+  assert.ok(!r.decision.reason.includes(AGENT));
+});
