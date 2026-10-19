@@ -17,3 +17,11 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 ## Proof
 
 `node --test tests/wayfinder.test.mjs` → passes with the reference linked and the continuation rule
+
+## Assumptions
+
+- recommended: the reference is `plugins/forge-sdlc/skills/wayfinder/GATE-POLICY.md`, linked as `[gate policy](GATE-POLICY.md)`, and names ADR 0018 nowhere by link, since a plugin file's link to `docs/adr/` would not resolve in an installed plugin (source: spec "One short reference file, beside the wayfinder skill")
+- recommended: `stop` is written only under `autonomous`; an attended stop writes none, and every other stage write drops it (source: spec Assumptions "under `autonomous`, the run's stop is written to the effort's state")
+- recommended: wayfinder step 7 is renamed `## 7. Gate 1`, since under `autonomous` it no longer always stops (source: spec "Step 7, under `autonomous` with a policy-passed Gate 1 ... continue as Resume step 3")
+- recommended: the ADR, design and README checks live in `tests/wayfinder.test.mjs`, the slice's proof file (source: plan row 03 proof)
+- recommended: the carried nits of review 01 are taken here: ADR 0018 covers design sections 8 and 9 (linked from both), section 8 says "ignored", and init item 4 names `attended` by the glossary instead of "today's loop" (source: .forge/review/autonomous-gates-01.md)
