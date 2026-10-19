@@ -1,0 +1,2 @@
+{ "script": "verified-before-stop.mjs", "expect": "block",
+  "payload": { "hook_event_name": "SubagentStop", "stop_hook_active": false, "agent_id": "a4e1c07b92d35" } }

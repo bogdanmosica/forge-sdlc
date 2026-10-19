@@ -27,3 +27,6 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 - recommended: `--slice` on a slice absent from the effort's `slices` writes `{ member }` there; the build publishes slices before it names implementers (source: spec, "it picks as above and writes the name to both `crew.<role>` and the slice's `member`")
 - recommended: the presets test imports `handleOf` from `crew-name.mjs` (the script runs only as a script, not on import) and drops its own copy and examples test, whose cases moved to `tests/crew-name.test.mjs` (source: .forge/review/cmux-members-04.md, Standards and Spec nits)
 - recommended: `--effort` must be a slug, `^[a-z0-9]+(-[a-z0-9]+)*$`, else exit 2, so the `<slug>-<nn>` fallback is always in handle form; a stored `member` is printed in handle form, one with nothing left is picked again, and a `crew.<role>` that is not a list counts as none used (source: spec, "The name script", handle form; .forge/review/cmux-members-05.md Round 1)
+
+## Comments
+- red (merger): Bugs and security has one Important finding left after two fix rounds: the `record.updatedAt` refresh in crew-name.mjs has no test that fails when it is removed. Findings: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-05.md. Slice branch and worktree stay for the implementer.

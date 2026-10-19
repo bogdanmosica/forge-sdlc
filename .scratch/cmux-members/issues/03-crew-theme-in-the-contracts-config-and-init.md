@@ -1,7 +1,7 @@
 # 03: cmux-members-03: Crew theme in the contracts, config and init
 
 Type: slice
-Status: ready-for-agent
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 
@@ -24,3 +24,7 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 - recommended: a re-run of init keeps hand-written `names.<role>` bullets while the theme stays and replaces them when the theme changes (source: spec user stories 24 and 26; init section 4 "rewrite the file whole")
 - recommended: a dismissed Crew question or preset page keeps the current theme, `none` on a fresh host, as prior-sdlc's init does (source: spec, Init, "This is prior-sdlc's question 8, minus its flags and script")
 - recommended: the contracts test sits in `tests/config.test.mjs` beside the state round-trip, so the slice proof covers it (source: plan row 03, proof line)
+
+## Comments
+
+resolved: clean. Review record: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/cmux-members-03.md. Merge sha: 7bd250b.

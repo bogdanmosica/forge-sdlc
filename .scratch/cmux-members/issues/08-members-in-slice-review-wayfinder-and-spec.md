@@ -17,3 +17,7 @@ Spec: `docs/efforts/cmux-members/spec.md` on `feat/cmux-members`
 ## Proof
 
 `node --test tests/slice-review.test.mjs tests/wayfinder.test.mjs tests/spec.test.mjs` → passes with the member calls
+
+## Comments
+
+red 2026-10-19: blocked by a red slice. Slice 05 (crew-name.mjs) ended red after two fix rounds with one Important finding left (a missing test for the `updatedAt` write, see `.forge/review/cmux-members-05.md`); this slice was not started. The next build run retries 05 first.

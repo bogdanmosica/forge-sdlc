@@ -55,7 +55,7 @@ Reminders for the agent, not a sandbox: the git host's branch protection stays t
 | test-frozen | no edit to a file matching `forge.md`'s test globs | while the edited file's checkout is in fix mode (the slice's mode in its worktree, the effort's on `feat/<slug>`) |
 | secrets-in-diff | no `git commit` that would add a credential shape or a `.env*` file: what is staged plus what the same command stages first (`git add … &&`, `commit -a`, `commit <path>`), simulated in a throwaway index; the reason names path and pattern, never the value | always |
 | format-after-edit | runs `forge.md`'s formatter on each edited file | when `forge.md` names a formatter |
-| verified-before-stop | an agent in a slice checkout stops only with a green verify record at its current HEAD; the reason is the command to run. After three blocks the next stop passes once, the slice marked red | on Stop and SubagentStop on a `slice/<slug>-<nn>` branch |
+| verified-before-stop | an agent in a slice checkout stops only with a green verify record at its current HEAD; the reason is the command to run. After three blocks the next stop passes once, the slice marked red | on Stop and SubagentStop on a `slice/<slug>-<nn>` branch, and on a subagent's SubagentStop by the slice whose `agent` is its id |
 | skills-version | warns when mattpocock-skills is missing, another version, or lost a heading the loop reads | at session start, resume and clear |
 
 ## Agents
