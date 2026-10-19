@@ -285,3 +285,39 @@ test('every numbered step of the skill ends on a Done line', () => {
   assert.equal(steps.length, 7);
   for (const step of steps) assert.match(step.trim().split('\n').pop(), /Done when [^\n]+\.$/, step.slice(0, 30));
 });
+
+/* The decision record: ADR 0018 supersedes ADR 0006, design.md points to it */
+
+const repo = path.resolve(plugin, '..', '..');
+const doc = (rel) => readFileSync(path.join(repo, rel), 'utf8');
+
+test('ADR 0018 "Gates pass by policy" records the four stops, the self-answered quiz, one run and attended by default', () => {
+  const adr = doc('docs/adr/0018-gates-pass-by-policy.md');
+  assert.match(adr, /^# 18\. Gates pass by policy$/m);
+  assert.match(adr, /^Status: accepted, \d{4}-\d{2}-\d{2}$/m);
+  for (const h of ['Context', 'Decision', 'Consequences']) assert.match(adr, new RegExp(`^## ${h}$`, 'm'), h);
+  for (const stop of ['`open:`', 'flagged concern', '`risk: high`', 'Gate 4']) assert.ok(adr.includes(stop), stop);
+  assert.match(adr, /`attended`[^\n]*default/);
+  assert.match(adr, /quiz/);
+  assert.match(adr, /supersedes[^\n]*0006/i);
+});
+
+test('ADR 0006 reads superseded by 0018 and keeps its text', () => {
+  const adr = doc('docs/adr/0006-unattended-between-gates.md');
+  assert.match(adr, /^Status: superseded by 0018$/m);
+  assert.match(adr, /^## Decision\n\nBetween Gate 3 \(plan approved\) and Gate 4/m, 'its decision text kept');
+});
+
+test('design.md section 5 carries a Decision (gates) line linking ADR 0018; section 13 item 6 is reworded to it', () => {
+  const design = doc('docs/design.md');
+  const s5 = /^## 5\. Commands\n([\s\S]*?)^## 6\. /m.exec(design)[1];
+  const line = s5.split('\n').find((l) => l.startsWith('Decision (gates):'));
+  assert.ok(line, 'a Decision (gates) line in section 5');
+  const link = /\]\((adr\/0018-gates-pass-by-policy\.md)\)/.exec(line);
+  assert.ok(link, 'links ADR 0018');
+  assert.ok(existsSync(path.join(repo, 'docs', link[1])));
+  const s13 = /^## 13\. [^\n]*\n([\s\S]*?)^## 14\. /m.exec(design)[1];
+  const item6 = /^6\. [^\n]*/m.exec(s13)[0];
+  assert.match(item6, /policy/);
+  assert.doesNotMatch(item6, /^6\. \*\*Unattended between gates\.\*\*/);
+});

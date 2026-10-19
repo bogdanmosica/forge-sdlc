@@ -143,6 +143,8 @@ Decision (chaining): inside the loop a forge-sdlc command runs another by readin
 
 Decision (members): every Agent call the commands make is a **member call**, defined once in `skills/build/MEMBERS.md` and linked with the member's role at each call in build, slice-review, wayfinder and spec. Before the call the lead runs `bin/crew-name.mjs <role>` (`--slice` for an implementer) and passes its line as `name`; after an implementer's call it writes the id the Agent result names as the slice's `agent`; it waits for the member's report and, under a lead with agent teams enabled, ends the teammate with the shutdown request once its work is settled. Agent teams is the transport, not crew.sh, and nothing detects it: a teams lead shows each member as a named pane, a plain lead runs the same call as a subagent. Names are display only ([ADR 0017](adr/0017-agents-as-named-members.md)).
 
+Decision (gates): Gates 1 to 3 pass by the host's **gate policy**, `policy` under `## Gates` in `forge.md` (section 8): `attended`, the default, stops at every gate for the owner; `autonomous` passes a gate when its artifact has no `open:` line, no flagged concern and the effort is `risk: normal`, so one `wayfinder` run goes on to the first stop or Gate 4, which stays the code owner's. A stop is written as `stop` beside `gate` in the effort's state (section 9). The rule, the stop reasons, the `Gate <n> passed` report line and the state write live in `skills/wayfinder/GATE-POLICY.md`, linked by wayfinder, spec and plan ([ADR 0018](adr/0018-gates-pass-by-policy.md), superseding ADR 0006).
+
 ### `init` (once per host)
 
 1. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/mattpocock-skills:setup-matt-pocock-skills` first and stop. It owns the tracker, triage labels and domain-docs layout; `init` never duplicates those questions.
@@ -454,7 +456,7 @@ The playbook's Test stage applied to the tool:
 3. **One pushed branch per effort, and the map and docs commit on it.** `map.md`, `intent.md`, `spec.md`, `plan.md` are files on `feat/<slug>`; the PR state is the gate record. Slices are local branches in their own worktrees, merged `--no-ff` and deleted; prototypes are discarded; research notes commit on the same branch. Nothing but `feat/<slug>` is ever pushed, enforced by a hook.
 4. **Verifier writes "done", implementer cannot.** The Stop hook reads the verifier's record.
 5. **Review happens once per slice, owned by the merger, on three axes.** The end-of-run `code-review` of `implement-spec` is replaced, not duplicated.
-6. **Unattended between gates.** No question between Gate 3 and Gate 4; open choices become recorded assumptions.
+6. **Gates pass by policy.** No question between Gate 3 and Gate 4; open choices become recorded assumptions. Under the `autonomous` gate policy Gates 1 to 3 pass too when nothing in their artifacts needs the owner, and the run stops only on an `open:` line, a flagged concern, `risk: high` or Gate 4 (ADR 0018, superseding ADR 0006).
 
 ## 14. Open questions and risks
 
