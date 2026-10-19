@@ -4,7 +4,7 @@
 // pointed at rather than pasted.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -181,6 +181,19 @@ test("build: step 4 records the implementer's agent id on its slice", () => {
   const { body } = frontmatter(read(SKILL));
   const step4 = body.split('\n').find((l) => l.includes('**Step 4**'));
   assert.match(step4, /slices\["<slug>-<nn>"\]\.agent/);
+});
+
+test('members: only the reference speaks of the transport (teammate, task notification)', () => {
+  const skills = path.join(plugin, 'skills');
+  const files = readdirSync(skills, { recursive: true })
+    .filter((f) => f.endsWith('.md'))
+    .filter((f) => path.join('skills', f) !== MEMBERS);
+  assert.ok(files.length > 1);
+  for (const f of files) {
+    const text = readFileSync(path.join(skills, f), 'utf8');
+    assert.doesNotMatch(text, /teammate|task notification/i, f);
+  }
+  assert.match(read(MEMBERS), /teammate/);
 });
 
 /* The implementer */
