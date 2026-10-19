@@ -196,6 +196,19 @@ test('members: only the reference speaks of the transport (teammate, task notifi
   assert.match(read(MEMBERS), /teammate/);
 });
 
+test('members: design section 5 records the member call with a Decision line to its ADR', () => {
+  const design = readFileSync(path.join(repo, 'docs', 'design.md'), 'utf8');
+  const section5 = design.slice(design.indexOf('## 5. Commands'), design.indexOf('## 6. The agents'));
+  const decision = section5.split('\n').find((l) => /^Decision \(members\)/.test(l));
+  assert.ok(decision, 'a Decision (members) line in section 5');
+  const adr = /\]\((adr\/0017-agents-as-named-members\.md)\)/.exec(decision);
+  assert.ok(adr, 'links ADR 0017');
+  const file = path.join(repo, 'docs', adr[1]);
+  assert.ok(existsSync(file), adr[1]);
+  assert.match(readFileSync(file, 'utf8'), /^# 17\. Agents as named members$/m);
+  assert.match(section5, /skills\/build\/MEMBERS\.md/);
+});
+
 /* The implementer */
 
 test('implementer: Opus high, everything but Agent and AskUserQuestion', () => {
