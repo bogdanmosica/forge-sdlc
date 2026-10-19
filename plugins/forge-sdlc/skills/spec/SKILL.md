@@ -53,6 +53,13 @@ With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.
 
 ## 7. Gate 2
 
-Apply the [gate policy](../wayfinder/GATE-POLICY.md) kept in step 1. Under `attended` the `spec:` key keeps its meaning: stop at Gate 2 when any holds: the spec gate is `always`; the spec has an `open:` line; `## Flagged concerns` has a bullet other than `- none`; the effort is `risk: high`; otherwise (`only-on-open`, clean, normal risk) the gate passes on its own. Under `autonomous` the `spec:` key is not consulted: the reference's stop rule alone decides, and a stop writes `stop: <reason>` as it says. A `risk: high` effort stops at Gate 2 under both policies, with step 5's `needs-tech-lead` label. A passed gate lets `/forge-sdlc:wayfinder` continue into plan.
+Apply the [gate policy](../wayfinder/GATE-POLICY.md) kept in step 1 to spec.md, with the spec gate kept in step 1. A passed gate lets `/forge-sdlc:wayfinder` continue into plan.
 
-Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and either `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>` (under `autonomous`, the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says), `Gate 2 passed: only-on-open, nothing open` under `attended`, or `Gate 2 passed: policy autonomous, nothing open` under `autonomous`. Done when the report is printed.
+Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line:
+
+- stopped under `attended`: `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>`.
+- stopped under `autonomous`: write `stop: <reason>` to the effort as step 6 writes state; the line names the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+- passed under `attended` (`only-on-open`): `Gate 2 passed: only-on-open, nothing open`.
+- passed under `autonomous`: `Gate 2 passed: policy autonomous, nothing open`.
+
+Done when the report is printed and, after a stop under `autonomous`, the state reads back `stop: <reason>`.
