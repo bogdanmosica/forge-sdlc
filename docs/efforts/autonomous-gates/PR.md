@@ -73,7 +73,7 @@ Tickets, frontier first (01):
 
 ## Summary
 
-A host's `gates.policy` decides who passes Gates 1 to 3. Under `autonomous`, wayfinder continues on each `Gate <n> passed` line to the first stop or Gate 4; `attended` (the default, and what no key reads as) is unchanged.
+A host's `gates.policy` decides who passes Gates 1 to 3. Under `autonomous`, one wayfinder run continues on each `Gate <n> passed` line to the first stop or Gate 4; `attended` (the default, and what no key reads as) is unchanged.
 
 ```diff
  docs/agents/forge.md
@@ -82,17 +82,22 @@ A host's `gates.policy` decides who passes Gates 1 to 3. Under `autonomous`, way
  effort-state <slug>
 -  { slug, stage, gate, next, why, source }
 +  { slug, stage, gate, next, why, source, policy, stop }
- wayfinder
-   charting, grilling            # human under both
+ wayfinder                          # charting, grilling: human under both
    Gate 1
 -    owner passes
 +    attended: owner passes
 +    autonomous: GATE-POLICY.md stop rule
 +      open | flagged | risk-high → stop: <reason>, report, end
 +      else → "Gate 1 passed: policy autonomous, nothing open", run on
-   Resume
--  continues on "Gate 2 passed"
-+  continues on "Gate <n> passed" to the first stop or Gate 4
+ spec
+   Gate 2: same rule; the spec: key is ignored under autonomous
+ plan
+   Gate 3 quiz
+-    owner answers
++    autonomous, risk normal: drafted breakdown answers it,
++      four "recommended: … (source: policy autonomous)" lines in ## Quiz
++    step 6: set or drop stop as GATE-POLICY.md says
+ build                              # unchanged; ends at Gate 4
 ```
 
 ```text
@@ -100,15 +105,13 @@ plugins/forge-sdlc/skills/wayfinder/GATE-POLICY.md   # stop rule, reasons, repor
 docs/adr/0018-gates-pass-by-policy.md                # supersedes ADR 0006
 ```
 
-Spec and plan passing their own gates by policy (slice 04) is **not** on this branch: the slice is red.
-
 ## Evidence
 
 - `autonomous-gates-01`: proof `node --test tests/config.test.mjs tests/init.test.mjs` exit 0; `npm test` exit 0; head `7f781f4`; at 2026-10-19T14:19:43Z
 - `autonomous-gates-02`: proof `node --test tests/effort-state.test.mjs tests/status.test.mjs` exit 0; `npm test` exit 0; head `e20241f`; at 2026-10-19T15:16:56Z
 - `autonomous-gates-03`: proof `node --test tests/wayfinder.test.mjs` exit 0; `npm test` exit 0; head `ba0543d`; at 2026-10-19T15:31:19Z
-- `autonomous-gates-04`: red, not merged. Proof `node --test tests/spec.test.mjs tests/plan.test.mjs` exit 0; `npm test` exit 0; head `ab343c6`; at 2026-10-20T06:28:59Z. Green, but review left two Important findings.
-- `feat/autonomous-gates` at `af64003`: `npm test` 323 pass, 0 fail.
+- `autonomous-gates-04`: proof `node --test tests/spec.test.mjs tests/plan.test.mjs` exit 0; `npm test` exit 0; head `97bf5ec`; at 2026-10-20T06:46:01Z
+- `feat/autonomous-gates` at `fd8232d`: `npm test` 342 pass, 0 fail.
 
 ## Merge Danger
 
@@ -118,8 +121,8 @@ Hosts read `attended` with no `policy` key, so nothing changes until a host sets
 
 **Blast Radius:** skill-text
 
-No hook or risk-high path changed. Until slice 04 lands, wayfinder can pass Gate 1 by policy, but spec and plan have no policy rules, so an autonomous run past Gate 1 is unproven. Don't switch a host to `autonomous` before 04 merges.
+No hook or risk-high path changed. The autonomous chain (wayfinder → spec → plan → build in one run, and the self-answered quiz) is proven structurally only. The live proof is the first `/forge-sdlc:wayfinder <idea>` on a host set to `autonomous`.
 
 ## Red slices
 
-- `autonomous-gates-04` (`.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`): after two fix rounds (verify green at `ab343c6`), Spec and Bugs and security each still report one Important: plan/SKILL.md step 6 never drops a leftover `stop` when Gate 3 passes or under `attended`, so a `stop: flagged` from Gate 2 survives to Gate 4. Step 6 should follow GATE-POLICY.md's State write unconditionally, and `tests/plan.test.mjs` must change with it. The fix is in Round 2 of `.forge/review/autonomous-gates-04.md`. Branch `slice/autonomous-gates-04` and its worktree stay for the next run. The earlier hung-verifier red no longer applies: the hang did not reproduce.
+none
