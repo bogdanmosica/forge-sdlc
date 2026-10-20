@@ -79,8 +79,8 @@ test("bin/forge-config.mjs prints this repo's crew theme as crew.theme", () => {
   assert.equal(printConfig(repoRoot).crew?.theme, 'star-trek');
 });
 
-test("bin/forge-config.mjs prints this repo's gate policy as gates.policy attended", () => {
-  assert.equal(printConfig(repoRoot).gates?.policy, 'attended');
+test("bin/forge-config.mjs prints this repo's gate policy as gates.policy autonomous", () => {
+  assert.equal(printConfig(repoRoot).gates?.policy, 'autonomous');
 });
 
 const template = readFileSync(path.join(root, 'skills', 'init', 'FORGE-TEMPLATE.md'), 'utf8');
