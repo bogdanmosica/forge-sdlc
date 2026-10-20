@@ -27,3 +27,7 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 - recommended: each Quiz line reads `- recommended: <question>: <answer> (source: policy autonomous)`, the question named first so a reviewer at Gate 4 sees which answer it is (source: spec user story 19)
 - recommended: under `autonomous`, a stopped Gate 2 reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume instead of `/forge-sdlc:plan <slug>` (source: GATE-POLICY.md Report line)
 - recommended: the reader of a Gate 3 `stop: open` is build step 1, which prints every `open:` line in plan.md's `## Quiz` verbatim and stops, as spec step 1 does for intent.md; it covers both `/forge-sdlc:wayfinder <slug>` (Resume step 3 runs build) and a typed `/forge-sdlc:build <slug>` (source: GATE-POLICY.md stop rule, Gate 3 artifact `plan.md`; .forge/review/autonomous-gates-04.md round 0)
+
+## Comments
+
+red: no fresh green verify record at slice head aeba516 (the record on file is for 394098e). Two verifier runs hung with about 28 node --test processes and were killed; suspect a test added in 059befd. Round 1 left one Standards Important (plan step 6 restating the reference), which aeba516 addresses but unreviewed. Findings: .forge/review/autonomous-gates-04.md. The slice branch and worktree stay for the implementer.

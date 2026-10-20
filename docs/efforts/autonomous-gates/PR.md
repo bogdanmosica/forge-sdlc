@@ -70,3 +70,56 @@ Tickets, frontier first (01):
 - `.scratch/autonomous-gates/issues/02-effort-state-and-status-print-the-policy-and-the-stop.md`
 - `.scratch/autonomous-gates/issues/03-gate-policy-reference-and-wayfinder-one-run.md`
 - `.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`
+
+## Summary
+
+A host's `gates.policy` decides who passes Gates 1 to 3. Under `autonomous`, wayfinder continues on each `Gate <n> passed` line to the first stop or Gate 4; `attended` (the default, and what no key reads as) is unchanged.
+
+```diff
+ docs/agents/forge.md
+   ## Gates
++    policy: attended | autonomous      # init asks it first
+ effort-state <slug>
+-  { slug, stage, gate, next, why, source }
++  { slug, stage, gate, next, why, source, policy, stop }
+ wayfinder
+   charting, grilling            # human under both
+   Gate 1
+-    owner passes
++    attended: owner passes
++    autonomous: GATE-POLICY.md stop rule
++      open | flagged | risk-high → stop: <reason>, report, end
++      else → "Gate 1 passed: policy autonomous, nothing open", run on
+   Resume
+-  continues on "Gate 2 passed"
++  continues on "Gate <n> passed" to the first stop or Gate 4
+```
+
+```text
+plugins/forge-sdlc/skills/wayfinder/GATE-POLICY.md   # stop rule, reasons, report line, state write
+docs/adr/0018-gates-pass-by-policy.md                # supersedes ADR 0006
+```
+
+Spec and plan passing their own gates by policy (slice 04) is **not** on this branch: the slice is red.
+
+## Evidence
+
+- `autonomous-gates-01`: proof `node --test tests/config.test.mjs tests/init.test.mjs` exit 0; `npm test` exit 0; head `7f781f4`; at 2026-10-19T14:19:43Z
+- `autonomous-gates-02`: proof `node --test tests/effort-state.test.mjs tests/status.test.mjs` exit 0; `npm test` exit 0; head `e20241f`; at 2026-10-19T15:16:56Z
+- `autonomous-gates-03`: proof `node --test tests/wayfinder.test.mjs` exit 0; `npm test` exit 0; head `ba0543d`; at 2026-10-19T15:31:19Z
+- `autonomous-gates-04`: red, not merged. Its last green record is for `394098e` (proof `node --test tests/spec.test.mjs tests/plan.test.mjs` exit 0; `npm test` exit 0; at 2026-10-19T19:42:57Z), stale against the slice head `aeba516`.
+- `feat/autonomous-gates` at `af64003`: `npm test` 323 pass, 0 fail.
+
+## Merge Danger
+
+**Door:** two-way
+
+Hosts read `attended` with no `policy` key, so nothing changes until a host sets `policy: autonomous` by hand. Reverting the merge removes the key's effect.
+
+**Blast Radius:** skill-text
+
+No hook or risk-high path changed. Until slice 04 lands, wayfinder can pass Gate 1 by policy, but spec and plan have no policy rules, so an autonomous run past Gate 1 is unproven. Don't switch a host to `autonomous` before 04 merges.
+
+## Red slices
+
+- `autonomous-gates-04` (`.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`): no fresh green verify record at slice head `aeba516` after two fix rounds. Three verifier runs at that head hung inside `npm test` and were killed. Fix round 1 (`394098e`) was green and its review left one Standards Important, which fix round 2 (`aeba516`) addresses but nobody has re-reviewed. Findings: `.forge/review/autonomous-gates-04.md`. Branch `slice/autonomous-gates-04` and its worktree stay for the next run.
