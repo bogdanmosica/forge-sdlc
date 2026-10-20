@@ -56,7 +56,7 @@ Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open s
 
 ## 7. Report
 
-Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>`; a stopped Gate 3 under `autonomous` names its own on the fourth line instead. Under `autonomous` a fourth line ends it:
+Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`); a stopped Gate 3 under `autonomous` names its own on the fourth line instead. Under `autonomous` a fourth line ends it:
 
 - passed: `Gate 3 passed: policy autonomous, nothing open`, on which wayfinder's Resume continues into build.
 - stopped: the reason (`risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
