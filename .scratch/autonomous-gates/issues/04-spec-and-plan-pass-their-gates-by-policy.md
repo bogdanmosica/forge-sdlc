@@ -20,13 +20,11 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 
 ## Assumptions
 
-- recommended: spec step 6 drops `stop` and spec step 7 writes `stop: <reason>` on an autonomous stop; plan step 6 writes `stop: risk-high` for a `risk: high` effort under `autonomous`, `stop: open` when step 3 stopped on an `open:` Quiz line, and drops `stop` only when Gate 3 passed or under `attended` (source: spec line 189, "plan skill ... write `stop` to state"; review round 0)
-- recommended: Gate 3's `open:` line is a Quiz line the drafted breakdown cannot answer (a proof the host cannot run, a slice that may not fit one context window); plan still publishes the tickets and writes plan.md with it, stops with `stop: open`, and the owner settles the line in plan.md before `/forge-sdlc:wayfinder <slug>` resumes into build, as spec stops after writing spec.md (source: GATE-POLICY.md stop rule, Gate 3 artifact `plan.md`)
+- recommended: spec step 6 drops `stop` and spec step 7 writes `stop: <reason>` on an autonomous stop; plan step 6 writes `stop: risk-high` for a `risk: high` effort under `autonomous`, and drops `stop` when Gate 3 passed or under `attended` (source: spec line 189, "plan skill ... write `stop` to state"; review round 0)
+- recommended: under `autonomous` with `risk: normal`, plan step 3 writes only `recommended:` Quiz lines, never `open:`, so Gate 3 never stops on plan.md; the `open` reason stays `intent.md` or `spec.md` and build is unchanged (source: spec line 92, "approved as drafted"; spec line 76; spec line 99, "build. Unchanged"; .forge/review/autonomous-gates-04.md round 1)
 - recommended: PLAN-TEMPLATE's `## Quiz` carries only its four lines, marked autonomous-only by `(source: policy autonomous)`; plan step 5 states when the section is written, so no author sentence leaks into plan.md (source: review round 0 Standards nit)
-- recommended: the carried nit from review 03 is fixed here: the `open` reason in GATE-POLICY.md and in contracts' `stop` line now names `plan.md` too, matching the stop rule's Gate 3 artifact (source: GATE-POLICY.md stop rule; .forge/review/autonomous-gates-03.md)
 - recommended: each Quiz line reads `- recommended: <question>: <answer> (source: policy autonomous)`, the question named first so a reviewer at Gate 4 sees which answer it is (source: spec user story 19)
 - recommended: under `autonomous`, a stopped Gate 2 reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume instead of `/forge-sdlc:plan <slug>` (source: GATE-POLICY.md Report line)
-- recommended: the reader of a Gate 3 `stop: open` is build step 1, which prints every `open:` line in plan.md's `## Quiz` verbatim and stops, as spec step 1 does for intent.md; it covers both `/forge-sdlc:wayfinder <slug>` (Resume step 3 runs build) and a typed `/forge-sdlc:build <slug>` (source: GATE-POLICY.md stop rule, Gate 3 artifact `plan.md`; .forge/review/autonomous-gates-04.md round 0)
 
 ## Comments
 
