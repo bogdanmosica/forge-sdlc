@@ -17,3 +17,7 @@ Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
 ## Proof
 
 `node --test tests/spec.test.mjs tests/plan.test.mjs` → passes with the policy rules and the Quiz block
+
+## Comments
+
+red: no fresh green verify record at slice head aeba516 (the record on file is for 394098e). Two verifier runs hung with about 28 node --test processes and were killed; suspect a test added in 059befd. Round 1 left one Standards Important (plan step 6 restating the reference), which aeba516 addresses but unreviewed. Findings: .forge/review/autonomous-gates-04.md. The slice branch and worktree stay for the implementer.
