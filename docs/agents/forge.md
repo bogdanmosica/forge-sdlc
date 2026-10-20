@@ -21,7 +21,7 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 - dependency_dir: none   # symlinked into each slice worktree, never installed there
 
 ## Gates
-- policy: attended               # or: autonomous
+- policy: autonomous             # or: attended
 - spec: always                   # or: only-on-open
 - max_parallel_slices: 3
 
