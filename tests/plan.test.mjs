@@ -169,13 +169,24 @@ test('plan step 3: under autonomous with risk normal the Quiz lines are recommen
   assert.match(step3, /Done when [^\n]*four Quiz lines/);
 });
 
-test('plan step 6: under autonomous a Gate 3 stop goes beside gate as the reference\'s State write says; no reason restated', () => {
+test('plan step 6: the state write sets or drops stop as the reference\'s State write says, under either policy', () => {
   const step6 = step(6);
-  assert.match(step6, /`autonomous`[^\n]*Gate 3 stop[^\n]*beside `gate`[^\n]*State write/);
-  for (const restated of [/`stop: open`/, /`stop: risk-high`/, /drop(s|ping)? `stop`/]) {
-    assert.doesNotMatch(step6, restated, `restates the reference: ${restated}`);
-  }
-  assert.match(step6, /Done when [^\n]*`stop`/);
+  const pointer = step6.split('\n').find((l) => l.includes('State write'));
+  assert.ok(pointer, 'step 6 points at the reference\'s State write');
+  assert.match(pointer, /set or drop `stop`[^\n]*as the reference's State write says/);
+  assert.doesNotMatch(pointer, /[Uu]nder `autonomous`/, 'the pointer has no policy condition: an attended run drops a stale stop too');
+  assert.doesNotMatch(step6, /`stop: open`/, 'no Gate 3 stop on plan.md');
+});
+
+test('plan step 6: Done reads back stop risk-high or no stop, so a leftover stop fails it', () => {
+  const done = step(6).split('\n').find((l) => l.startsWith('Done when '));
+  assert.ok(done, 'a Done line');
+  assert.match(done, /`stop: risk-high`, or no `stop`/);
+  assert.doesNotMatch(done, /as written or absent/);
+});
+
+test('plan step 7: the attended report keeps its wayfinder resume alternative (story 3)', () => {
+  assert.match(step(7), /`\/forge-sdlc:build <slug>` \(or `\/forge-sdlc:wayfinder <slug>`\)/);
 });
 
 test('plan step 7: under autonomous a stopped Gate 3 (risk high only) reports its reasons and resumes through wayfinder', () => {
