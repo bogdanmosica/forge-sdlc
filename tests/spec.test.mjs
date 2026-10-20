@@ -125,6 +125,7 @@ const step = (n) => stepOf(skill, n);
 
 test('spec step 7: applies the gate policy reference and leaves its rules there', () => {
   const step7 = step(7);
+  assert.notEqual(step7, '', 'spec has a step 7');
   assert.ok(step7.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
   for (const restated of [/not consulted/, /both policies/, /the spec gate is `always`/, /keeps its meaning/]) {
     assert.doesNotMatch(step7, restated, `restates the reference: ${restated}`);

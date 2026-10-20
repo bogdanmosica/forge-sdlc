@@ -138,6 +138,7 @@ test('PLAN-TEMPLATE.md: frontmatter per contracts, the slice table columns, the 
 test('every numbered step of SKILL.md ends on a completion criterion', () => {
   const steps = [1, 2, 3, 4, 5, 6, 7].map((n) => stepOf(skill, n));
   for (const [k, body] of steps.entries()) assert.match(body, /Done when /, `step ${k + 1}`);
+  assert.equal(stepOf(skill, 8), '', 'no step 8 left unchecked');
 });
 
 test('plan: each slice enters state with status open and mode normal (docs/contracts.md)', () => {
@@ -182,6 +183,14 @@ test('plan step 7: under autonomous a stopped Gate 3 reports its reasons and res
   assert.match(step7, /`Gate 3 passed: policy autonomous, nothing open`/);
   assert.match(step7, /stopped[^\n]*reasons[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
   assert.match(step7, /stopped[^\n]*changes the breakdown[^\n]*`\/forge-sdlc:plan <slug>`/, 'a settlement that changes the breakdown reruns plan first');
+});
+
+test('plan Gate 3 stop: open has a reader on resume: build step 1 stops on an open: line in plan.md\'s ## Quiz', () => {
+  const build1 = stepOf(readFileSync(path.join(repo, 'plugins', 'forge-sdlc', 'skills', 'build', 'SKILL.md'), 'utf8'), 1);
+  assert.notEqual(build1, '', 'build has a step 1');
+  assert.match(build1, /plan\.md[^\n]*`## Quiz`[^\n]*`open:`|`open:`[^\n]*plan\.md[^\n]*`## Quiz`/);
+  assert.match(build1, /`open:`[^\n]*verbatim[^\n]*stop/, 'prints each open: line verbatim and stops');
+  assert.match(build1, /Done when [^\n]*no `open:` line/);
 });
 
 test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, four recommended lines, no author instruction in it', () => {
