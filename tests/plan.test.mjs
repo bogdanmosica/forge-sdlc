@@ -161,11 +161,11 @@ test('plan step 3: the dialog quiz under attended or risk high; under autonomous
   assert.match(step3, /Done when /);
 });
 
-test('plan step 3: an open: line among the Quiz lines stops Gate 3 under autonomous with stop: open', () => {
+test('plan step 3: under autonomous with risk normal the Quiz lines are recommended only and Gate 3 never stops on plan.md (spec: approved as drafted)', () => {
   const step3 = step(3);
-  assert.match(step3, /`open:` line/);
-  assert.match(step3, /`stop: open`/);
-  assert.match(step3, /passes Gate 3|Gate 3 passes/);
+  assert.doesNotMatch(step3, /`open:`/, 'no open: Quiz line');
+  assert.doesNotMatch(step3, /`stop: open`|stop[^\n]*`open`/, 'no Gate 3 stop on plan.md');
+  assert.match(step3, /approved as drafted/);
   assert.match(step3, /Done when [^\n]*four Quiz lines/);
 });
 
@@ -178,19 +178,12 @@ test('plan step 6: under autonomous a Gate 3 stop goes beside gate as the refere
   assert.match(step6, /Done when [^\n]*`stop`/);
 });
 
-test('plan step 7: under autonomous a stopped Gate 3 reports its reasons and resumes through wayfinder', () => {
+test('plan step 7: under autonomous a stopped Gate 3 (risk high only) reports its reasons and resumes through wayfinder', () => {
   const step7 = step(7);
   assert.match(step7, /`Gate 3 passed: policy autonomous, nothing open`/);
-  assert.match(step7, /stopped[^\n]*reasons[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
-  assert.match(step7, /stopped[^\n]*changes the breakdown[^\n]*`\/forge-sdlc:plan <slug>`/, 'a settlement that changes the breakdown reruns plan first');
-});
-
-test('plan Gate 3 stop: open has a reader on resume: build step 1 stops on an open: line in plan.md\'s ## Quiz', () => {
-  const build1 = stepOf(readFileSync(path.join(repo, 'plugins', 'forge-sdlc', 'skills', 'build', 'SKILL.md'), 'utf8'), 1);
-  assert.notEqual(build1, '', 'build has a step 1');
-  assert.match(build1, /plan\.md[^\n]*`## Quiz`[^\n]*`open:`|`open:`[^\n]*plan\.md[^\n]*`## Quiz`/);
-  assert.match(build1, /`open:`[^\n]*verbatim[^\n]*stop/, 'prints each open: line verbatim and stops');
-  assert.match(build1, /Done when [^\n]*no `open:` line/);
+  assert.match(step7, /stopped[^\n]*`risk-high`[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
+  assert.doesNotMatch(step7, /`open:`/, 'no open: Quiz line to report');
+  assert.doesNotMatch(step7, /changes the breakdown/, 'no settled Quiz line reruns plan');
 });
 
 test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, four recommended lines, no author instruction in it', () => {
@@ -208,17 +201,26 @@ test('plan steps 1, 5 and 6: a policy-passed Gate 2, the Quiz block in plan.md a
   assert.match(step(6), /`## Plan`[^\n]*Quiz[^\n]*under the slice table|under the slice table[^\n]*Quiz/);
 });
 
-test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; the stop bullet\'s open reason covers plan.md', () => {
+test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; the stop bullet\'s open reason stays intent.md or spec.md', () => {
   const contracts = readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8');
   const row = contracts.split('\n').find((l) => l.startsWith('| `## Plan` |'));
   assert.ok(row, 'a ## Plan row');
   assert.match(row, /Quiz lines[^|]*`autonomous`[^|]*`risk: normal`/);
   const stop = contracts.split('\n').find((l) => l.startsWith('- `stop` is optional'));
-  assert.match(stop, /`open` \([^)]*plan\.md\)/);
+  assert.ok(stop, 'a stop bullet');
+  assert.match(stop, /`open` \(an `open:` line in intent\.md or spec\.md\)/);
 });
 
-test('the gate policy reference: the open reason covers plan.md, the artifact Gate 3 checks', () => {
+test('the gate policy reference: the open reason stays intent.md or spec.md (spec: open limited to them)', () => {
   const ref = readFileSync(path.join(dir, '..', 'wayfinder', 'GATE-POLICY.md'), 'utf8');
   const row = ref.split('\n').find((l) => l.startsWith('| `open` |'));
-  assert.match(row, /`plan\.md`/);
+  assert.ok(row, 'an open row');
+  assert.match(row, /`intent\.md` or `spec\.md` \|$/);
+});
+
+test('design: plan step 2 has no Gate 3 stop on an open: Quiz line', () => {
+  const design = readFileSync(path.join(repo, 'docs', 'design.md'), 'utf8');
+  const plan = design.slice(design.indexOf('### `plan`'), design.indexOf('\n### ', design.indexOf('### `plan`') + 1));
+  assert.match(plan, /`Gate 3 passed`/);
+  assert.doesNotMatch(plan, /`stop: open`/);
 });

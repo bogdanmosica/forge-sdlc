@@ -10,6 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedUpstream, skillFile } from '../plugins/forge-sdlc/bin/upstream.mjs';
+import { stepOf } from './support/skill.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const plugin = path.join(repo, 'plugins', 'forge-sdlc');
@@ -53,6 +54,13 @@ test('build: precondition is plan.md committed and the state at gate plan', () =
   assert.match(body, /docs\/efforts\/<slug>\/plan\.md/);
   assert.match(body, /gate: plan/);
   assert.match(body, /\/forge-sdlc:plan <slug>/);
+});
+
+test('build: step 1 is unchanged by the gate policy: no plan.md Quiz reader (spec: build unchanged)', () => {
+  const step1 = stepOf(read(SKILL), 1);
+  assert.notEqual(step1, '', 'build has a step 1');
+  assert.doesNotMatch(step1, /`## Quiz`|`open:`/);
+  assert.match(step1, /Done when plan\.md is committed, the state reads/);
 });
 
 test('build: implement-spec is resolved by file and followed step by step', () => {
