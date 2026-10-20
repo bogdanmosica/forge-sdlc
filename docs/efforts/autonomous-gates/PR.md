@@ -118,7 +118,7 @@ Hosts read `attended` with no `policy` key, so nothing changes until a host sets
 
 **Blast Radius:** skill-text
 
-No hook or risk-high path changed. Until slice 04 lands, a host set to `autonomous` passes Gate 1 by policy, but spec and plan still stop at Gates 2 and 3 as they do under `attended`. Don't switch a host to `autonomous` before 04 merges.
+No hook or risk-high path changed. Until slice 04 lands, wayfinder can pass Gate 1 by policy, but spec and plan have no policy rules, so an autonomous run past Gate 1 is unproven. Don't switch a host to `autonomous` before 04 merges.
 
 ## Red slices
 
