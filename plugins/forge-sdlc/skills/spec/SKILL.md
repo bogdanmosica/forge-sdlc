@@ -12,10 +12,10 @@ argument-hint: <slug>
 - The checkout is on `feat/<slug>` and `docs/efforts/<slug>/intent.md` is committed there (`git log -1 -- docs/efforts/<slug>/intent.md` prints a commit).
 - `intent.md` has no `open:` assumption line. Each one is a question only the owner settles: print every `open:` line verbatim and stop; the owner answers by editing intent.md (`recommended:` with a source), then reruns this command.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" to-spec` prints the to-spec file. Exit 1 stops with the install line it printed.
-- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; keep `gates.spec` (missing means `always`). Read the `## Policy skills` bullets of `docs/agents/forge.md` as the policy skill list (or none).
-- The human typing this command accepts Gate 1: when intent.md's frontmatter reads `status: draft`, set `status: accepted`; it commits with the spec in step 3.
+- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; keep `gates.spec` (missing means `always`) and `gates.policy`, read as the [gate policy](../wayfinder/GATE-POLICY.md) says. Read the `## Policy skills` bullets of `docs/agents/forge.md` as the policy skill list (or none).
+- The human typing this command, or the policy passing Gate 1 under `autonomous`, accepts Gate 1: when intent.md's frontmatter reads `status: draft`, set `status: accepted`; it commits with the spec in step 3.
 
-Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:wayfinder <slug>`). Done when intent.md is committed with no `open:` line and you hold the to-spec path, the spec gate and the policy skills.
+Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:wayfinder <slug>`). Done when intent.md is committed with no `open:` line and you hold the to-spec path, the spec gate, the gate policy and the policy skills.
 
 ## 2. Spawn the spec-writer
 
@@ -49,10 +49,17 @@ Rewrite only these PR body sections and keep every other section verbatim (`gh p
 
 ## 6. State
 
-With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort in `.forge/state.json` to `stage: spec`, `gate: spec`, `risk` from the spec frontmatter, `updatedAt` now; every other field kept. Done when the state reads back `stage: spec`, `gate: spec`.
+With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort in `.forge/state.json` to `stage: spec`, `gate: spec`, `risk` from the spec frontmatter, `updatedAt` now, dropping `stop`; every other field kept. Done when the state reads back `stage: spec`, `gate: spec`.
 
 ## 7. Gate 2
 
-Stop at Gate 2 when any holds: the spec gate is `always`; the spec has an `open:` line; `## Flagged concerns` has a bullet other than `- none`; the effort is `risk: high`. Otherwise (`only-on-open`, clean, normal risk) the gate passes on its own and `/forge-sdlc:wayfinder` continues into plan.
+Apply the [gate policy](../wayfinder/GATE-POLICY.md) kept in step 1 to spec.md, with the spec gate kept in step 1. A passed gate lets `/forge-sdlc:wayfinder` continue into plan. A stop under `autonomous` writes `stop: <reason>` to the effort as step 6 writes state.
 
-Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and either `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>` or `Gate 2 passed: only-on-open, nothing open`. Done when the report is printed.
+Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line:
+
+- stopped under `attended`: `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>`.
+- stopped under `autonomous`: the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+- passed under `attended` (`only-on-open`): `Gate 2 passed: only-on-open, nothing open`.
+- passed under `autonomous`: `Gate 2 passed: policy autonomous, nothing open`.
+
+Done when the report is printed and, after a stop under `autonomous`, the state reads back `stop: <reason>`.

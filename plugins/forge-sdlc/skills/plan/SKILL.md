@@ -10,7 +10,7 @@ argument-hint: <slug>
 ## 1. Precondition
 
 - `docs/efforts/<slug>/spec.md` is committed on `feat/<slug>` (`git log -1 -- docs/efforts/<slug>/spec.md` prints a commit) and the checkout is on `feat/<slug>`.
-- The spec gate passed: the effort in `.forge/state.json` reads `gate: spec`, and the human typing this command is the approval; a re-run reads `stage: plan` and starts from the published tickets. When spec.md frontmatter still reads `status: draft`, set `status: accepted`; it commits with the plan in step 5.
+- The spec gate passed: the effort in `.forge/state.json` reads `gate: spec`, and the approval is the human typing this command or, under `autonomous`, the policy passing Gate 2 (spec reported `Gate 2 passed: policy autonomous, nothing open`); a re-run reads `stage: plan` and starts from the published tickets. When spec.md frontmatter still reads `status: draft`, set `status: accepted`; it commits with the plan in step 5.
 - Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:spec <slug>`).
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" to-tickets` prints the procedure's file; read it whole. Exit 1 stops with the install line it printed.
 
@@ -28,9 +28,12 @@ Done when every slice has `nn`, title, blocked by, delivers and a proof the host
 
 ## 3. Gate 3: the quiz
 
-To-tickets' `Quiz the user` is Gate 3. Through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
+To-tickets' `Quiz the user` is Gate 3, passed as the [gate policy](../wayfinder/GATE-POLICY.md) says, with `gates.policy` from the host config (`node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"`) and `risk` from spec.md.
 
-Done when the engineer has answered that the breakdown is approved.
+- Under `attended`, or for a `risk: high` effort, which runs attended: through `AskUserQuestion`, present the slice table, the prefactoring and the risks, and ask its three questions (granularity, blocking edges, merge or split) plus one of this frame's: is each proof the observable the engineer would accept as done? Revise, renumber so `nn` stays dependency order, ask again.
+- Under `autonomous` with `risk: normal`: the drafted breakdown is the quiz's answer. Write the four lines of the template's `## Quiz` ([PLAN-TEMPLATE.md](PLAN-TEMPLATE.md)), each a `recommended:` line ending `(source: policy autonomous)`; the breakdown is approved as drafted and Gate 3 passes. Steps 5 and 6 record the lines.
+
+Done when the engineer has answered that the breakdown is approved, or, under `autonomous` with `risk: normal`, the four Quiz lines are written and Gate 3 has passed.
 
 ## 4. Publish the tickets
 
@@ -40,17 +43,22 @@ Done when the tracker lists one ticket per slice and every blocking edge is on i
 
 ## 5. Write plan.md and commit
 
-Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
+Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines when step 3 wrote them (`autonomous` only); otherwise the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
 
 Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 
 ## 6. Gate record and state
 
-- PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by, proof) and each ticket's link; every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
-- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now.
+- PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by, proof) and each ticket's link, and step 3's four Quiz lines under the slice table when step 3 wrote them (`autonomous` only); every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
+- State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now, and set or drop `stop` beside `gate` as the reference's State write says.
 
-Done when `.forge/state.json` reads back `stage: plan`, `gate: plan` and one open slice per row of the table.
+Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop: risk-high`, or no `stop`.
 
 ## 7. Report
 
-Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`). Done when the state reads back and the report is printed.
+Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`); a stopped Gate 3 under `autonomous` names its own on the fourth line instead. Under `autonomous` a fourth line ends it:
+
+- passed: `Gate 3 passed: policy autonomous, nothing open`, on which wayfinder's Resume continues into build.
+- stopped: the reason (`risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+
+Done when the state reads back and the report is printed.
