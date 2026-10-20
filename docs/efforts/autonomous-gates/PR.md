@@ -107,7 +107,7 @@ Spec and plan passing their own gates by policy (slice 04) is **not** on this br
 - `autonomous-gates-01`: proof `node --test tests/config.test.mjs tests/init.test.mjs` exit 0; `npm test` exit 0; head `7f781f4`; at 2026-10-19T14:19:43Z
 - `autonomous-gates-02`: proof `node --test tests/effort-state.test.mjs tests/status.test.mjs` exit 0; `npm test` exit 0; head `e20241f`; at 2026-10-19T15:16:56Z
 - `autonomous-gates-03`: proof `node --test tests/wayfinder.test.mjs` exit 0; `npm test` exit 0; head `ba0543d`; at 2026-10-19T15:31:19Z
-- `autonomous-gates-04`: red, not merged. Its last green record is for `394098e` (proof `node --test tests/spec.test.mjs tests/plan.test.mjs` exit 0; `npm test` exit 0; at 2026-10-19T19:42:57Z), stale against the slice head `aeba516`.
+- `autonomous-gates-04`: red, not merged. Proof `node --test tests/spec.test.mjs tests/plan.test.mjs` exit 0; `npm test` exit 0; head `ab343c6`; at 2026-10-20T06:28:59Z. Green, but review left two Important findings.
 - `feat/autonomous-gates` at `af64003`: `npm test` 323 pass, 0 fail.
 
 ## Merge Danger
@@ -122,4 +122,4 @@ No hook or risk-high path changed. Until slice 04 lands, wayfinder can pass Gate
 
 ## Red slices
 
-- `autonomous-gates-04` (`.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`): no fresh green verify record at slice head `aeba516` after two fix rounds. Three verifier runs at that head hung inside `npm test` and were killed. Fix round 1 (`394098e`) was green and its review left one Standards Important, which fix round 2 (`aeba516`) addresses but nobody has re-reviewed. Findings: `.forge/review/autonomous-gates-04.md`. Branch `slice/autonomous-gates-04` and its worktree stay for the next run.
+- `autonomous-gates-04` (`.scratch/autonomous-gates/issues/04-spec-and-plan-pass-their-gates-by-policy.md`): after two fix rounds (verify green at `ab343c6`), Spec and Bugs and security each still report one Important: plan/SKILL.md step 6 never drops a leftover `stop` when Gate 3 passes or under `attended`, so a `stop: flagged` from Gate 2 survives to Gate 4. Step 6 should follow GATE-POLICY.md's State write unconditionally, and `tests/plan.test.mjs` must change with it. The fix is in Round 2 of `.forge/review/autonomous-gates-04.md`. Branch `slice/autonomous-gates-04` and its worktree stay for the next run. The earlier hung-verifier red no longer applies: the hang did not reproduce.
