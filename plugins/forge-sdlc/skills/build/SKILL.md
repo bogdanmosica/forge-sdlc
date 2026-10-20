@@ -12,11 +12,12 @@ Prompts to agents are **pointers**: paths, ticket ids, branch names, one per lin
 ## 1. Precondition
 
 - `docs/efforts/<slug>/plan.md` is committed on `feat/<slug>` (`git log -1 -- docs/efforts/<slug>/plan.md` prints a commit).
+- plan.md's `## Quiz` has no `open:` line (a Gate 3 stop under `autonomous`). Each is the owner's to settle: print every `open:` line verbatim and stop; the owner answers by editing plan.md (`recommended:` with a source), then resumes.
 - `.forge/state.json` reads `stage: plan`, `gate: plan` for the effort; a re-run reads `stage: build` and resumes from the slice statuses.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" implement-spec` prints the procedure's file; read it whole. Exit 1 stops with the install line it printed.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs" .` prints the host config: `max_parallel_slices` under Gates (default 3).
 
-Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:plan <slug>`). Done when plan.md is committed, the state reads `gate: plan` (or `stage: build`), and the implement-spec file is read.
+Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:plan <slug>`). Done when plan.md is committed with no `open:` line, the state reads `gate: plan` (or `stage: build`), and the implement-spec file is read.
 
 ## 2. Follow implement-spec under the frame
 
