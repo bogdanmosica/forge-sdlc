@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
-import { host } from './support/host.mjs';
+import { forgeMd, host } from './support/host.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'effort-state.mjs');
 
@@ -133,4 +133,80 @@ test('--list on a host with no effort prints an empty list', () => {
   const r = run(['--list', dir]);
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(r.json, []);
+});
+
+/** forge.md text with `- policy: <value>` under ## Gates. */
+const withPolicy = (value) => forgeMd().replace('- spec: always', `- policy: ${value}\n- spec: always`);
+
+test('policy: no policy key prints attended', () => {
+  const { dir } = host();
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.policy, 'attended');
+});
+
+test('policy: autonomous prints autonomous', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.policy, 'autonomous');
+});
+
+test('policy: an unknown value prints attended', () => {
+  for (const value of ['maybe', 'Autonomous', 'autonomous-ish']) {
+    const { dir } = host({ config: withPolicy(value) });
+    writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+    const r = run([dir, 'x']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.policy, 'attended', value);
+  }
+});
+
+test('stop: each reason prints that stop and a why naming it, next unchanged', () => {
+  const cases = [
+    ['open', /open line waits for the owner/],
+    ['flagged', /flagged concern waits for the owner/],
+    ['risk-high', /risk high, the effort runs attended/],
+  ];
+  for (const [stop, why] of cases) {
+    const { dir } = host({ config: withPolicy('autonomous') });
+    writeState(dir, { efforts: { x: effort('spec', 'spec', { stop }) } });
+    const r = run([dir, 'x']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json.stop, stop);
+    assert.match(r.json.why, why, stop);
+    assert.equal(r.json.next, 'plan', stop);
+  }
+});
+
+test('stop: no stop prints none and the stage line as why', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  writeState(dir, { efforts: { x: effort('spec', 'spec') } });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.json.stop, 'none');
+  assert.match(r.json.why, /^Gate 2: running this approves spec\.md$/);
+});
+
+test('stop: source artifacts prints none and the config policy', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  effortBranch(dir, 'x', { 'map.md': 'm', 'intent.md': 'i', 'spec.md': 's' });
+  const r = run([dir, 'x']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual({ source: r.json.source, policy: r.json.policy, stop: r.json.stop }, { source: 'artifacts', policy: 'autonomous', stop: 'none' });
+});
+
+test('--list entries carry policy and stop', () => {
+  const { dir } = host({ config: withPolicy('autonomous') });
+  effortBranch(dir, 'b-branch-only', { 'map.md': 'm', 'intent.md': 'i' });
+  writeState(dir, { efforts: { a: effort('spec', 'spec', { stop: 'flagged' }), c: effort('plan', 'plan') } });
+  const r = run(['--list', dir]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(r.json.map((e) => [e.slug, e.policy, e.stop]), [
+    ['a', 'autonomous', 'flagged'],
+    ['b-branch-only', 'autonomous', 'none'],
+    ['c', 'autonomous', 'none'],
+  ]);
 });

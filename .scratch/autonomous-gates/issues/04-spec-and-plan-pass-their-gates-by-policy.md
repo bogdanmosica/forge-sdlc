@@ -1,0 +1,35 @@
+# 04: autonomous-gates-04: spec and plan pass their gates by policy
+
+Type: slice
+Status: resolved
+Labels: ready-for-agent
+Spec: `docs/efforts/autonomous-gates/spec.md` on `feat/autonomous-gates`
+
+**What to build:** The spec and plan stages pass their gates by policy. Spec step 1 accepts Gate 1 passed by the policy as it accepts the human's command; step 7 applies the stop rule through the gate policy reference, not consulting the `spec:` key under autonomous; the `risk: high` stop and the `needs-tech-lead` label stay under both. Plan step 1 accepts a policy-passed Gate 2; step 3, under autonomous with `risk: normal`, takes the drafted breakdown as the quiz's answer and writes the four answers (granularity, blocking edges, merge or split, proofs) as `recommended:` lines with `(source: policy autonomous)`, keeping the dialog quiz under attended and for a risk-high effort; step 5 writes `## Quiz` after `## Prefactoring` in plan.md under autonomous only; step 6 repeats the four lines under the slice table in the PR body's Plan section; step 7 reports `Gate 3 passed` under autonomous. PLAN-TEMPLATE gains the `## Quiz` section marked as autonomous-only. Both skills link the reference.
+
+**Blocked by:** 03 (Gate policy reference and wayfinder's one run)
+
+- [ ] Spec step 7 and plan step 3 link the reference; spec step 7 applies the stop rule under autonomous without the `spec:` key
+- [ ] Plan keeps the dialog quiz under attended and writes the four Quiz lines with `(source: policy autonomous)` under autonomous; the Gate 3 passed line is reported
+- [ ] PLAN-TEMPLATE carries `## Quiz` after `## Prefactoring`; the contracts' PR body table notes the Quiz lines under the Plan row
+- [ ] Every changed numbered step ends on a Done line; every relative link resolves
+
+## Proof
+
+`node --test tests/spec.test.mjs tests/plan.test.mjs` → passes with the policy rules and the Quiz block
+
+## Assumptions
+
+- recommended: spec step 6 drops `stop` and spec step 7 writes `stop: <reason>` on an autonomous stop; plan step 6 writes `stop: risk-high` for a `risk: high` effort under `autonomous`, and drops `stop` when Gate 3 passed or under `attended` (source: spec line 189, "plan skill ... write `stop` to state"; review round 0)
+- recommended: under `autonomous` with `risk: normal`, plan step 3 writes only `recommended:` Quiz lines, never `open:`, so Gate 3 never stops on plan.md; the `open` reason stays `intent.md` or `spec.md` and build is unchanged (source: spec line 92, "approved as drafted"; spec line 76; spec line 99, "build. Unchanged"; .forge/review/autonomous-gates-04.md round 1)
+- recommended: PLAN-TEMPLATE's `## Quiz` carries only its four lines, marked autonomous-only by `(source: policy autonomous)`; plan step 5 states when the section is written, so no author sentence leaks into plan.md (source: review round 0 Standards nit)
+- recommended: each Quiz line reads `- recommended: <question>: <answer> (source: policy autonomous)`, the question named first so a reviewer at Gate 4 sees which answer it is (source: spec user story 19)
+- recommended: under `autonomous`, a stopped Gate 2 reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume instead of `/forge-sdlc:plan <slug>` (source: GATE-POLICY.md Report line)
+
+## Comments
+
+red: no fresh green verify record at slice head aeba516 (the record on file is for 394098e). Two verifier runs hung with about 28 node --test processes and were killed; suspect a test added in 059befd. Round 1 left one Standards Important (plan step 6 restating the reference), which aeba516 addresses but unreviewed. Findings: .forge/review/autonomous-gates-04.md. The slice branch and worktree stay for the implementer.
+
+red (review of head ab343c6; the earlier red comment about aeba516 and the hung verifier no longer applies, verify is green at ab343c6): Important left on Spec and Bugs and security, one defect: plan/SKILL.md step 6 points at the reference's State write only for a Gate 3 stop, so a pass or an attended run never drops a leftover `stop`. Findings and fix: .forge/review/autonomous-gates-04.md (Round 2).
+
+merged 14652ed: review record .forge/review/autonomous-gates-04.md, clean.

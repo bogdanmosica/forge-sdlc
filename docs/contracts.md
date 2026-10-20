@@ -15,7 +15,7 @@ The shapes every slice of the build order (design, section 15) agrees on, so sli
 | Exploration notes for a build | `.forge/notes/<slug>/*.md`, not committed |
 | Verify record | `.forge/verify/<slug>-<nn>.json`, written by `node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs" --slice <slug>-<nn> --worktree <path> --project <host> --proof "<proof>"` (exit 0 green, 1 red, 2 bad usage); the Stop hook's block count beside it as `<slug>-<nn>.denials` |
 | Review record | `.forge/review/<slug>-<nn>.md` |
-| Effort position | `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" [host] <slug>` prints `{ slug, stage, gate, next, why, source }` (`--list [host]` for every effort); `source` is `state`, or `artifacts` when re-derived from `feat/<slug>` |
+| Effort position | `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" [host] <slug>` prints `{ slug, stage, gate, next, why, source, policy, stop }` (`--list [host]` for every effort); `source` is `state`, or `artifacts` when re-derived from `feat/<slug>`; `policy` is the host's gate policy read from `## Gates` of forge.md on each call (`attended` or `autonomous`, `attended` when the key is missing or any other value); `stop` is the state's `stop` (`open`, `flagged`, `risk-high`), or `none` when absent or when `source` is `artifacts` |
 | Agent types | `forge-sdlc:researcher`, `forge-sdlc:prototyper`, `forge-sdlc:spec-writer`, `forge-sdlc:implementer`, `forge-sdlc:verifier`, `forge-sdlc:reviewer`, `forge-sdlc:merger` |
 | Member name | `node "${CLAUDE_PLUGIN_ROOT}/bin/crew-name.mjs" <role> --project <host> --effort <slug> [--slice <slug>-<nn>]` prints one line, the next name of the role's pool in handle form (letters, digits, `_`, `-`), and records it in state (exit 0; 2 on bad usage, such as an `--effort` not a slug (lowercase letters and digits joined by single `-`), or a `--slice` off an implementer or not `<effort>-<nn>` of its `--effort`). Roles: `researcher`, `prototyper`, `spec-writer`, `implementer`, `verifier`, `reviewer`, `merger`, `general`. Pool: the host's `names.<role>` bullet under `## Crew`, else the preset its `theme` names, else the fallback `<slug>-<nn>` for an implementer with `--slice` and `<role>` otherwise; a pool run out restarts with `-2`, `-3` |
 | Crew presets | `crew.json` in the plugin root: `presets.<id>` for the ids `warcraft`, `star-trek`, `star-wars`, `got`, `mario`, each `{ label, names: { <role>: [names] } }` with one pool per role above, names in display form; read by `crew-name.mjs` and init |
@@ -32,6 +32,7 @@ Written by the commands at every stage boundary, read by the hooks and `status`.
     "<slug>": {
       "stage": "map | intent | spec | plan | build | built",
       "gate": "none | intent | spec | plan | pr",
+      "stop": "open | flagged | risk-high",
       "mode": "normal | fix",
       "risk": "normal | high",
       "branch": "feat/<slug>",
@@ -45,6 +46,7 @@ Written by the commands at every stage boundary, read by the hooks and `status`.
 ```
 
 - `stage` is the last stage that has an artifact; `gate` is the gate the effort waits at (`none` while a stage runs). `wayfinder <slug>` resumes from `stage` and `gate`.
+- `stop` is optional: why a run under the `autonomous` gate policy stopped at `gate`, one of `open` (an `open:` line in intent.md or spec.md), `flagged` (a flagged concern in spec.md), `risk-high` (the effort runs attended). A stage that stops by policy writes it beside `gate`; every other stage write drops it. It is additive: an absent `stop` reads as none, and no migration runs.
 - `pr` is `null` on a host without a remote.
 - `mode` exists at two levels. The effort's `mode: fix` is for work in the main checkout (the `diagnosing-bugs` flow on `feat/<slug>`). A slice's `mode: fix` is set by the fix implementer for that slice only, so parallel implementers on other slices keep editing their tests. The `test-frozen` hook resolves the edited file's checkout: inside a slice worktree it reads that slice's `mode`; in the main checkout it reads the effort's.
 - `crew` holds, per role, the handle-form names `crew-name.mjs` has handed out in this effort; a slice's `member` is its implementer's name, kept across fix rounds and resumes, and written by `crew-name.mjs --slice`. A slice's `agent` is the id the Agent result named for its current implementer, written by the lead (or the merger, for a fix round) right after the call and cleared when the slice goes `merged` or `red`; the `verified-before-stop` hook reads it to find the slice a stopping subagent built. All three are additive: an absent field reads as none, and no migration runs.
@@ -109,7 +111,7 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | `## Assumptions to confirm` | wayfinder, then spec | the assumption lines, `open` first |
 | `## Spec` | spec | a link to `spec.md` and the user-story count |
 | `## Flagged concerns` | spec | the spec's bullets, verbatim |
-| `## Plan` | plan | the slice table: nn, title, blocked by, proof |
+| `## Plan` | plan | the slice table: nn, title, blocked by, proof; below it, plan.md's four Quiz lines (its `## Quiz`) under `autonomous` with `risk: normal` only |
 | `## Summary`, `## Evidence`, `## Merge Danger` | build | the `pr` template, Evidence one bullet per slice from its verify record |
 | `## Red slices` | build | one line per red slice with its ticket and reason, or `none` |
 

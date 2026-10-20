@@ -217,3 +217,141 @@ test('this session is the lead of its member calls, reading the reference by pat
   assert.match(line, /lead[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.doesNotMatch(skill, /teammate|task notification/i);
 });
+
+/* The gate policy (skills/wayfinder/GATE-POLICY.md, ADR 0018) */
+
+const GATE_LINK = '[gate policy](GATE-POLICY.md)';
+const section = (heading) => new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(skill)?.[1] ?? '';
+
+test('GATE-POLICY.md beside wayfinder: the four stops, the three reasons in order, the report line, the state write', () => {
+  const file = path.join(skillDir, 'GATE-POLICY.md');
+  assert.ok(existsSync(file), 'skills/wayfinder/GATE-POLICY.md');
+  const ref = readFileSync(file, 'utf8');
+  assert.match(ref, /`gates\.policy`/);
+  assert.match(ref, /`attended`/);
+  assert.match(ref, /`autonomous`/);
+  assert.match(ref, /no `open:` line/);
+  assert.match(ref, /other than `- none`/);
+  assert.match(ref, /`risk: normal`/);
+  assert.match(ref, /Gate 4[^\n]*always stops/);
+  assert.match(ref, /`spec:` key/);
+  const reasons = ['open', 'flagged', 'risk-high'].map((r) => ref.indexOf(`| \`${r}\` |`));
+  assert.ok(reasons.every((i) => i > 0), 'a row per stop reason');
+  assert.deepEqual([...reasons].sort((a, b) => a - b), reasons, 'reasons in the order open, flagged, risk-high');
+  assert.match(ref, /first in that order[^\n]*written[^\n]*names all of them/);
+  assert.match(ref, /^`Gate <n> passed: policy autonomous, nothing open`$/m);
+  assert.match(ref, /`stop: <reason>` beside `gate`/);
+  assert.match(ref, /every other stage state write drops `stop`/i);
+  assert.match(ref, /Gate 4 writes none/);
+  assert.match(ref, /runs attended from here/);
+});
+
+test('step 1 keeps the gate policy with the default branch and the risk globs', () => {
+  const step1 = section('1\\. Resolve the input');
+  assert.match(step1, /default branch[^\n]*`risk\.high` globs[^\n]*`gates\.policy`/);
+});
+
+test('step 7 applies the gate policy: attended stops, a policy pass continues into spec, a stop writes stop', () => {
+  const step7 = section('7\\. [^\\n]*');
+  assert.ok(step7.includes(GATE_LINK), 'step 7 links the gate policy');
+  assert.match(step7, /`attended`[^\n]*this run ends here/);
+  assert.match(step7, /`Gate 1 passed: policy autonomous, nothing open`[^\n]*\[Resume\]\(#resume\) step 3[^\n]*`spec`/);
+  assert.match(step7, /`stop: <reason>`[^\n]*reasons/);
+  assert.match(step7, /`risk-high`[^\n]*runs attended from here/);
+  assert.match(step7, /Done when [^\n]+\.\s*$/);
+});
+
+test('Resume continues past every Gate <n> passed to the first stop or Gate 4, reading each next stage by file', () => {
+  const r = section('Resume');
+  assert.ok(r.includes(GATE_LINK), 'Resume links the gate policy');
+  assert.match(r, /\{ slug, stage, gate, next, why, source, policy, stop \}/);
+  const step3 = /^3\. \*\*Run the next stage\.\*\*[^\n]*/m.exec(r)?.[0] ?? '';
+  assert.match(step3, /`Gate <n> passed`[^\n]*1, 2 or 3/);
+  assert.match(step3, /next stage from `effort-state\.mjs`/);
+  assert.match(step3, /first stop or (at )?Gate 4/);
+  assert.match(step3, /SKILL\.md` when (that|the) stage starts/);
+  assert.match(step3, /`only-on-open`[^\n]*same rule/);
+  assert.doesNotMatch(step3, /After `spec`, a report of `Gate 2 passed` continues into `plan`/, 'the Gate 2 special case is folded into the rule');
+});
+
+test('the description names the autonomous run; the skill stays user-invoked', () => {
+  const fm = frontmatter(skill);
+  assert.match(fm, /^description: [^\n]*autonomous[^\n]*Gate 4/m);
+  assert.match(fm, /^disable-model-invocation: true$/m);
+});
+
+test('every numbered step of the skill ends on a Done line', () => {
+  const steps = skill.split(/^## (?=\d+\. |Resume$)/m).slice(1, -1);
+  assert.equal(steps.length, 7);
+  for (const step of steps) assert.match(step.trim().split('\n').pop(), /Done when [^\n]+\.$/, step.slice(0, 30));
+});
+
+/* The decision record: ADR 0018 supersedes ADR 0006, design.md points to it */
+
+const repo = path.resolve(plugin, '..', '..');
+const doc = (rel) => readFileSync(path.join(repo, rel), 'utf8');
+
+test('ADR 0018 "Gates pass by policy" records the four stops, the self-answered quiz, one run and attended by default', () => {
+  const adr = doc('docs/adr/0018-gates-pass-by-policy.md');
+  assert.match(adr, /^# 18\. Gates pass by policy$/m);
+  assert.match(adr, /^Status: accepted, \d{4}-\d{2}-\d{2}$/m);
+  for (const h of ['Context', 'Decision', 'Consequences']) assert.match(adr, new RegExp(`^## ${h}$`, 'm'), h);
+  for (const stop of ['`open:`', 'flagged concern', '`risk: high`', 'Gate 4']) assert.ok(adr.includes(stop), stop);
+  assert.match(adr, /`attended`[^\n]*default/);
+  assert.match(adr, /quiz/);
+  assert.match(adr, /supersedes[^\n]*0006/i);
+});
+
+test('ADR 0006 reads superseded by 0018 and keeps its text', () => {
+  const adr = doc('docs/adr/0006-unattended-between-gates.md');
+  assert.match(adr, /^Status: superseded by 0018$/m);
+  assert.match(adr, /^## Decision\n\nBetween Gate 3 \(plan approved\) and Gate 4/m, 'its decision text kept');
+});
+
+test('design.md section 5 carries a Decision (gates) line linking ADR 0018; section 13 item 6 is reworded to it', () => {
+  const design = doc('docs/design.md');
+  const s5 = /^## 5\. Commands\n([\s\S]*?)^## 6\. /m.exec(design)[1];
+  const line = s5.split('\n').find((l) => l.startsWith('Decision (gates):'));
+  assert.ok(line, 'a Decision (gates) line in section 5');
+  const link = /\]\((adr\/0018-gates-pass-by-policy\.md)\)/.exec(line);
+  assert.ok(link, 'links ADR 0018');
+  assert.ok(existsSync(path.join(repo, 'docs', link[1])));
+  const s13 = /^## 13\. [^\n]*\n([\s\S]*?)^## 14\. /m.exec(design)[1];
+  const item6 = /^6\. [^\n]*/m.exec(s13)[0];
+  assert.match(item6, /policy/);
+  assert.doesNotMatch(item6, /^6\. \*\*Unattended between gates\.\*\*/);
+});
+
+test('design.md describes who passes each gate under each policy (sections 3, 4, 5, 8, 11)', () => {
+  const design = doc('docs/design.md');
+  const part = (n, m) => new RegExp(`^## ${n}\\. [^\\n]*\\n([\\s\\S]*?)^## ${m}\\. `, 'm').exec(design)[1];
+  const s3 = part(3, 4);
+  assert.match(s3, /Gate 1[^\n]*policy/, 'the diagram names the policy at Gate 1');
+  assert.match(s3, /`autonomous`[^\n]*first stop or Gate 4/);
+  const s4 = part(4, 5);
+  const gates = s4.split('\n').filter((l) => /^\| [123] (intent|spec|plan) \|/.test(l));
+  assert.equal(gates.length, 3);
+  for (const row of gates) assert.match(row, /`autonomous`/, row.slice(0, 12));
+  assert.match(gates[2], /## Quiz/);
+  const s5 = part(5, 6);
+  const sub = (name) => new RegExp(`^### \`${name}\`[^\\n]*\\n([\\s\\S]*?)(?=^### )`, 'm').exec(s5)[1];
+  assert.match(sub('wayfinder'), /GATE-POLICY\.md|gate policy/);
+  assert.match(sub('wayfinder'), /first stop or Gate 4/);
+  assert.match(sub('spec'), /`autonomous`[^\n]*`spec:` key/);
+  assert.match(sub('plan'), /`autonomous`[^\n]*## Quiz/);
+  assert.match(part(8, 9), /`autonomous` the `spec` key is ignored/);
+  assert.match(part(11, 12), /wayfinder\/SKILL\.md[^\n]*GATE-POLICY\.md/);
+});
+
+test('README: the loop table names the policy pass at Gates 1 to 3 and one paragraph describes the policy', () => {
+  const readme = doc('README.md');
+  const rows = readme.split('\n').filter((l) => /^\| (Plan|Design|Build 1) \|/.test(l));
+  assert.equal(rows.length, 3);
+  for (const row of rows) assert.match(row, /policy/, row.slice(0, 20));
+  assert.match(readme, /^\| Build 2 \+ Test \|[^\n]*4: the code owner/m);
+  const para = readme.split('\n').find((l) => /`policy: autonomous`/.test(l));
+  assert.ok(para, 'a paragraph on policy: autonomous');
+  assert.match(para, /`attended`[^\n]*default/);
+  assert.match(para, /Gate 4/);
+  assert.match(para, /`open:`[^\n]*flagged[^\n]*`risk: high`/);
+});

@@ -10,7 +10,8 @@ The leading words of forge-sdlc, one line each. The design ([docs/design.md](doc
 - **Destination**: where the effort is going, written under the intent headings Problem, Outcome, Users, Constraints, Open questions; named first, it becomes `intent.md`.
 - **slice**: one tracer-bullet ticket of the plan, `<slug>-<nn>`, built test-first on its own local branch `slice/<slug>-<nn>` in its own worktree, then merged into the effort branch.
 - **frontier**: the open tickets whose blockers are all closed (or merged): what can start now.
-- **gate**: a point where a human decides (Gate 1 intent, 2 spec, 3 plan, 4 PR); the effort waits there in `.forge/state.json`, and the PR body or `PR.md` is the gate record.
+- **gate**: a point where the effort waits for a decision (Gate 1 intent, 2 spec, 3 plan, 4 PR): the owner's under the attended gate policy, or the policy's own when the gate's artifact is complete and nothing in it asks for a human; the effort waits there in `.forge/state.json`, and the PR body or `PR.md` is the gate record either way.
+- **gate policy**: the host's choice, in `forge.md`, of who passes Gates 1 to 3: `attended`, the owner at each one, or `autonomous`, the policy whenever the artifact has no open line, no flagged concern and normal risk. Gate 4 is always the owner's.
 - **proof**: the one command and observable that show a slice done, written in `plan.md` and run first by `verify-record.mjs`; the host's proof commands (test, typecheck, lint, build) follow it.
 - **verify record**: `.forge/verify/<slug>-<nn>.json`, written by `bin/verify-record.mjs`: each command, its exit code, a trimmed tail, the HEAD it ran at; fresh while HEAD is unchanged, green when every command exited 0.
 - **review record**: `.forge/review/<slug>-<nn>.md`, written by slice-review: each round's three axis reports side by side, then the verdict.

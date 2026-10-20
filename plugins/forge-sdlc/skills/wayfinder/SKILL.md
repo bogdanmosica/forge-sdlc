@@ -1,6 +1,6 @@
 ---
 name: wayfinder
-description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug.
+description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug. Under the autonomous gate policy one run goes on through spec, plan and build to the first stop or Gate 4.
 disable-model-invocation: true
 argument-hint: "<idea> | #issue | <slug>"
 ---
@@ -11,7 +11,7 @@ argument-hint: "<idea> | #issue | <slug>"
 
 - A slug: `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" . <slug>` exits 0 for an existing effort: go to [Resume](#resume). Exit 1 means no such effort: the words are an idea.
 - `#123`: fetch the issue as `docs/agents/issue-tracker.md` says; its title and body are the idea. Words: they are the idea.
-- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; exit 1 stops with its line (run `/forge-sdlc:init`). Keep the default branch and the `risk.high` globs.
+- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; exit 1 stops with its line (run `/forge-sdlc:init`). Keep the default branch, the `risk.high` globs and `gates.policy` (`autonomous` when it reads exactly that, else `attended`).
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" wayfinder` prints the procedure's file; read it whole. Exit 1 stops with the install line it printed.
 
 Done when the idea is in hand, the config printed and the upstream file read.
@@ -81,14 +81,20 @@ Done when every template heading has content or `none`, and every gap is an assu
 
 Done when the PR (or PR.md) shows both sections and `.forge/state.json` reads back `gate: intent`.
 
-## 7. Stop at Gate 1
+## 7. Gate 1
 
-Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the next move: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`. Done when the report is printed; this run ends here.
+Apply the [gate policy](GATE-POLICY.md) to intent.md. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line by policy:
+
+- `attended`: the next move: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`; this run ends here.
+- `autonomous`, passed: `Gate 1 passed: policy autonomous, nothing open`, then continue as [Resume](#resume) step 3 with `spec` as next, in this run.
+- `autonomous`, stopped: write `stop: <reason>` to the effort as step 6 writes state; the gate line names all the reasons and `/forge-sdlc:wayfinder <slug>`, and for `risk-high` says the effort runs attended from here; this run ends here.
+
+Done when the report is printed and the run has ended at Gate 1 or gone on into `spec`.
 
 ## Resume
 
-The slug runs the effort's next stage and stops at that stage's gate; the human typing the command is the approval of the gate the effort waits at.
+The slug runs the effort's next stage and stops at that stage's gate, or, where the [gate policy](GATE-POLICY.md) passes a gate, runs on to the first stop or Gate 4; the human typing the command is the approval of the gate the effort waits at.
 
-1. **Where it stands.** The `effort-state.mjs` line of step 1 printed `{ slug, stage, gate, next, why, source }`. Announce `<slug>: stage <stage>, gate <gate>; next <next> (<why>)` and `git switch feat/<slug>`. `source: artifacts` means the state was lost: write the effort's `stage`, `gate`, `branch`, `pr` as step 6 does. Done when the line is printed and `.forge/state.json` reads back that stage.
+1. **Where it stands.** The `effort-state.mjs` line of step 1 printed `{ slug, stage, gate, next, why, source, policy, stop }`; `policy` is the one this run applies. Announce `<slug>: stage <stage>, gate <gate>; next <next> (<why>)` and `git switch feat/<slug>`. `source: artifacts` means the state was lost: write the effort's `stage`, `gate`, `branch`, `pr` as step 6 does. Done when the line is printed and `.forge/state.json` reads back that stage.
 2. **Reopened questions.** Read the `open:` lines under `## Assumptions to confirm` and what the owner wrote since: `gh pr view feat/<slug> --json body,comments`, or `docs/efforts/<slug>/PR.md` and `git log -p` on the effort folder. Each line the owner has settled by a comment or an edit reopens its map ticket (the one its question came from, else a new `wayfinder:grilling` ticket) and is worked as step 4 works one. Then the stage that wrote the line runs again: an intent.md line through steps 5–6, a spec.md line by taking `spec` as next. Done when every settled line is closed on the tracker and reads `recommended:` in its artifact.
-3. **Run the next stage.** `map`: step 4 of this skill through step 7. `spec`, `plan`, `build`: the skill `forge-sdlc:<next>` with the slug; forge-sdlc commands are user-invoked, so read `${CLAUDE_PLUGIN_ROOT}/skills/<next>/SKILL.md` and follow it. A file read this way keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`. `none`: report that the PR waits at Gate 4 for the code owner. After `spec`, a report of `Gate 2 passed` continues into `plan` in this run. Done when the stage's own report is printed and the run stops at its gate.
+3. **Run the next stage.** `map`: step 4 of this skill through step 7. `spec`, `plan`, `build`: the skill `forge-sdlc:<next>` with the slug; forge-sdlc commands are user-invoked, so read `${CLAUDE_PLUGIN_ROOT}/skills/<next>/SKILL.md` when that stage starts and follow it. A file read this way keeps its plugin-root variable unresolved, and Bash has no such variable: read each one in it as `${CLAUDE_PLUGIN_ROOT}`. `none`: report that the PR waits at Gate 4 for the code owner. A stage whose report ends `Gate <n> passed` (1, 2 or 3) continues in this run: take the next stage from `effort-state.mjs` and run it the same way, until a stage stops at its gate or `build` reaches Gate 4. The attended `only-on-open` spec's `Gate 2 passed` is the same rule. Done when the last stage's own report is printed and the run has stopped at the first stop or at Gate 4.

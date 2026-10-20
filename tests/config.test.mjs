@@ -79,11 +79,20 @@ test("bin/forge-config.mjs prints this repo's crew theme as crew.theme", () => {
   assert.equal(printConfig(repoRoot).crew?.theme, 'star-trek');
 });
 
+test("bin/forge-config.mjs prints this repo's gate policy as gates.policy attended", () => {
+  assert.equal(printConfig(repoRoot).gates?.policy, 'attended');
+});
+
 const template = readFileSync(path.join(root, 'skills', 'init', 'FORGE-TEMPLATE.md'), 'utf8');
 
 test('bin/forge-config.mjs prints crew.theme none for a host written from the init template', () => {
   const { dir } = host({ branch: 'main', config: template });
   assert.deepEqual(printConfig(dir).crew, { theme: 'none' });
+});
+
+test('bin/forge-config.mjs prints gates.policy attended for a host written from the init template', () => {
+  const { dir } = host({ branch: 'main', config: template });
+  assert.equal(printConfig(dir).gates.policy, 'attended');
 });
 
 test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in display form", () => {
@@ -103,6 +112,24 @@ test('docs/contracts.md: the state shape has crew per effort, member and agent p
   const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
   assert.match(names, /^\| Member name \|[^\n]*bin\/crew-name\.mjs/m);
   assert.match(names, /^\| Crew presets \|[^\n]*crew\.json/m);
+});
+
+test('docs/contracts.md: the effort record has the optional stop, and the effort-position row prints policy and stop', () => {
+  const contracts = readFileSync(path.join(repoRoot, 'docs', 'contracts.md'), 'utf8');
+  const shape = /## `\.forge\/state\.json`[\s\S]*?```json\n([\s\S]*?)```/.exec(contracts)[1];
+  assert.match(shape, /"gate": [^\n]*\n\s*"stop": "open \| flagged \| risk-high"/, 'stop beside gate');
+  const state = /## `\.forge\/state\.json`\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(state, /^- `stop`[^\n]*additive[^\n]*absent[^\n]*none/m, 'stop is additive, absent reads as none');
+  const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
+  assert.match(names, /^\| Effort position \|[^\n]*\{ slug, stage, gate, next, why, source, policy, stop \}/m);
+});
+
+test('docs/design.md: section 8 shows the policy bullet first under Gates, section 9 shows stop beside gate', () => {
+  const design = readFileSync(path.join(repoRoot, 'docs', 'design.md'), 'utf8');
+  const config = /^## 8\. Host configuration\n([\s\S]*?)^## 9\. /m.exec(design)[1];
+  assert.match(config, /^## Gates\n- policy: attended\b[^\n]*autonomous\n- spec: always\b/m);
+  const state = /^## 9\. State in the host\n([\s\S]*?)^## 10\. /m.exec(design)[1];
+  assert.match(state, /state\.json[^\n]*\{ stage, gate, stop, mode,/);
 });
 
 test('state: null before any effort, round-trips through an atomic write, effortOf reads one effort', () => {
