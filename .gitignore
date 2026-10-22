@@ -6,3 +6,5 @@ plugins/*/.claude-plugin/types/
 .forge/
 # Per-machine Claude Code settings (the live-check hook of cmux-members ticket 09 lives here)
 .claude/settings.local.json
+# Session handoff summaries (context-handoff plugin)
+.ai-context/
