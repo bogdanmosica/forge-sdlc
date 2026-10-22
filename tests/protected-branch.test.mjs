@@ -92,7 +92,7 @@ test('outside a git repository the call proceeds', () => {
 });
 
 test('an empty payload is allowed, never an error', () => {
-  const r = hook('protected-branch.mjs', {}, { projectDir: '/' });
+  const r = hook('protected-branch.mjs', {}, { projectDir: '/', cwd: '/' });
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(r.decision, {});
 });
