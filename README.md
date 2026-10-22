@@ -2,7 +2,7 @@
 
 The [AI-native SDLC playbook](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) as a team of Claude Code agents, with [Matt Pocock's skills](https://github.com/mattpocock/skills) as the procedures. One effort, one folder under `docs/efforts/<slug>/`, one pushed branch `feat/<slug>`, one PR. Humans decide at the gates; agents work between them; hooks enforce the rules a model could forget.
 
-Matt's skills are used unmodified. forge-sdlc adds the frame: where each artifact is committed, who may edit what and when, which agent runs which step with which tools, and where the human is asked. Design: [docs/design.md](docs/design.md); shared names and schemas: [docs/contracts.md](docs/contracts.md); decisions: [docs/adr/](docs/adr/); words: [GLOSSARY.md](GLOSSARY.md).
+Matt's skills are used unmodified. forge-sdlc adds the frame: where each artifact is committed, who may edit what and when, which agent runs which step with which tools, and where the human is asked. Design: [docs/design.md](docs/design.md); diagrams: [docs/how-it-works.md](docs/how-it-works.md); shared names and schemas: [docs/contracts.md](docs/contracts.md); decisions: [docs/adr/](docs/adr/); words: [GLOSSARY.md](GLOSSARY.md).
 
 ## Install
 
