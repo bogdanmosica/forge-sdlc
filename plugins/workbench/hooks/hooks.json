@@ -1,0 +1,228 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion|ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "set"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "set"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "clear"],
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-files.sh"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "clear"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "clear"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-crew.sh", "prompt"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-lane.sh", "prompt"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "clear"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-crew.sh", "stop"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-team.sh", "stop"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-lane.sh", "stop"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-log.sh", "stop"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-checkpoint.sh"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-log.sh", "subagent-start"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-log.sh", "subagent-stop"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-tasks.sh", "created"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-tasks.sh", "completed"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-team.sh", "start"],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-needs-you.sh", "clear"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-crew.sh", "end"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-team.sh", "end"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-statusline-clear.sh"],
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/claude-tasks.sh", "clear"],
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "modules": ["./workbench.tsx"]
+}

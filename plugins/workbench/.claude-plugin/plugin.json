@@ -1,0 +1,18 @@
+{
+  "name": "workbench",
+  "version": "0.5.1",
+  "description": "Every Claude session at a glance, inside Claude Code: /focus-pane, /boards (board, lanes, inbox, crew), a needs-you band above the prompt, /diff-pane, /side-chat, /morning and /crew; plus the command hooks that still feed the cmux sidebars, and the cmux-crew skill",
+  "author": {
+    "name": "Bogdan Mosica"
+  },
+  "keywords": [
+    "cmux",
+    "hooks",
+    "teams",
+    "crew",
+    "statusline"
+  ],
+  "repository": "https://github.com/bogdanmosica/forge-sdlc",
+  "types": "./hooks/types/index.d.ts",
+  "license": "MIT"
+}

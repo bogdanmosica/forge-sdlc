@@ -1,15 +1,24 @@
 {
   "name": "forge-personal",
-  "owner": { "name": "Bogdan Mosica" },
-  "metadata": {
-    "description": "Personal marketplace for forge-sdlc. Add this repository, then install forge-sdlc at project scope in a host."
+  "owner": {
+    "name": "Bogdan Mosica"
   },
-  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
+  "metadata": {
+    "description": "Personal marketplace for forge-sdlc and workbench. Add this repository, then install forge-sdlc at project scope in a host and workbench at user scope."
+  },
+  "allowCrossMarketplaceDependenciesOn": [
+    "claude-plugins-official"
+  ],
   "plugins": [
     {
       "name": "forge-sdlc",
       "source": "./plugins/forge-sdlc",
       "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills. Depends on mattpocock-skills@claude-plugins-official."
+    },
+    {
+      "name": "workbench",
+      "source": "./plugins/workbench",
+      "description": "Every Claude session at a glance inside Claude Code: /focus-pane, /boards, a needs-you band, /diff-pane, /side-chat, /morning, /crew; the command hooks that feed the cmux sidebars and the cmux-crew skill. Standalone, silent outside cmux."
     }
   ]
 }

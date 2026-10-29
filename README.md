@@ -9,6 +9,7 @@ Matt's skills are used unmodified. forge-sdlc adds the frame: where each artifac
 ```sh
 claude plugin marketplace add <path or URL of this repository>
 claude plugin install forge-sdlc@forge-personal --scope project
+claude plugin install workbench@forge-personal --scope user   # optional, see Workbench below
 ```
 
 `mattpocock-skills@claude-plugins-official` is a declared dependency. The CLI installs it with forge-sdlc, at the same scope, and the success line lists it (`+ 1 dependency: mattpocock-skills`). That works because this marketplace's `allowCrossMarketplaceDependenciesOn` names `claude-plugins-official`; without that allowlist the CLI skips a dependency from another marketplace and forge-sdlc fails to load. If the success line does not list the dependency, install it by hand at the same scope and the plugin loads on the next start:
@@ -73,6 +74,10 @@ Reminders for the agent, not a sandbox: the git host's branch protection stays t
 | verifier | Sonnet, low | Bash, Read | runs `verify-record.mjs`, which writes the verify record; judges nothing |
 | reviewer | Opus, high | read-only | reviews one axis of one slice's diff: Important blocks, Nit does not |
 | merger | Sonnet, low | Bash, read, write, Skill, Agent | follows slice-review, merges a clean slice or marks it red |
+
+## Workbench
+
+`plugins/workbench/` is a second, standalone plugin in this marketplace, unrelated to the loop: every running Claude session at a glance inside Claude Code. A mod (`hooks/workbench.tsx`) adds `/focus-pane`, `/boards` (board, lanes, inbox, agent teams), a needs-you band above the prompt, `/diff-pane`, `/side-chat`, `/morning` and `/crew`; command hooks (`hooks/scripts/`) feed the [cmux](https://github.com/manaflow-ai/cmux) sidebars (needs-you marker, lanes, task mirror, checkpoints, activity log, FILES line, team and crew sync) and stay silent outside cmux; the `cmux-crew` skill runs a visible team of sessions, one cmux pane per member. It is installed at user scope so it works in any project's session. It moved here from the eMAG `agent-pipeline` repository on 2026-10-29 at version 0.5.1, unchanged.
 
 ## Developing
 
