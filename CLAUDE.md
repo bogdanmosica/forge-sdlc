@@ -2,10 +2,12 @@
 
 A Claude Code plugin, `plugins/forge-sdlc/`, in its own marketplace `forge-personal` (this repository): the AI-native SDLC loop as a team of agents over Matt Pocock's skills. The design is `docs/design.md`; build it in the order of its section 15.
 
+A second plugin, `plugins/workbench/`, lives in the same marketplace and is unrelated to the loop: every Claude session at a glance inside Claude Code, as a mod (`hooks/workbench.tsx`, with `focus.tsx`, `boards.tsx`, `band.tsx`, `commands.tsx`, tests beside them as `*.test.tsx` run by `claude plugin test`), plus the command hooks under `hooks/scripts/` that feed the cmux sidebars and the `cmux-crew` skill. It is installed at user scope (`workbench@forge-personal`), so a change is live in every new session straight from this checkout; bump `plugins/workbench/.claude-plugin/plugin.json` so `claude plugin list` tells builds apart. Its hooks must print nothing and exit 0 outside cmux (`plugins/workbench/tests/hooks.test.mjs`). The cmux side (sidebars, Dock scripts, the status line script) is the `cmux-config` repository, whose CLAUDE.md documents every hook and line.
+
 ## Commands
 
-- `npm test`: every test under `tests/` (`node --test`), fixture repos in a temp dir. Set `MATTPOCOCK_SKILLS_ROOT` to an upstream plugin root so the upstream comparisons run instead of skipping.
-- `npm run validate`: the marketplace at the root and the plugin, `--strict`.
+- `npm test`: `test:node`, every test under `tests/` and `plugins/workbench/tests/` (`node --test`), fixture repos in a temp dir, then `test:mod`, `claude plugin test plugins/workbench`. `npm run typecheck`: the workbench mod against the engine's types (laid in `plugins/workbench/.claude-plugin/types/` once a session has loaded the plugin). Set `MATTPOCOCK_SKILLS_ROOT` to an upstream plugin root so the upstream comparisons run instead of skipping.
+- `npm run validate`: the marketplace at the root and both plugins, `--strict`.
 - `node plugins/forge-sdlc/bin/skill-path.mjs <skill|--root|--check>`: where an upstream skill file is; `--check` is the UPSTREAM.lock verdict.
 - `node plugins/forge-sdlc/bin/forge-config.mjs <host>`: print a host's parsed `docs/agents/forge.md`.
 - `node plugins/forge-sdlc/bin/effort-state.mjs [host] <slug>` (or `--list [host]`): an effort's stage, gate and next command, from `.forge/state.json` or re-derived from its artifacts. Read-only.
