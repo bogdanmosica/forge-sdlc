@@ -4,9 +4,11 @@
 // At most MAX_ROWS rows and a "+N more" line; a prompt waiting longer than
 // STALE_MS leaves the band (the Boards pane still lists it). "×" marks a row
 // read for this viewer, until that session asks again or finishes another
-// turn; "resume" copies the command that reopens the session. With nothing to
-// show, or while a survey holds the band, the band is left to the plugins
-// beneath.
+// turn; "resume" copies the command that reopens the session. The rows sit
+// above whatever is drawn beneath (a plugin's own band, or the engine's), so
+// register this hook before any other band hook of the plugin: the first
+// registered is the outermost. With nothing to show, or while a survey holds
+// the band, the band is left as the plugins beneath draw it.
 import { atom, read, update } from 'claude-code';
 import type { On } from 'claude-code';
 import type { SessionRecord } from './types';
@@ -15,9 +17,9 @@ import { age, isUnread } from './boards';
 const MAX_ROWS = 3;
 const STALE_MS = 60 * 60 * 1000;
 
-const self = atom({ plugin: 'workbench', key: 'self' } as const, null as SessionRecord | null);
-const boardsSessions = atom({ plugin: 'workbench', key: 'boardsSessions' } as const, [] as SessionRecord[]);
-const inboxSeen = atom({ plugin: 'workbench', key: 'inboxSeen' } as const, {} as Record<string, number>);
+const self = atom({ plugin: 'forge-sdlc', key: 'self' } as const, null as SessionRecord | null);
+const boardsSessions = atom({ plugin: 'forge-sdlc', key: 'boardsSessions' } as const, [] as SessionRecord[]);
+const inboxSeen = atom({ plugin: 'forge-sdlc', key: 'inboxSeen' } as const, {} as Record<string, number>);
 
 // The rows the band shows: waiting ones oldest first, then finished ones newest first.
 export function bandRows(
@@ -42,6 +44,7 @@ export function registerBand(on: On) {
     const now = await $.clock.now();
     const rows = bandRows(sessions, seen, me, now);
     if (rows.length === 0) return next(e);
+    const below = await next(e); // the band beneath, kept under the rows (a tree as data)
     const { Box, Text, Button } = $.ui.resolve(e);
     return (
       <Box flexDirection="column">
@@ -80,6 +83,7 @@ export function registerBand(on: On) {
           </Box>
         ))}
         {rows.length > MAX_ROWS && <Text dimColor>+{rows.length - MAX_ROWS} more in /boards</Text>}
+        {(below ?? null) as never}
       </Box>
     );
   });

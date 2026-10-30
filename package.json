@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Claude Code plugins: forge-sdlc, the AI-native SDLC loop as a team of agents over Matt Pocock's skills, and workbench, every Claude session at a glance",
+  "description": "Claude Code plugins: forge-sdlc, the AI-native SDLC loop as a team of agents over Matt Pocock's skills with the workbench mod (every Claude session at a glance), and workbench, the command hooks that feed cmux",
   "scripts": {
     "test": "npm run test:node && npm run test:mod",
     "test:node": "node --test \"tests/**/*.test.mjs\" \"plugins/workbench/tests/**/*.test.mjs\"",
-    "test:mod": "claude plugin test plugins/workbench",
-    "typecheck": "npx -y -p typescript@5.9.3 tsc -p plugins/workbench",
+    "test:mod": "claude plugin test plugins/forge-sdlc",
+    "typecheck": "npx -y -p typescript@5.9.3 tsc -p plugins/forge-sdlc",
     "validate": "claude plugin validate --strict . && claude plugin validate --strict plugins/forge-sdlc && claude plugin validate --strict plugins/workbench",
     "check": "npm run validate && npm run typecheck && npm test"
   },

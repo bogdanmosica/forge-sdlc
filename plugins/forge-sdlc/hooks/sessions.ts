@@ -22,7 +22,7 @@ const TEXT_MAX = 120;
 const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 const PERSON_TOOLS: Record<string, string> = { AskUserQuestion: 'question', ExitPlanMode: 'plan review' };
 
-export const self = atom({ plugin: 'workbench', key: 'self' } as const, null as SessionRecord | null);
+export const self = atom({ plugin: 'forge-sdlc', key: 'self' } as const, null as SessionRecord | null);
 
 export const sessionsDir = (home: string) => `${home}/.cache/workbench/sessions`;
 
@@ -147,16 +147,28 @@ export async function finishTurn($: EngineInterface, answer: string) {
   }));
 }
 
-export function registerSessions(on: On) {
-  const asked = new Set<string>(); // main-thread calls whose verdict was `ask`, by tool_use_id
+// Marks this session working with the prompt's first line; the first prompt
+// names the session. Run from the plugin's one prompt.submit hook.
+export async function notePrompt($: EngineInterface, e: { text: string; isMeta?: boolean }) {
+  const line = firstLine(e.text, TEXT_MAX);
+  if (line && !e.isMeta) {
+    await patch($, (r, now) => ({ ...setStatus('working')(r, now), lastPrompt: line, title: r.title || line }));
+  }
+}
 
+// The prompt.submit hook, for a plugin that holds no other (a plugin may hook
+// an event only once without a matcher).
+export function registerSessionPrompt(on: On) {
   on('prompt.submit', async ($, e, next) => {
-    const line = firstLine(e.text, TEXT_MAX);
-    if (line && !e.isMeta) {
-      await patch($, (r, now) => ({ ...setStatus('working')(r, now), lastPrompt: line, title: r.title || line }));
-    }
+    await notePrompt($, e);
     return next(e);
   });
+}
+
+// The matched hooks and the unmatched ones no other part of a plugin holds:
+// tool.check, tool.call, session.measure, session.end.
+export function registerSessions(on: On) {
+  const asked = new Set<string>(); // main-thread calls whose verdict was `ask`, by tool_use_id
 
   // tool.check runs inside tool.call's next(e): it only notes an `ask`. The
   // call's own timer below turns an ask still open after PERMISSION_WAIT_MS

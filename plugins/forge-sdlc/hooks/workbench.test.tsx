@@ -129,7 +129,7 @@ async function focusText($: Engine): Promise<string> {
     presentation: { isFullscreen: false, columns: 120 },
   } as never);
   const ui = await $.ui.mount({
-    plugin: 'workbench',
+    plugin: 'forge-sdlc',
     surface: 'terminal',
     component: 'Pane',
     requestId: 'workbench-focus',

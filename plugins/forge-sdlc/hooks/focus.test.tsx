@@ -24,7 +24,7 @@ const runFocus = ($: Engine) =>
 async function focusPane($: Engine): Promise<() => Promise<string>> {
   await runFocus($);
   const ui = await $.ui.mount({
-    plugin: 'workbench',
+    plugin: 'forge-sdlc',
     surface: 'terminal',
     component: 'Pane',
     requestId: 'workbench-focus',

@@ -1,7 +1,7 @@
 {
   "name": "workbench",
-  "version": "0.5.1",
-  "description": "Every Claude session at a glance, inside Claude Code: /focus-pane, /boards (board, lanes, inbox, crew), a needs-you band above the prompt, /diff-pane, /side-chat, /morning and /crew; plus the command hooks that still feed the cmux sidebars, and the cmux-crew skill",
+  "version": "0.6.0",
+  "description": "The Claude Code command hooks that feed the cmux sidebars (needs-you marker, lanes, task mirror, checkpoints, activity log, FILES line, team and crew sync, the status line's SessionEnd clear) and the cmux-crew skill. Silent outside cmux. The workbench mod (the views) lives in the forge-sdlc and emag-sdlc plugins since 0.6.0",
   "author": {
     "name": "Bogdan Mosica"
   },
@@ -13,6 +13,5 @@
     "statusline"
   ],
   "repository": "https://github.com/bogdanmosica/forge-sdlc",
-  "types": "./hooks/types/index.d.ts",
   "license": "MIT"
 }

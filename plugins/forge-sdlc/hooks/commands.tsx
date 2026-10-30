@@ -23,10 +23,10 @@ export const SIDE_PANE = 'workbench-side-chat';
 export const MORNING_PANE = 'workbench-morning';
 const PATCH_MAX = 200_000;
 
-const self = atom({ plugin: 'workbench', key: 'self' } as const, null as SessionRecord | null);
-const diffView = atom({ plugin: 'workbench', key: 'diffView' } as const, null as DiffView | null);
-const sideChat = atom({ plugin: 'workbench', key: 'sideChat' } as const, null as SideChat | null);
-const morning = atom({ plugin: 'workbench', key: 'morning' } as const, null as Morning | null);
+const self = atom({ plugin: 'forge-sdlc', key: 'self' } as const, null as SessionRecord | null);
+const diffView = atom({ plugin: 'forge-sdlc', key: 'diffView' } as const, null as DiffView | null);
+const sideChat = atom({ plugin: 'forge-sdlc', key: 'sideChat' } as const, null as SideChat | null);
+const morning = atom({ plugin: 'forge-sdlc', key: 'morning' } as const, null as Morning | null);
 
 const COMMANDS = [
   {
