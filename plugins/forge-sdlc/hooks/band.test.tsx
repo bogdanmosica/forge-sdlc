@@ -32,7 +32,7 @@ function lay(h: Host, records: SessionRecord[]) {
 
 async function band($: Engine) {
   return $.ui.mount({
-    plugin: 'workbench',
+    plugin: 'forge-sdlc',
     surface: 'terminal',
     component: 'AbovePrompt',
     props: {

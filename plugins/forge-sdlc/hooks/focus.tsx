@@ -7,7 +7,7 @@
 // Git, the MR and the ticket are refreshed every REFRESH_MS on a timer, so the
 // pane never waits on glab or Jira while drawing.
 import { atom, read, update } from 'claude-code';
-import type { EngineInterface, On } from 'claude-code';
+import type { EngineInterface, On, TurnStepResult } from 'claude-code';
 import type { FocusCache, FocusGit, FocusJira, FocusMr, GateState, MergeGate, SessionRecord } from './types';
 import { patch, run } from './sessions';
 import { jiraKey, jiraState } from './jira';
@@ -21,16 +21,16 @@ export const CACHE_TTL_MS = 60 * 60_000;
 const UNTRACKED_MAX = 200; // untracked files counted into the diff stat
 
 // This session's record, written by sessions.ts; read here to draw.
-const self = atom({ plugin: 'workbench', key: 'self' } as const, null as SessionRecord | null);
-const focusMr = atom({ plugin: 'workbench', key: 'focusMr' } as const, null as FocusMr | null);
-const focusGit = atom({ plugin: 'workbench', key: 'focusGit' } as const, null as FocusGit | null);
-const focusJira = atom({ plugin: 'workbench', key: 'focusJira' } as const, null as FocusJira | null);
+const self = atom({ plugin: 'forge-sdlc', key: 'self' } as const, null as SessionRecord | null);
+const focusMr = atom({ plugin: 'forge-sdlc', key: 'focusMr' } as const, null as FocusMr | null);
+const focusGit = atom({ plugin: 'forge-sdlc', key: 'focusGit' } as const, null as FocusGit | null);
+const focusJira = atom({ plugin: 'forge-sdlc', key: 'focusJira' } as const, null as FocusJira | null);
 // The last ticket asked for, so off VPN the next ask waits JIRA_MS.
 const focusJiraTried = atom(
-  { plugin: 'workbench', key: 'focusJiraTried' } as const,
+  { plugin: 'forge-sdlc', key: 'focusJiraTried' } as const,
   null as { key: string; at: number } | null,
 );
-const focusCache = atom({ plugin: 'workbench', key: 'focusCache' } as const, null as FocusCache | null);
+const focusCache = atom({ plugin: 'forge-sdlc', key: 'focusCache' } as const, null as FocusCache | null);
 
 // Lines the checkout has that origin's default branch lacks: `git diff
 // --shortstat` against their merge base, untracked files counted as added, as
@@ -249,27 +249,34 @@ export async function startFocus($: EngineInterface) {
   $.clock.every(REFRESH_MS, () => void refreshFocus($));
 }
 
+// Each main-thread response: when it came and what the next request re-sends.
+// Run from the plugin's one turn.step hook with the step it answered.
+export async function noteStep($: EngineInterface, e: { agentId?: string }, step: Pick<TurnStepResult, 'usage'>) {
+  const u = step.usage;
+  if (e.agentId || !u) return;
+  const at = await $.clock.now();
+  const cached = u.cache_read_input_tokens + u.cache_creation_input_tokens;
+  await update($, focusCache, () => ({
+    at,
+    tokens: u.input_tokens + cached + u.output_tokens,
+    isObserved: cached > 0,
+  }));
+}
+
+// The turn.step hook, for a plugin that holds no other.
+export function registerFocusStep(on: On) {
+  on('turn.step', async function* ($, e, next) {
+    const step = yield* next(e);
+    await noteStep($, e, step);
+    return step;
+  });
+}
+
 export function registerFocus(on: On) {
   on('command.run', { command: 'focus-pane' }, async ($) => {
     await refreshFocus($);
     await $.ui.open({ id: FOCUS_PANE, title: 'Focus' });
     return { text: 'Focus pane opened.' };
-  });
-
-  // Each main-thread response: when it came and what the next request re-sends.
-  on('turn.step', async function* ($, e, next) {
-    const step = yield* next(e);
-    const u = step.usage;
-    if (!e.agentId && u) {
-      const at = await $.clock.now();
-      const cached = u.cache_read_input_tokens + u.cache_creation_input_tokens;
-      await update($, focusCache, () => ({
-        at,
-        tokens: u.input_tokens + cached + u.output_tokens,
-        isObserved: cached > 0,
-      }));
-    }
-    return step;
   });
 
   on('ui.render', { component: 'Pane', requestId: FOCUS_PANE }, async ($, e) => {

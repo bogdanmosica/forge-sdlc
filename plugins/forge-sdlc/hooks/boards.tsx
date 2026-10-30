@@ -24,11 +24,11 @@ const TABS: { id: BoardsTab; label: string; hotkey: string }[] = [
   { id: 'crew', label: 'Crew', hotkey: 'c' },
 ];
 
-const self = atom({ plugin: 'workbench', key: 'self' } as const, null as SessionRecord | null);
-const boardsTab = atom({ plugin: 'workbench', key: 'boardsTab' } as const, 'board' as BoardsTab);
-const boardsSessions = atom({ plugin: 'workbench', key: 'boardsSessions' } as const, [] as SessionRecord[]);
-const boardsTeams = atom({ plugin: 'workbench', key: 'boardsTeams' } as const, [] as TeamInfo[]);
-const inboxSeen = atom({ plugin: 'workbench', key: 'inboxSeen' } as const, {} as Record<string, number>);
+const self = atom({ plugin: 'forge-sdlc', key: 'self' } as const, null as SessionRecord | null);
+const boardsTab = atom({ plugin: 'forge-sdlc', key: 'boardsTab' } as const, 'board' as BoardsTab);
+const boardsSessions = atom({ plugin: 'forge-sdlc', key: 'boardsSessions' } as const, [] as SessionRecord[]);
+const boardsTeams = atom({ plugin: 'forge-sdlc', key: 'boardsTeams' } as const, [] as TeamInfo[]);
+const inboxSeen = atom({ plugin: 'forge-sdlc', key: 'inboxSeen' } as const, {} as Record<string, number>);
 
 export type Lane = 'needs-you' | 'working' | 'review' | 'idle';
 export const LANES: Lane[] = ['needs-you', 'working', 'review', 'idle'];

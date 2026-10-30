@@ -1,4 +1,4 @@
-// The workbench mod's state contract: every value it keeps in `$.state`,
+// The workbench mod's state contract (the views of the former workbench plugin): every value it keeps in `$.state`,
 // declared under the plugin's name so `claude plugin validate` holds the
 // module to it. A SessionRecord is also what each session publishes to
 // ~/.cache/workbench/sessions/<id>.json for the other sessions' Boards pane
@@ -74,7 +74,7 @@ export type Morning = { checkedAt: number; rows: MorningRow[]; unreachable: numb
 
 declare module 'claude-code' {
   interface PluginState {
-    workbench: {
+    'forge-sdlc': {
       self: SessionRecord | null;
       focusMr: FocusMr | null;
       focusGit: FocusGit | null;

@@ -20,7 +20,7 @@ const command = ($: Engine, name: string, args = '') =>
 
 async function pane($: Engine, requestId: string) {
   const ui = await $.ui.mount({
-    plugin: 'workbench',
+    plugin: 'forge-sdlc',
     surface: 'terminal',
     component: 'Pane',
     requestId,

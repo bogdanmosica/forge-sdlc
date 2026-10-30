@@ -1,9 +1,20 @@
 {
   "name": "forge-sdlc",
-  "version": "0.1.0",
-  "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills: wayfinder front door, intent, spec, plan, build, guardrail hooks. One effort, one folder, one pushed branch, one PR.",
-  "author": { "name": "Bogdan Mosica" },
+  "version": "0.2.0",
+  "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills: wayfinder front door, intent, spec, plan, build, guardrail hooks. One effort, one folder, one pushed branch, one PR. Plus the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew.",
+  "author": {
+    "name": "Bogdan Mosica"
+  },
   "license": "MIT",
-  "keywords": ["sdlc", "workflow", "agents", "wayfinder", "tdd"],
-  "dependencies": ["mattpocock-skills@claude-plugins-official"]
+  "keywords": [
+    "sdlc",
+    "workflow",
+    "agents",
+    "wayfinder",
+    "tdd"
+  ],
+  "dependencies": [
+    "mattpocock-skills@claude-plugins-official"
+  ],
+  "types": "./hooks/types/index.d.ts"
 }

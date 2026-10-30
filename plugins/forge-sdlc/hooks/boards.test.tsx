@@ -48,7 +48,7 @@ async function boards($: Engine) {
     presentation: { isFullscreen: false, columns: 140 },
   } as never);
   return $.ui.mount({
-    plugin: 'workbench',
+    plugin: 'forge-sdlc',
     surface: 'terminal',
     component: 'Pane',
     requestId: 'workbench-boards',

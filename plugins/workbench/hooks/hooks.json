@@ -223,6 +223,5 @@
         ]
       }
     ]
-  },
-  "modules": ["./workbench.tsx"]
+  }
 }
