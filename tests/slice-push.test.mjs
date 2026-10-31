@@ -93,6 +93,33 @@ test('a cd or -C earlier in the command moves the push to that checkout', () => 
   assert.deepEqual(push(slice.dir, `git -C ${effort.dir} push`).decision, {});
 });
 
+test('a shell redirection after the push is not a ref: the effort branch still passes', () => {
+  const { dir } = host({ branch: 'feat/checkout' });
+  for (const command of [
+    'git push origin feat/checkout 2>&1',
+    'git push origin feat/checkout 2>&1 | tail -3',
+    'git push origin feat/checkout > /dev/null 2>&1',
+    'git push origin feat/checkout >push.log 2>push.err',
+    'git push origin feat/checkout &> push.log',
+    'git push -u origin HEAD 2>&1 && echo pushed',
+    'git push 2>&1',
+  ]) {
+    const r = push(dir, command);
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(r.decision, {}, command);
+  }
+});
+
+test('a shell redirection after a slice push changes nothing: the slice ref is still the one named', () => {
+  const { dir } = host({ branch: 'slice/checkout-01' });
+  for (const command of ['git push origin slice/checkout-01 2>&1', 'git push 2>&1 | tail -3']) {
+    const r = push(dir, command);
+    assert.equal(decisionOf(r), 'deny', command);
+    assert.match(reasonOf(r), /slice\/checkout-01/);
+    assert.doesNotMatch(reasonOf(r), /Ref \d*>/);
+  }
+});
+
 test('a command with several pushes is denied when any of them offends', () => {
   const { dir } = host({ branch: 'feat/x', branches: ['slice/x-01'] });
   assert.equal(decisionOf(push(dir, 'git push origin feat/x; git push origin slice/x-01')), 'deny');
