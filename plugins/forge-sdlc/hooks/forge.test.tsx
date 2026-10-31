@@ -135,6 +135,13 @@ test(
       expect(tools, surface).toMatch(/\/forge-sdlc:status \[slug\]/);
       expect(tools, surface).toMatch(/\/forge-pane/);
       expect(tools, surface).toMatch(/\/handoff-new \[focus\]/);
+      // the workbench views' commands, registered by focus.tsx, boards.tsx and commands.tsx
+      expect(tools, surface).toMatch(/\/focus-pane/);
+      expect(tools, surface).toMatch(/\/boards/);
+      expect(tools, surface).toMatch(/\/diff-pane \[branch \| working \| staged \| <ref>\]/);
+      expect(tools, surface).toMatch(/\/side-chat <question>/);
+      expect(tools, surface).toMatch(/\/morning/);
+      expect(tools, surface).toMatch(/\/crew <agent type> <task>/);
       expect(tools, surface).toMatch(/\/forge \[loop/);
       // a skill no group names still shows, under Other
       expect(textsUnder(tree, 'group-Other').join('\n'), surface).toMatch(/\/forge-sdlc:brand-new/);

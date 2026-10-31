@@ -22,22 +22,52 @@ export const GROUPS: { title: string; skills: string[]; mods?: true }[] = [
 // Skills run by agents only, or an alias kept one version: none today.
 export const HIDDEN: string[] = [];
 
-// The commands the mod registers itself, after the skills of the `mods` group.
+// The commands the mod registers itself (run-pane.tsx, forge.tsx, run-band.tsx
+// and the workbench views: focus.tsx, boards.tsx, commands.tsx), after the
+// skills of the `mods` group. tests/forge-help fails when a command the mod
+// registers is missing here. Panels first, then the actions.
 export const MOD_COMMANDS: Row[] = [
+  {
+    command: '/forge',
+    hint: '[loop | agents | close]',
+    description: 'This panel: the commands, the agents, and how the loop runs.',
+  },
   {
     command: '/forge-pane',
     hint: '[history | export | close]',
     description: 'Context, cost, running agents and the frontier of the newest effort map.',
   },
   {
+    command: '/focus-pane',
+    description: 'This session at a glance: branch, ticket, MR with its merge checklist, usage, files.',
+  },
+  {
+    command: '/boards',
+    description: 'Every running Claude session: board, lanes, inbox, crew.',
+  },
+  {
+    command: '/diff-pane',
+    hint: '[branch | working | staged | <ref>]',
+    description: 'A diff in a pane: the branch against the default branch, the working tree, the index, or any ref.',
+  },
+  {
+    command: '/side-chat',
+    hint: '<question>',
+    description: 'A side question over this session, answered in a pane and never added to the conversation.',
+  },
+  {
+    command: '/morning',
+    description: "Every running session's MR checked: failed pipeline, conflicts, open threads.",
+  },
+  {
+    command: '/crew',
+    hint: '<agent type> <task>',
+    description: 'Start a named background agent.',
+  },
+  {
     command: '/handoff-new',
     hint: '[focus]',
     description: 'Write a handoff of this conversation, then start a new one drafted to read it (the H button).',
-  },
-  {
-    command: '/forge',
-    hint: '[loop | agents | close]',
-    description: 'This panel: the commands, the agents, and how the loop runs.',
   },
 ];
 
