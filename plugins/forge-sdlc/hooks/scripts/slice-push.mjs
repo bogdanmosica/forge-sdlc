@@ -57,11 +57,21 @@ function pushFrom(words, dir) {
   return words[i] === 'push' ? { dir: at, ...pushArgs(words.slice(i + 1)) } : null;
 }
 
+/**
+ * A shell redirection and its target, as a word of its own after a space: `2>&1`, `>&2`, `> out`,
+ * `2>/dev/null`, `>>log`, `&>log`, `< in`. Stripped before the command is split at operators, since
+ * the `&` of `2>&1` is not a command separator and `2>` is not a ref.
+ */
+const REDIRECTION = /(?<=^|\s)(?:\d*>&(?:\d+|-)|(?:&>>?|\d*>>?\|?|\d*<)\s*[^\s;&|()`]*)/g;
+
+/** `command` without its shell redirections; what remains is the command's own words. */
+export const withoutRedirections = (command) => (command ?? '').replace(REDIRECTION, '');
+
 /** Every `git push` in a Bash command, split at operators, each with the checkout it runs in. */
 export function pushesOf(command, cwd) {
   const pushes = [];
   let dir = cwd;
-  for (const segment of (command ?? '').split(/[;&|\n`()]+/)) {
+  for (const segment of withoutRedirections(command).split(/[;&|\n`()]+/)) {
     const words = segment.trim().split(/\s+/).filter(Boolean);
     if (words[0] === 'cd') dir = cdTarget(words[1], dir);
     if (words[0] !== 'git') continue;
