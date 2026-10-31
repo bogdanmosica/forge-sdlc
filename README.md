@@ -84,7 +84,7 @@ Reminders for the agent, not a sandbox: the git host's branch protection stays t
 
 Two optional sections of `docs/agents/forge.md` feed it. `## Routing` routes a role to another model or effort (`- model.implementer: claude-opus-5-5`, `- effort.reviewer: high`; [plugins/forge-sdlc/hooks/ROUTING.md](plugins/forge-sdlc/hooks/ROUTING.md)): applied at spawn and on every step, the row marked `⇄ routed`, an invalid bullet toasted once and kept in the band. `## Mark` (`text`, `color`, a hex colour in quotes) replaces the `forge` word at the left of the band. The `## Crew` theme init writes also names any Agent call the lead left unnamed (a skill's own Explore or general-purpose agent) from the theme's `general` pool; the loop's member calls keep the name `bin/crew-name.mjs` gave them.
 
-Ported from eMAG's `emag-sdlc` plugin on 2026-10-31 (0.3.0; the handoff button 0.4.0; the `/forge` help panel 0.5.0), without its GitLab merge-request gauge and Jira.
+Ported from eMAG's `emag-sdlc` plugin on 2026-10-31 (0.3.0; the handoff button 0.4.0; the `/forge` help panel 0.5.0; its Tools group listing all nine of the mod's commands 0.5.1), without its GitLab merge-request gauge and Jira.
 
 ## Workbench
 

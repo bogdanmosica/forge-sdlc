@@ -74,11 +74,30 @@ test("one group is flagged for the mod's own commands, and commandGroups puts th
   assert.equal(flagged.length, 1, 'exactly one group carries mods: true');
   const group = commandGroups([]).find((g) => g.title === flagged[0].title);
   assert.deepEqual(group?.rows, MOD_COMMANDS);
-  assert.deepEqual(
-    MOD_COMMANDS.map((r) => r.command),
-    ['/forge-pane', '/handoff-new', '/forge'],
-    'the three commands the mod registers',
+});
+
+test('every command the mod registers is a row of MOD_COMMANDS, and every row is a registered command', () => {
+  // A command spec is the one place a hooks source writes `name: '<x>'`
+  // (fixtures and tests are left out: their names are not commands).
+  const hooksDir = join(pluginRoot, 'hooks');
+  const sources = readdirSync(hooksDir).filter(
+    (f) => /\.tsx?$/.test(f) && !/\.(test|fixture)\.tsx?$/.test(f) && !f.endsWith('.d.ts'),
   );
+  const registered = new Set(
+    sources.flatMap((f) =>
+      [...readFileSync(join(hooksDir, f), 'utf8').matchAll(/name: '([a-z][a-z-]*)'/g)].map((m) => m[1]),
+    ),
+  );
+  assert.ok(registered.size >= 9, `found ${registered.size} registered commands, expected the mod's nine or more`);
+  const rows = MOD_COMMANDS.map((r) => r.command);
+  for (const name of registered)
+    assert.ok(
+      rows.includes(`/${name}`),
+      `the mod registers /${name}, which MOD_COMMANDS in hooks/forge/help.ts does not list`,
+    );
+  for (const command of rows)
+    assert.ok(registered.has(command.slice(1)), `MOD_COMMANDS lists ${command}, which no hooks source registers`);
+  assert.equal(new Set(rows).size, rows.length, 'each command once');
 });
 
 test('newestVersionFirst orders version directories by number, not by text', () => {
