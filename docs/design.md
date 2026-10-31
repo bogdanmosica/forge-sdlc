@@ -136,6 +136,7 @@ All user-invoked (`disable-model-invocation: true`). Type them in full with the 
 | `/forge-sdlc:build` | `<slug>` | Build 2 + Test | unattended; PR ready with evidence and red slices (Gate 4) |
 | `/forge-sdlc:slice-review` | `<slice-branch> [effort-branch]` | Test | one slice reviewed on three axes, up to two fix rounds, record `.forge/review/<slug>-<nn>.md`, verdict `clean` or `red` |
 | `/forge-sdlc:status` | `[slug]` | any | read-only: the effort's stage, gate, next command, frontier, red slices, worktrees |
+| `/forge-sdlc:help` | | any | opens the mod's `/forge` panel on the commands; the reply is one line pointing at it |
 
 Decision (`intent`): it reshapes a Destination only once the map is charted; with no map it points to `wayfinder`, which names the first Destination before it charts ([ADR 0012](adr/0012-intent-needs-a-charted-map.md)).
 
@@ -393,7 +394,8 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── plan/SKILL.md         # + PLAN-TEMPLATE.md
 │   │   ├── build/SKILL.md        # + MEMBERS.md (the member call every dispatching skill links)
 │   │   ├── slice-review/SKILL.md
-│   │   └── status/SKILL.md
+│   │   ├── status/SKILL.md
+│   │   └── help/SKILL.md         # opens the mod's /forge panel
 │   ├── agents/
 │   │   ├── researcher.md  prototyper.md  spec-writer.md
 │   │   ├── implementer.md verifier.md    reviewer.md    merger.md
