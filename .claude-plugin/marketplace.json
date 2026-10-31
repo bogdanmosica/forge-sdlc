@@ -13,7 +13,7 @@
     {
       "name": "forge-sdlc",
       "source": "./plugins/forge-sdlc",
-      "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills, with the run pane (/forge-pane, a figures band above the prompt, per-role routing and crew names from docs/agents/forge.md) and the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew. Depends on mattpocock-skills@claude-plugins-official."
+      "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills, with the run pane (/forge-pane, a figures band above the prompt with the H handoff button, per-role routing and crew names from docs/agents/forge.md) and the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew. Depends on mattpocock-skills@claude-plugins-official."
     },
     {
       "name": "workbench",
