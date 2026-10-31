@@ -1,7 +1,7 @@
 {
   "name": "forge-sdlc",
-  "version": "0.2.0",
-  "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills: wayfinder front door, intent, spec, plan, build, guardrail hooks. One effort, one folder, one pushed branch, one PR. Plus the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew.",
+  "version": "0.3.0",
+  "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills: wayfinder front door, intent, spec, plan, build, guardrail hooks. One effort, one folder, one pushed branch, one PR. Plus the run pane (/forge-pane: the frontier, the agents, where your context went, per-role routing and crew names from docs/agents/forge.md) and the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew.",
   "author": {
     "name": "Bogdan Mosica"
   },

@@ -125,6 +125,6 @@
     ]
   },
   "modules": [
-    "./workbench.tsx"
+    "./run-pane.tsx"
   ]
 }
