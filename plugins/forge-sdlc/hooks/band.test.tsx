@@ -92,7 +92,9 @@ test('× hides a row until that session asks again; resume copies the command', 
   expect(texts(await ui.drawn())).not.toContain('api needs you');
 });
 
-test('with nothing to show the band is left to the plugins beneath', async ($, on) => {
+test("with nothing to show the band is left as the run's band beneath draws it", async ($, on) => {
   await later($, on, [other('docs', { status: 'idle', lastTurnAt: NOW - 10_000 })]);
-  expect(texts(await (await band($)).drawn())).toBe('');
+  const text = texts(await (await band($)).drawn());
+  expect(text).not.toMatch(/needs you|done:/);
+  expect(text).toContain('the run at a glance'); // the run pane's band (run-band.tsx), untouched
 });

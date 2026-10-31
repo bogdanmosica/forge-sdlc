@@ -1,0 +1,12 @@
+{
+  "_comment": "Anthropic list prices per model, USD per million tokens, for the run pane's per-agent USD estimate. Taken from the claude-api skill's model reference (Current Models table, cached 2026-09-25; pricing page https://platform.claude.com/docs/en/about-claude/pricing). cacheRead is the model's own cache-read rate; cacheWrite is the 5-minute cache write at 1.25 x input. The figure drawn is a list-price estimate: partner platforms, batch, fast mode and 1-hour cache writes differ. Bump with the plugin version when a price moves.",
+  "date": "2026-09-25",
+  "source": "Anthropic list prices via the claude-api skill reference (cached 2026-09-25)",
+  "unit": "USD per million tokens",
+  "models": {
+    "claude-opus-5-5": { "input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite": 5 },
+    "claude-sonnet-5-5": { "input": 2, "output": 10, "cacheRead": 0.2, "cacheWrite": 2.5 },
+    "claude-haiku-4-5-20251001": { "input": 1, "output": 5, "cacheRead": 0.1, "cacheWrite": 1.25 },
+    "claude-fable-5-1": { "input": 10, "output": 50, "cacheRead": 0.25, "cacheWrite": 12.5 }
+  }
+}
