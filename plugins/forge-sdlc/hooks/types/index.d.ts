@@ -200,6 +200,7 @@ declare module 'claude-code' {
       agentRouting: Record<string, AgentRouting>;
       crewCounts: Record<string, number>;
       runPaneNotes: RunPaneNotes;
+      handoffBusy: boolean; // a handoff is being written: a second H press is ignored
       bandTurns: number; // prompts sent this session: every third shows a tip in the band
       // the workbench views
       self: SessionRecord | null;

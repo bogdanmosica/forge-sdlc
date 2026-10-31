@@ -10,8 +10,8 @@
 //
 // Opens on `/forge-pane` (seated at any width) and unasked on `/forge-sdlc:wayfinder`
 // and `/forge-sdlc:build` (seated from 144 columns; below that the band says the
-// pane waits). The figures also sit in the band above the prompt (run-band.tsx),
-// never as a $.ui.status line. Refreshes every five seconds. Draws on the
+// pane waits). The figures also sit in the band above the prompt (run-band.tsx,
+// with the H handoff button and /handoff-new), never as a $.ui.status line. Refreshes every five seconds. Draws on the
 // terminal and the desktop app only; Buttons with hotkeys, never Select.
 //
 // Routing (run-pane/routing.ts, shape in ROUTING.md): the host config's
@@ -54,7 +54,7 @@ import { entryFor, frontmatterOf, overrides, parseRouting, pluginRoleOf } from '
 import { GENERAL, handleOf, nameAt, parseCrew, withCrewName } from './run-pane/crew';
 import { parseMark } from './run-pane/mark';
 import { frontierOf, readMap } from './run-pane/tracker';
-import { registerRunBand } from './run-band';
+import { HANDOFF_COMMAND, registerRunBand } from './run-band';
 import { completeWorkbenchTurn, noteWorkbenchStep, registerWorkbench, startWorkbench } from './workbench';
 import { bar, barParts, dimTone, limitsOf, plural, short, tone, untilReset, usd } from './run-pane/gauges';
 import { estimateUsd, parsePrices, usdEstimate } from './run-pane/prices';
@@ -317,9 +317,10 @@ async function open($: EngineInterface, asked: boolean) {
 
 export const register: Register = (on) => {
   registerWorkbench(on); // first: its needs-you band sits above the run's band (the first band hook is the outermost)
-  registerRunBand(on); // the band above the prompt: the figures and the notes
+  registerRunBand(on); // the band above the prompt: the figures, the notes, the H button, /handoff-new
 
   on('session.start', async ($, e, next) => {
+    await $.command.register(HANDOFF_COMMAND);
     await $.command.register({
       name: 'forge-pane',
       description:
