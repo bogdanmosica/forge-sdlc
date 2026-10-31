@@ -174,7 +174,7 @@ async function handoff($: EngineInterface, args = ''): Promise<string | undefine
 // Each percent's bar, in cells: enough to read at a glance, short enough for one row.
 const BAR_CELLS = 8;
 const LIMIT_NAMES: Record<string, string> = { five_hour: '5-hour', seven_day: 'weekly' };
-export const MARK_HINT = 'forge-sdlc: the run at a glance; /forge-pane opens the run pane';
+export const MARK_HINT = 'forge-sdlc: the run at a glance; /forge-pane opens the run pane, /forge-sdlc:help says how it works';
 
 type Hints = { ctx: string; usd: string; agents: string; [limit: string]: string };
 
@@ -230,8 +230,10 @@ async function readChord($: EngineInterface): Promise<string | undefined> {
 // 7th...), the next tip each time, until the next prompt; no row otherwise.
 export const TIPS = [
   'Run /forge-pane to see the run: the frontier, the agents and where your context went',
+  'Run /forge-sdlc:help, or /forge, for the commands, the agents and how the loop runs',
   'Run /forge-pane history to list the stored runs, /forge-pane export to write them as CSV',
   'Press H above the prompt, or run /handoff-new [focus], to hand this conversation off and start fresh',
+  "Run /forge agents to see the plugin's agents and the model and effort each runs at",
   'Hover a figure in the band above the prompt to see what it counts',
   'Run /forge-sdlc:status <slug> for the effort’s stage, gate and next command',
   'Name the agents after a crew: theme under ## Crew in docs/agents/forge.md (warcraft, star-trek, star-wars, got, mario)',

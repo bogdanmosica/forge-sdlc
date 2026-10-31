@@ -14,6 +14,11 @@
 // with the H handoff button and /handoff-new), never as a $.ui.status line. Refreshes every five seconds. Draws on the
 // terminal and the desktop app only; Buttons with hotkeys, never Select.
 //
+// The /forge panel (forge.tsx, tables in forge/help.ts): the plugin's commands
+// read from the skills' own SKILL.md files, its agents, how the loop runs and
+// where the driver is needed; /forge-sdlc:help opens it. Registered from here
+// (registerForge, FORGE_COMMAND) since a plugin has one hooks module.
+//
 // Routing (run-pane/routing.ts, shape in ROUTING.md): the host config's
 // `## Routing` section, read at each spawn, sets a routed agent's model on
 // `agent.spawn` and its effort on each of its `turn.step`s. Frontmatter is the
@@ -54,6 +59,7 @@ import { entryFor, frontmatterOf, overrides, parseRouting, pluginRoleOf } from '
 import { GENERAL, handleOf, nameAt, parseCrew, withCrewName } from './run-pane/crew';
 import { parseMark } from './run-pane/mark';
 import { frontierOf, readMap } from './run-pane/tracker';
+import { FORGE_COMMAND, registerForge } from './forge';
 import { HANDOFF_COMMAND, registerRunBand } from './run-band';
 import { completeWorkbenchTurn, noteWorkbenchStep, registerWorkbench, startWorkbench } from './workbench';
 import { bar, barParts, dimTone, limitsOf, plural, short, tone, untilReset, usd } from './run-pane/gauges';
@@ -317,9 +323,11 @@ async function open($: EngineInterface, asked: boolean) {
 
 export const register: Register = (on) => {
   registerWorkbench(on); // first: its needs-you band sits above the run's band (the first band hook is the outermost)
+  registerForge(on); // the /forge panel: one hooks module per plugin
   registerRunBand(on); // the band above the prompt: the figures, the notes, the H button, /handoff-new
 
   on('session.start', async ($, e, next) => {
+    await $.command.register(FORGE_COMMAND);
     await $.command.register(HANDOFF_COMMAND);
     await $.command.register({
       name: 'forge-pane',

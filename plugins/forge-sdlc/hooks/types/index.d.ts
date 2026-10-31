@@ -119,6 +119,16 @@ export type AgentRouting = {
 // The workbench views (sessions.ts, focus.tsx, boards.tsx, band.tsx,
 // commands.tsx).
 
+// The /forge panel (forge.tsx): which view shows, and whether mattpocock-skills'
+// commands are listed beside the plugin's.
+export type ForgeView = { tab: 'commands' | 'agents' | 'loop'; upstream: boolean };
+// A skill as the panel lists it: its name, the first sentence of its description and its argument hint,
+// as forge/help.ts parseSkill reads its SKILL.md frontmatter.
+export type ForgeSkill = { name: string; description: string; hint?: string };
+// An agent as the panel lists it: a skill's fields plus the model and effort its frontmatter names.
+export type ForgeAgent = ForgeSkill & { model?: string; effort?: string };
+export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[] };
+
 export type SessionStatus = 'working' | 'idle' | 'needs-you';
 
 export type SessionLimit = { kind: string; percentUsed: number; resetsAt?: string };
@@ -202,6 +212,9 @@ declare module 'claude-code' {
       runPaneNotes: RunPaneNotes;
       handoffBusy: boolean; // a handoff is being written: a second H press is ignored
       bandTurns: number; // prompts sent this session: every third shows a tip in the band
+      // the /forge panel
+      forgeView: ForgeView;
+      forgeSkills: ForgeSkills;
       // the workbench views
       self: SessionRecord | null;
       focusMr: FocusMr | null;
