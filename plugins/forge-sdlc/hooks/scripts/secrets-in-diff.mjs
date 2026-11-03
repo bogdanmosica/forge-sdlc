@@ -16,7 +16,7 @@ import { allow, cwdOf, deny, git, gitSegmentsOf, isGitCommit, run } from './lib.
 /** Credential shapes, first match per line wins, so the more specific `sk-` forms come first. */
 const PATTERNS = [
   ['AWS access key id', /\b(?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/],
-  ['AWS secret access key', /secret_?access_?key["']?\s*[:=]\s*["']?[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/i],
+  ['AWS secret access key', /secret_?access_?key["']?\s*[:=]\s*["']?[a-z0-9/+=]{40}(?![a-z0-9/+=])/i],
   ['Anthropic key', /\bsk-ant-[A-Za-z0-9_-]{20,}/],
   ['OpenAI project key', /\bsk-proj-[A-Za-z0-9_-]{20,}/],
   ['OpenAI key', /\bsk-[A-Za-z0-9_-]{20,}/],
@@ -38,7 +38,11 @@ const COMMIT_VALUED = new Set([
 ]);
 
 /** `git add` forms that cannot be simulated or stage nothing: interactive, patch, edit, dry run. */
-const ADD_SKIPPED = /^(-[a-zA-Z]*[ipen][a-zA-Z]*|--interactive|--patch|--edit|--dry-run)$/;
+const ADD_SKIPPED_LONG = new Set(['--interactive', '--patch', '--edit', '--dry-run']);
+const addSkipped = (word) => ADD_SKIPPED_LONG.has(word) || /[ipen]/.test(shortFlagsOf(word));
+
+/** The letters of a short-option cluster (`-qam` is `qam`), '' for any other word. */
+const shortFlagsOf = (word) => (/^-[a-zA-Z]+$/.test(word) ? word.slice(1) : '');
 
 /** `{ all, paths }` of a commit's args: `-a`/`--all` (also inside `-am`), and explicit pathspecs. */
 export function commitArgs(args) {
@@ -50,7 +54,7 @@ export function commitArgs(args) {
       paths.push(...args.slice(i + 1));
       break;
     }
-    if (word === '--all' || /^-[a-zA-Z]*a[a-zA-Z]*$/.test(word)) all = true;
+    if (word === '--all' || shortFlagsOf(word).includes('a')) all = true;
     if (COMMIT_VALUED.has(word)) i += 1;
     else if (/^-[a-zA-Z]*m$/.test(word)) i += 1; // `-am wip`, `-qm wip`: the message follows
     else if (!word.startsWith('-')) paths.push(word);
@@ -77,7 +81,7 @@ function simulatedIndex(commit, segments, commitIndex) {
   if (real.status === 0 && existsSync(realPath)) copyFileSync(realPath, tmp);
   const env = { ...process.env, GIT_INDEX_FILE: tmp };
   for (const seg of segments.slice(0, commitIndex)) {
-    if (seg.sub !== 'add' || toplevelOf(seg.dir) !== top || seg.args.some((a) => ADD_SKIPPED.test(a))) continue;
+    if (seg.sub !== 'add' || toplevelOf(seg.dir) !== top || seg.args.some(addSkipped)) continue;
     git(['-C', seg.dir, 'add', ...seg.args], env);
   }
   const { all, paths } = commitArgs(commit.args);
@@ -86,21 +90,24 @@ function simulatedIndex(commit, segments, commitIndex) {
   return { env, folder };
 }
 
+/** `{ file, line }` of every added line of a `-U0` diff text, the `+` kept; a deleted file adds none. */
+function* addedLinesOf(text) {
+  let file = null;
+  let inHeader = false;
+  for (const line of text.split('\n')) {
+    if (line.startsWith('diff --git ')) inHeader = true;
+    else if (line.startsWith('@@')) inHeader = false;
+    if (inHeader && line.startsWith('+++ ')) file = line === '+++ /dev/null' ? null : line.slice(4).replace(/^b\//, '');
+    else if (file && line.startsWith('+')) yield { file, line };
+  }
+}
+
 /** `path: pattern` lines for the diff the index in `env` would commit from `dir`; null outside a repository. */
 function hitsOf(dir, env) {
   const diff = git(['-C', dir, 'diff', '--cached', '--no-color', '--no-ext-diff', '-U0'], env);
   if (diff.status !== 0) return null;
   const hits = new Set();
-  let file = null;
-  let inHeader = false;
-  for (const line of diff.stdout.split('\n')) {
-    if (line.startsWith('diff --git ')) inHeader = true;
-    else if (line.startsWith('@@')) inHeader = false;
-    if (inHeader && line.startsWith('+++ ')) {
-      file = line === '+++ /dev/null' ? null : line.slice(4).replace(/^b\//, '');
-      continue;
-    }
-    if (!file || !line.startsWith('+')) continue;
+  for (const { file, line } of addedLinesOf(diff.stdout)) {
     const hit = PATTERNS.find(([, re]) => re.test(line));
     if (hit) hits.add(`${file}: ${hit[0]}`);
   }
