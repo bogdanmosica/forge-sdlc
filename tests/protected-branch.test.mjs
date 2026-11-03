@@ -85,6 +85,48 @@ test('git -C <dir> commit is checked against the checkout in <dir>, not cwd', ()
   assert.deepEqual(back.decision, {});
 });
 
+test('a cd earlier in the command moves the commit: cd into a feature checkout passes, cd into main is denied', () => {
+  const main = host({ branch: 'main' });
+  const feature = host({ branch: 'feat/x' });
+  const into = hook('protected-branch.mjs', bash(main.dir, `cd ${feature.dir} && git add -A && git commit -m x`), {
+    projectDir: main.dir,
+  });
+  assert.deepEqual(into.decision, {});
+  const back = hook('protected-branch.mjs', bash(feature.dir, `cd ${main.dir}; git commit -m x`), {
+    projectDir: feature.dir,
+  });
+  assert.equal(decisionOf(back), 'deny');
+});
+
+test('git commit inside quoted text is no commit, even with a shell operator inside the quotes', () => {
+  const { dir } = host({ branch: 'main' });
+  for (const command of [
+    'echo "done; git commit -m x"',
+    "git log --grep='fix && git commit -m x'",
+    'printf "%s\\n" "a | git commit -am x"',
+  ]) {
+    assert.deepEqual(hook('protected-branch.mjs', bash(dir, command)).decision, {}, command);
+  }
+  assert.equal(decisionOf(hook('protected-branch.mjs', bash(dir, 'echo "a; b" && git commit -m "x; y"'))), 'deny');
+});
+
+test('git commit inside a heredoc body is no commit; a commit that reads its message from a heredoc still is', () => {
+  const { dir } = host({ branch: 'main' });
+  for (const command of [
+    "cat > notes.md <<'EOF'\nRun git commit -m x when done\ngit commit -am x\nEOF",
+    'cat <<EOF > a.sh\n  git add -A && git commit -m x\nEOF\nls',
+    'cat <<-"END"\n\tgit commit -m x\n\tEND',
+  ]) {
+    assert.deepEqual(hook('protected-branch.mjs', bash(dir, command)).decision, {}, command);
+  }
+  for (const command of [
+    "git commit -F - <<'EOF'\nfeat: x\nEOF",
+    "cat > a.txt <<'EOF'\nhello\nEOF\ngit commit -am x",
+  ]) {
+    assert.equal(decisionOf(hook('protected-branch.mjs', bash(dir, command))), 'deny', command);
+  }
+});
+
 test('outside a git repository the call proceeds', () => {
   const r = hook('protected-branch.mjs', edit('/'), { projectDir: '/' });
   assert.equal(r.status, 0, r.stderr);
