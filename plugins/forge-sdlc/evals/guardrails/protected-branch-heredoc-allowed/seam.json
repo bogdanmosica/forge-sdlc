@@ -1,0 +1,2 @@
+{ "script": "protected-branch.mjs", "expect": "allow",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": { "command": "cat > notes.md <<'EOF'\nWhen done: git add -A && git commit -m \"notes\"\nEOF" } } }

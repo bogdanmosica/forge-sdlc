@@ -115,6 +115,15 @@ test('git -C <dir> commit scans the staged diff of that checkout', () => {
   assert.deepEqual(commit(dir).decision, {});
 });
 
+test('a git commit inside quoted text or a heredoc body is no commit, so the staged diff is not scanned', () => {
+  const { dir } = host({ branch: 'feat/x' });
+  stage(dir, { 'src/config.ts': SHAPES['OpenAI key'] });
+  for (const command of ['echo "done; git commit -m wip"', "cat > notes.md <<'EOF'\nthen: git add -A && git commit -m wip\nEOF"]) {
+    assert.deepEqual(commit(dir, command).decision, {}, command);
+  }
+  assert.equal(decisionOf(commit(dir, "git commit -F - <<'EOF'\nwip\nEOF")), 'deny', 'a heredoc message is still a commit');
+});
+
 test('commands that are not commits, and a commit outside a repo, are quiet', () => {
   const { dir } = host({ branch: 'feat/x' });
   stage(dir, { 'src/config.ts': SHAPES['OpenAI key'] });

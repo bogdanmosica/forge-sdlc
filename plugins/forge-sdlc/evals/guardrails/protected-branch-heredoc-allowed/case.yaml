@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: protected-branch-heredoc-allowed
+description: A Bash heredoc on main whose body mentions git commit writes a file and is not a commit, so the protected-branch guardrail stays silent (the 2026-11-03 false positive)
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: notes.md is written; the reply says the command went through
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Bash]
+  prompt: "Run exactly this one Bash command and nothing else:\n\ncat > notes.md <<'EOF'\nWhen done: git add -A && git commit -m \"notes\"\nEOF\n\nThen tell me in one line whether it went through and, if not, why."

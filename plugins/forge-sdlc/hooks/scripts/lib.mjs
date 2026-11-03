@@ -190,6 +190,81 @@ export function cdTarget(word, dir) {
   return word === '~' || word.startsWith('~/') ? path.join(process.env.HOME ?? '', word.slice(1)) : path.resolve(dir, word);
 }
 
+/** Characters that end a shell segment when they stand outside quotes. */
+const SEGMENT_END = new Set([';', '&', '|', '\n', '`', '(', ')']);
+
+/** A heredoc operator and its delimiter word: `<<EOF`, `<<-EOF`, `<< 'EOF'`, `<<"EOF"`, `<<\EOF`. */
+const HEREDOC = /^<<(-?)[ \t]*(?:'([^'\n]*)'|"([^"\n]*)"|\\?([A-Za-z_][\w.-]*))/;
+
+/** The heredoc opening at `text[i]` as `{ delimiter, dash, length }`, or null (a here-string `<<<` is none). */
+function heredocAt(text, i) {
+  if (!text.startsWith('<<', i) || text.startsWith('<<<', i)) return null;
+  const m = HEREDOC.exec(text.slice(i));
+  return m ? { delimiter: m[2] ?? m[3] ?? m[4], dash: m[1] === '-', length: m[0].length } : null;
+}
+
+/** The index after the bodies of `docs`, read line by line from `i` up to each one's delimiter line. */
+function afterHeredocBodies(text, i, docs) {
+  let at = i;
+  for (const doc of docs) {
+    while (at < text.length) {
+      const nl = text.indexOf('\n', at);
+      const line = text.slice(at, nl === -1 ? text.length : nl);
+      at = nl === -1 ? text.length : nl + 1;
+      if ((doc.dash ? line.replace(/^\t+/, '') : line) === doc.delimiter) break;
+    }
+  }
+  return at;
+}
+
+/**
+ * The segments of a Bash command, split at shell operators that stand outside quotes, so a
+ * `;` or `&&` inside a quoted argument stays in its segment. Heredoc bodies are data and are
+ * left out, as is the `<<word` that opens them. Quotes are kept for shellWords; a backslash
+ * outside single quotes escapes the next character. `<<<` here-strings pass through as text.
+ */
+export function shellSegments(command) {
+  const text = command ?? '';
+  const state = { segments: [], docs: [], current: '', quote: null };
+  let i = 0;
+  while (i < text.length) i = shellStep(text, i, state);
+  state.segments.push(state.current);
+  return state.segments.map((s) => s.trim()).filter(Boolean);
+}
+
+/** Append `n` characters from `text[i]` to the current segment; the next index. */
+function appendTo(state, text, i, n) {
+  state.current += text.slice(i, i + n);
+  return i + n;
+}
+
+/** One step of shellSegments from `text[i]`: updates `state`, returns the next index. */
+function shellStep(text, i, state) {
+  const ch = text[i];
+  const escape = ch === '\\' && state.quote !== "'";
+  if (state.quote || escape) {
+    if (ch === state.quote) state.quote = null;
+    return appendTo(state, text, i, escape ? 2 : 1);
+  }
+  if (ch === '"' || ch === "'") {
+    state.quote = ch;
+    return appendTo(state, text, i, 1);
+  }
+  if (text.startsWith('<<<', i)) return appendTo(state, text, i, 3);
+  const doc = heredocAt(text, i);
+  if (doc) {
+    state.docs.push(doc);
+    return i + doc.length;
+  }
+  if (!SEGMENT_END.has(ch)) return appendTo(state, text, i, 1);
+  state.segments.push(state.current);
+  state.current = '';
+  if (ch !== '\n' || state.docs.length === 0) return i + 1;
+  const next = afterHeredocBodies(text, i + 1, state.docs);
+  state.docs = [];
+  return next;
+}
+
 /**
  * Every `git [globals] <sub> args…` in a Bash command, split at shell operators, as
  * `{ dir, sub, args }` with the checkout it runs in: a `cd` earlier in the command moves it,
@@ -198,7 +273,7 @@ export function cdTarget(word, dir) {
 export function gitSegmentsOf(command, cwd) {
   const out = [];
   let dir = cwd;
-  for (const segment of (command ?? '').split(/[;&|\n`()]+/)) {
+  for (const segment of shellSegments(command)) {
     const words = shellWords(segment.trim());
     if (words[0] === 'cd') dir = cdTarget(words[1], dir);
     else if (words[0] === 'git') {
