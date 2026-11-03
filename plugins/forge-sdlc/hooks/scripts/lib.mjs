@@ -200,20 +200,24 @@ export function gitSegmentsOf(command, cwd) {
   let dir = cwd;
   for (const segment of (command ?? '').split(/[;&|\n`()]+/)) {
     const words = shellWords(segment.trim());
-    if (words[0] === 'cd') {
-      dir = cdTarget(words[1], dir);
-      continue;
+    if (words[0] === 'cd') dir = cdTarget(words[1], dir);
+    else if (words[0] === 'git') {
+      const parsed = gitSegment(words, dir);
+      if (parsed) out.push(parsed);
     }
-    if (words[0] !== 'git') continue;
-    let i = 1;
-    let at = dir;
-    while (i < words.length && words[i].startsWith('-')) {
-      if (words[i] === '-C' && i + 1 < words.length) at = path.resolve(at, words[i + 1]);
-      i += ['-C', '-c'].includes(words[i]) ? 2 : 1;
-    }
-    if (i < words.length) out.push({ dir: at, sub: words[i], args: words.slice(i + 1) });
   }
   return out;
+}
+
+/** `{ dir, sub, args }` of one `git [globals] <sub> args…` segment's words run from `dir`; null without a subcommand. */
+function gitSegment(words, dir) {
+  let i = 1;
+  let at = dir;
+  while (i < words.length && words[i].startsWith('-')) {
+    if (words[i] === '-C' && i + 1 < words.length) at = path.resolve(at, words[i + 1]);
+    i += ['-C', '-c'].includes(words[i]) ? 2 : 1;
+  }
+  return i < words.length ? { dir: at, sub: words[i], args: words.slice(i + 1) } : null;
 }
 
 /** Whether a Bash command text contains a `git commit` (`git -c k=v commit`, `git -C dir commit`, chained forms). */
