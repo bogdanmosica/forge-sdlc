@@ -211,11 +211,12 @@ test('every scaffold builds its host (an upstream one when MATTPOCOCK_SKILLS_ROO
   }
 });
 
-/** The seam's payload as the engine sends it: cwd is the session's project dir, file paths are joined to the workspace. */
+/** The seam's payload as the engine sends it: cwd is the session's project dir, file and transcript paths are joined to the workspace. */
 const resolvePayload = (payload, cwd, work) => {
   const p = structuredClone(payload);
   p.cwd = cwd;
   if (p.tool_input?.file_path) p.tool_input.file_path = path.join(work, p.tool_input.file_path);
+  if (p.transcript_path) p.transcript_path = path.join(work, p.transcript_path);
   return p;
 };
 

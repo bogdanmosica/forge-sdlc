@@ -105,6 +105,15 @@ export async function diffFor(
   return { title, stat: stat ?? '', patch: patch.slice(0, PATCH_MAX), isCut: patch.length > PATCH_MAX };
 }
 
+// The diff `mode` names in `cwd`, shown in the diff pane; what /diff-pane and
+// the run pane's diff buttons (an agent's worktree) share.
+export async function openDiff($: EngineInterface, cwd: string, branch: string | undefined, mode: string) {
+  const view = await diffFor($, cwd, branch, mode);
+  await update($, diffView, () => view);
+  await $.ui.open({ id: DIFF_PANE, title: 'Diff' });
+  return view;
+}
+
 // ---- /side-chat
 
 const SIDE_ROWS = 40;
@@ -177,9 +186,7 @@ export function registerCommands(on: On) {
   on('command.run', { command: 'diff-pane' }, async ($, e) => {
     const r = await read($, self);
     if (!r) return { text: 'No session yet.' };
-    const view = await diffFor($, r.cwd, r.branch, e.args.trim());
-    await update($, diffView, () => view);
-    await $.ui.open({ id: DIFF_PANE, title: 'Diff' });
+    const view = await openDiff($, r.cwd, r.branch, e.args.trim());
     return { text: view.error ? `Diff: ${view.error}.` : `Diff opened: ${view.title}.` };
   });
 

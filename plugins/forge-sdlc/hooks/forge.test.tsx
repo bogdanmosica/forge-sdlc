@@ -181,13 +181,14 @@ test('/forge loop opens on how the loop runs: each stage, and where the driver i
     const tree = await ui.drawn();
     expect(textsUnder(tree, 'commands'), surface).toEqual([]);
     const loop = textsUnder(tree, 'loop').join('\n');
-    for (const stage of ['Setup', 'Plan', 'Design', 'Build', 'Deploy']) expect(loop, surface).toContain(stage);
+    for (const stage of ['Watch', 'Setup', 'Plan', 'Design', 'Build', 'Deploy']) expect(loop, surface).toContain(stage);
+    expect(loop, surface).toMatch(/cmux claude-teams/); // how to watch the agents, one pane each
     expect(loop, surface).toMatch(/\/forge-sdlc:init/);
     expect(loop, surface).toMatch(/\/forge-sdlc:wayfinder/);
     expect(loop, surface).toMatch(/\/forge-sdlc:build/);
-    // where the driver is needed: the setup answers, then the four gates
+    // where the driver is needed: the run pane to watch, the setup answers, then the four gates
     const you = loop.split('\n').filter((l) => l.includes('you:'));
-    expect(you.length, surface).toBe(5);
+    expect(you.length, surface).toBe(6);
     for (const gate of [1, 2, 3, 4]) expect(you.join('\n'), surface).toContain(`Gate ${gate}:`);
     expect(you.join('\n'), surface).toMatch(/\/forge-sdlc:wayfinder <slug> resumes/);
     expect(you.join('\n'), surface).toMatch(/code owner/);

@@ -4,7 +4,7 @@
 // reads back what the mod rewrote.
 import { test, expect, mock } from 'claude-code/testing';
 import type { Engine } from 'claude-code/testing';
-import { HOST_CONFIG, SURFACES, band, forgeConfig, pane, textsUnder } from './run-pane.fixture';
+import { HOST_CONFIG, SURFACES, agentRows as rowsOf, band, forgeConfig, pane } from './run-pane.fixture';
 import type { AgentInfo, AgentSpawnInput, On, TurnStepInput } from 'claude-code';
 
 // The roles' frontmatter defaults, as core resolves them.
@@ -123,7 +123,7 @@ async function agentRows($: Engine, clock: ReturnType<typeof mock.clock>, surfac
     presentation: { isFullscreen: false, columns: 160 },
   });
   const ui = await pane($, surface);
-  const rows = textsUnder(await ui.drawn(), 'agents');
+  const rows = rowsOf(await ui.drawn());
   await ui.unmount();
   return rows;
 }

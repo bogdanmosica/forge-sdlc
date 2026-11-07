@@ -31,3 +31,5 @@ Work only inside the worktree. The project dir is `dirname "$(git -C <worktree> 
 7. **Report.** Under 10 lines: the branch `slice/<slug>-<nn>`, the commits (`git log feat/<slug>..HEAD --oneline`), the record path and its `head`, and each recorded assumption. Done when the report is your final message.
 
 When Important findings come back on a later fix prompt, run steps 1 to 7 again in the same worktree.
+
+**Budget.** Your context budget is the host's `## Budgets` `agent_context` (150000 tokens unless set); the `context-budget` hook denies your next tool call once you reach it. On that deny, call no more tools: write the step 7 report with what is left (the ticket's behaviours not yet built) and stop. The slice stays open, and a continuation implementer takes the same worktree and branch from your report.

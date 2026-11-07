@@ -4,7 +4,7 @@
 // and reads the drawing back by key. The world beneath the mod is
 // run-pane.fixture.tsx, shared with the history, crew, routing and band tests.
 import { test, expect, mock } from 'claude-code/testing';
-import { PANE, SURFACES, band, pane, runPane, seat, start, step, textsUnder } from './run-pane.fixture';
+import { PANE, SURFACES, agentRows, band, pane, runPane, seat, start, step, textsUnder } from './run-pane.fixture';
 
 test('the gauge row shows context, cost and running agents on terminal and desktop', async ($, on) => {
   const clock = mock.clock(on);
@@ -98,7 +98,7 @@ test(
     for (const surface of SURFACES) {
       const ui = await pane($, surface);
       const tree = await ui.drawn();
-      const agents = textsUnder(tree, 'agents');
+      const agents = agentRows(tree);
       expect(agents, surface).toHaveLength(2);
       expect(agents[0], surface).toMatch(/^● research the auth flow.*2\.4k↑/);
       expect(agents[1], surface).toMatch(/^✓ review slice 03/);

@@ -35,7 +35,7 @@ export const MOD_COMMANDS: Row[] = [
   {
     command: '/forge-pane',
     hint: '[history | export | close]',
-    description: 'Context, cost, running agents and the frontier of the newest effort map.',
+    description: 'The run pane: context, cost, the agents by crew name and the frontier of the newest effort map.',
   },
   {
     command: '/focus-pane',
@@ -43,7 +43,7 @@ export const MOD_COMMANDS: Row[] = [
   },
   {
     command: '/boards',
-    description: 'Every running Claude session: board, lanes, inbox, crew.',
+    description: 'Every running Claude session: board, lanes, inbox, and the crew of a `cmux claude-teams` lead.',
   },
   {
     command: '/diff-pane',
@@ -73,6 +73,11 @@ export const MOD_COMMANDS: Row[] = [
 
 // The loop, stage by stage: what runs, and where the driver is needed (`you`).
 export const LOOP: { stage: string; text: string; you?: string }[] = [
+  {
+    stage: 'Watch',
+    text: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab); a plain `claude` runs them as named subagents, listed in /forge-pane and the band',
+    you: 'run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns); hover a band figure for what it counts',
+  },
   {
     stage: 'Setup',
     text: 'once per host: /mattpocock-skills:setup-matt-pocock-skills, then /forge-sdlc:init derives the proof commands and branches from the repo and writes docs/agents/forge.md',

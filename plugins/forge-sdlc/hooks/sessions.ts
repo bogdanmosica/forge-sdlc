@@ -11,6 +11,7 @@
 // the classic events and passes them on past a mod.
 import { atom, read, update } from 'claude-code';
 import type { EngineInterface, On } from 'claude-code';
+import { noteAgentCall } from './run-pane/activity';
 import type { SessionRecord, SessionStatus } from './types';
 
 export const HEARTBEAT_MS = 30_000;
@@ -180,7 +181,7 @@ export function registerSessions(on: On) {
   });
 
   on('tool.call', async ($, e, next) => {
-    if (e.agentId) return next(e); // a subagent's calls are its own
+    if (e.agentId) return noteAgentCall($, e, () => next(e)); // a subagent's calls are its own: the command center's
     const person = PERSON_TOOLS[e.tool];
     if (person) await patch($, setStatus('needs-you', person));
     const id = e.tool_use_id;

@@ -45,6 +45,18 @@ export type RunPaneAgent = {
   status: string;
 };
 
+// The command center's record of one agent: when it began and ended, the tool
+// call it is in now (and that call's file), the files it edited newest first,
+// and the directory its diff is cut in (the call's cwd or worktree).
+export type AgentActivity = {
+  startedAt?: number; // absent for an agent spawned before the mod loaded
+  endedAt?: number;
+  tool?: string;
+  path?: string;
+  files: string[];
+  cwd?: string;
+};
+
 export type RunPaneSnapshot = {
   usage: RunPaneUsage | null;
   agents: RunPaneAgent[];
@@ -208,6 +220,7 @@ declare module 'claude-code' {
       runPanePrices: RunPanePrices | null;
       runPaneRun: RunPaneRun | null;
       agentRouting: Record<string, AgentRouting>;
+      agentActivity: Record<string, AgentActivity>;
       crewCounts: Record<string, number>;
       runPaneNotes: RunPaneNotes;
       handoffBusy: boolean; // a handoff is being written: a second H press is ignored
