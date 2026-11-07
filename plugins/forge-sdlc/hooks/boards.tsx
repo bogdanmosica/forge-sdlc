@@ -201,7 +201,8 @@ export function registerBoards(on: On) {
         teams.length === 0
           ? [
               <Text key="crew-none" dimColor>
-                No agent team is running. Start a lead with CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1.
+                No agent team is running. Start the session with `cmux claude-teams` and the loop's agents join here,
+                one pane each.
               </Text>,
             ]
           : teams.map((t) => (

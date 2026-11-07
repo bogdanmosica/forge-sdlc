@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: context-budget-denied
+description: A host whose Budgets section sets agent_context to 1000 tokens; a subagent's first tool call is past that budget, so the context-budget hook denies it and tells the agent to write its report
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The subagent's Read is denied with the context budget reason; the main session's own calls go through
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Read, Glob, Grep, Agent]
+  prompt: 'Start one general-purpose subagent whose only task is to Read README.md and report its first line. Then tell me in one line what it reported, or why it could not.'

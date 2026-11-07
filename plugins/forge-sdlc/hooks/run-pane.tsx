@@ -25,13 +25,19 @@
 // default, routing the override, the engine's forcing variables and effort cap
 // above both. An invalid bullet is toasted once, kept in the band and ignored.
 //
+// Command center (run-pane/activity.ts): one row per agent with its crew name,
+// the tool call it is in, the files it edited, its tokens and its elapsed time,
+// and a diff button that opens the diff pane on its worktree (the call's cwd,
+// else the toplevel of its first edit, else the session's).
+//
 // Crew (run-pane/crew.ts): the host config's `## Crew` section, read at each
-// Agent call, names an agent the call left unnamed with the next name of its
-// role's pool (a plugin role's, else the general pool), from the plugin's
-// crew.json or the section's own names: the call's `name`, its handle above the
-// prompt, and the front of its description. The loop's member calls arrive
-// named by bin/crew-name.mjs and keep their name. On `tool.call`, since
-// `agent.spawn` pins the name.
+// spawn, names an agent its call left unnamed with the next name of its role's
+// pool (a plugin role's, else the general pool), from the plugin's crew.json or
+// the section's own names, in front of its description. The loop's member calls
+// arrive named by bin/crew-name.mjs and show that handle's display form. On
+// `agent.spawn`, never `tool.call`: a rewritten call lands after auto mode
+// reviewed it, so every dispatch was refused once; spawn pins `name`, so there
+// is no `@` handle.
 //
 // The workbench views (workbench.tsx: sessions.ts, focus.tsx, boards.tsx,
 // band.tsx, commands.tsx) register their matched hooks through
@@ -40,8 +46,9 @@
 // which call their functions: a plugin may hook an event only once without a
 // matcher.
 import { atom, read, update } from 'claude-code';
-import type { BuiltinToolInputs, EngineInterface, Register, SessionUsage } from 'claude-code';
+import type { AgentSpawnInput, AgentSpawnResult, EngineInterface, Register, SessionUsage } from 'claude-code';
 import type {
+  AgentActivity,
   AgentRouting,
   AgentUsage,
   RunPaneMap,
@@ -56,7 +63,10 @@ import { addStep, compactTokens, MAIN } from './run-pane/usage';
 import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
 import type { ForgeConfig } from './run-pane/config';
 import { entryFor, frontmatterOf, overrides, parseRouting, pluginRoleOf } from './run-pane/routing';
-import { GENERAL, handleOf, nameAt, parseCrew, withCrewName } from './run-pane/crew';
+import { GENERAL, crewNameOf, displayNameOf, hasCrewName, nameAt, parseCrew, withCrewName } from './run-pane/crew';
+import { begun, diffDirOf, doingOf, elapsedText, ended } from './run-pane/activity';
+import { openDiff } from './commands';
+import { run as runProcess } from './sessions';
 import { parseMark } from './run-pane/mark';
 import { frontierOf, readMap } from './run-pane/tracker';
 import { FORGE_COMMAND, registerForge } from './forge';
@@ -83,6 +93,7 @@ const run = atom({ plugin: 'forge-sdlc', key: 'runPaneRun' } as const, null as R
 const agentRouting = atom({ plugin: 'forge-sdlc', key: 'agentRouting' } as const, {} as Record<string, AgentRouting>);
 const bandNotes = atom({ plugin: 'forge-sdlc', key: 'runPaneNotes' } as const, {} as RunPaneNotes);
 const crewCounts = atom({ plugin: 'forge-sdlc', key: 'crewCounts' } as const, {} as Record<string, number>);
+const agentActivity = atom({ plugin: 'forge-sdlc', key: 'agentActivity' } as const, {} as Record<string, AgentActivity>);
 
 function usageOf(u: SessionUsage): RunPaneUsage {
   return {
@@ -196,17 +207,23 @@ async function readRouting($: EngineInterface, config: ForgeConfig | undefined) 
   return routing.table;
 }
 
-type AgentArgs = BuiltinToolInputs['Agent'];
-
-// An Agent call's arguments with the crew name as its handle and in front of
-// its description, the next of its role's pool counted across the session; a
-// fork, a call that named its agent (the name it will address) and a role with
-// no pool as they are.
-async function crewNamedCall<T extends AgentArgs>($: EngineInterface, e: T): Promise<T> {
-  const type = e.subagent_type ?? 'general-purpose';
-  if (type === 'fork' || e.name) return e;
+// A spawn's input with the crew name in front of its description: a member
+// call (skills/build/MEMBERS.md) already carries its name as the call's `name`,
+// the handle bin/crew-name.mjs printed, which stays the address and is shown in
+// its display form; any other call takes the next of its role's pool counted
+// across the session. A fork and a role with no pool are left as they are. At
+// spawn, not at the Agent tool call: a rewrite of the call lands after auto mode
+// reviewed it, which then gets no verdict. The handle (`name`) is pinned at
+// spawn, so a pool name rides in the description alone.
+async function crewNamedSpawn($: EngineInterface, e: AgentSpawnInput): Promise<AgentSpawnInput> {
+  const type = e.subagentType;
+  if (e.fork || type === 'fork') return e;
   const crew = parseCrew(await readConfig($), await readOrUndefined($, `${$.plugin.root}/crew.json`));
   await sayOnce($, 'crew', crew.problems);
+  if (e.name)
+    return hasCrewName(e.description)
+      ? e
+      : { ...e, description: withCrewName(displayNameOf(e.name, crew.pools), e.description) };
   const role = pluginRoleOf(type) ?? GENERAL;
   const pool = crew.pools[role];
   if (!pool) return e;
@@ -215,9 +232,7 @@ async function crewNamedCall<T extends AgentArgs>($: EngineInterface, e: T): Pro
     index = all[role] ?? 0;
     return { ...all, [role]: index + 1 };
   });
-  const name = nameAt(pool, index);
-  const handle = handleOf(name);
-  return { ...e, ...(handle ? { name: handle } : {}), description: withCrewName(name, e.description) };
+  return { ...e, description: withCrewName(nameAt(pool, index), e.description) };
 }
 
 // The picked map (the view's choice, else the newest) into $.state; null when
@@ -257,6 +272,38 @@ async function readFrontmatter($: EngineInterface, subagentType: string) {
   }
 }
 
+// The routing at spawn: a fork inherits and is left alone; a routed type takes
+// the host config's model, and its row is marked when that changed the default.
+async function routedSpawn(
+  $: EngineInterface,
+  e: AgentSpawnInput,
+  next: (e: AgentSpawnInput) => Promise<AgentSpawnResult>,
+): Promise<AgentSpawnResult> {
+  if (e.fork) return next(e);
+  const entry = entryFor(await readRouting($, await readConfig($)), e.subagentType);
+  if (!entry) return next(e);
+  const overridden = overrides(entry, await readFrontmatter($, e.subagentType), e.model);
+  const result = await next(entry.model ? { ...e, model: entry.model } : e);
+  if (result.agentId)
+    await update($, agentRouting, (all) => ({
+      ...all,
+      [result.agentId!]: { type: e.subagentType, ...entry, overridden },
+    }));
+  return result;
+}
+
+// An agent's diff in the diff pane: cut in the call's own directory, else the
+// worktree of its first edit (git's toplevel of that folder), else the session's;
+// the mode /diff-pane would pick there (branch off main, working tree on it).
+async function openAgentDiff($: EngineInterface, id: string): Promise<void> {
+  const a = (await read($, agentActivity))[id];
+  let dir = diffDirOf(a);
+  if (dir && !a?.cwd) dir = (await runProcess($, ['git', 'rev-parse', '--show-toplevel'], dir))?.trim() || dir;
+  const cwd = dir ?? (await $.session.cwd());
+  const branch = (await runProcess($, ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd))?.trim() || undefined;
+  await openDiff($, cwd, branch, '');
+}
+
 async function tick($: EngineInterface): Promise<void> {
   ticks += 1;
   const before = await read($, snapshot);
@@ -289,6 +336,9 @@ async function tick($: EngineInterface): Promise<void> {
     mark: mark.parts,
   };
   await update($, snapshot, () => next);
+  const stopped = agents.filter((a) => a.status !== 'running' && a.status !== 'pending');
+  if (stopped.length)
+    await update($, agentActivity, (all) => stopped.reduce((acc, a) => ended(acc, a.id, next.readAt), all));
   const map = await loadMap($);
   if (map) {
     try {
@@ -379,24 +429,18 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  // Crew at the Agent call, where the name is still the call's to give: the
-  // handle and the description. Read fresh at each call so an edit counts
-  // without a restart.
-  on('tool.call', { tool: 'Agent' }, async ($, e, next) => next(e.tool === 'Agent' ? await crewNamedCall($, e) : e));
-
-  // Routing at spawn: the model (a fork inherits and is left alone); then the
-  // effort on each step of a routed agent whose model takes an effort.
-  on('agent.spawn', async ($, e, next) => {
-    if (e.fork) return next(e);
-    const entry = entryFor(await readRouting($, await readConfig($)), e.subagentType);
-    if (!entry) return next(e);
-    const overridden = overrides(entry, await readFrontmatter($, e.subagentType), e.model);
-    const result = await next(entry.model ? { ...e, model: entry.model } : e);
-    if (result.agentId)
-      await update($, agentRouting, (all) => ({
-        ...all,
-        [result.agentId!]: { type: e.subagentType, ...entry, overridden },
-      }));
+  // Crew, then routing, at spawn: the crew name in front of the description,
+  // read fresh at each spawn so an edit counts without a restart; then the model
+  // (a fork inherits and is left alone), and the effort on each step of a routed
+  // agent whose model takes an effort. The command center's record begins here.
+  on('agent.spawn', async ($, input, next) => {
+    const e = await crewNamedSpawn($, input);
+    const result = await routedSpawn($, e, next);
+    if (result.agentId) {
+      const id = result.agentId;
+      const now = await $.clock.now();
+      await update($, agentActivity, (all) => begun(all, id, now, e.cwd));
+    }
     return result;
   });
 
@@ -416,6 +460,7 @@ export const register: Register = (on) => {
     const v = await read($, view);
     const table = await read($, prices);
     const routed = await read($, agentRouting);
+    const activity = await read($, agentActivity);
     const f = m ? frontierOf(m.tickets) : null;
     const cols = Math.max(24, e.props.bodyColumns);
     const agents = s?.agents ?? [];
@@ -444,6 +489,8 @@ export const register: Register = (on) => {
       </Box>
     );
     const half = wide ? Math.floor((cols - 1) / 2) : cols;
+    // The command center's name column: a crew name and its slice, a third of the pane.
+    const nameWidth = Math.max(12, Math.min(28, Math.floor(cols / 3)));
     return (
       <Box flexDirection="column" width={cols}>
         <Box key="gauges" flexDirection="row" gap={2}>
@@ -494,25 +541,63 @@ export const register: Register = (on) => {
               </Box>
             )}
           </Box>
-          <Box key="agents-column" flexDirection="column" width={half}>
-            <Box key="agents-title">
-              <Text bold underline>
-                Agents · {String(running)} running / {String(agents.length)}
-              </Text>
-            </Box>
-            {agents.length === 0 && <Text dimColor>no agents yet</Text>}
-            <Box key="agents" flexDirection="column">
-              {agents.map((a) => {
-                const t = tokens[a.id];
-                return (
-                  <Text key={a.id} dimColor={a.status !== 'running'} wrap="truncate-end">
-                    {mark(a.status)} {short(a.description || a.type, Math.max(8, half - 12))}
-                    {t ? ` ${compactTokens(t.output)}↑` : ''}
-                    {routed[a.id]?.overridden ? ' ⇄ routed' : ''}
-                  </Text>
-                );
-              })}
-            </Box>
+        </Box>
+        <Box key="agents-column" flexDirection="column" marginTop={1}>
+          <Box key="agents-title">
+            <Text bold underline>
+              Agents · {String(running)} running / {String(agents.length)}
+            </Text>
+          </Box>
+          {agents.length === 0 && <Text dimColor>no agents yet</Text>}
+          <Box key="agents" flexDirection="column">
+            {agents.map((a) => {
+              const t = tokens[a.id];
+              const act = activity[a.id];
+              const isRunning = a.status === 'running';
+              const name = hasCrewName(a.description) ? crewNameOf(a.description) : a.description || a.type;
+              const doing = doingOf(act, a.status);
+              const files = act?.files.length ? plural(act.files.length, 'file') : '';
+              const toks = t ? `${compactTokens(t.output)}↑ ${compactTokens(t.input)}↓` : '';
+              const until = act?.endedAt ?? s?.readAt ?? 0;
+              return (
+                <Box key={`row-${a.id}`} flexDirection="row" gap={1}>
+                  <Box key="name" width={nameWidth} flexShrink={0}>
+                    <Text dimColor={!isRunning} wrap="truncate-end">
+                      {mark(a.status)} {name}
+                      {routed[a.id]?.overridden ? ' ⇄ routed' : ''}
+                    </Text>
+                  </Box>
+                  {wide && (
+                    <Box key="doing" flexGrow={1} flexShrink={1}>
+                      <Text dimColor wrap="truncate-end">
+                        {doing}
+                      </Text>
+                    </Box>
+                  )}
+                  {wide && (
+                    <Box key="files" width={8} flexShrink={0}>
+                      <Text wrap="truncate-end">{files}</Text>
+                    </Box>
+                  )}
+                  {wide && (
+                    <Box key="tokens" width={12} flexShrink={0}>
+                      <Text wrap="truncate-end">{toks}</Text>
+                    </Box>
+                  )}
+                  <Box key="elapsed" width={8} flexShrink={0}>
+                    <Text dimColor={!isRunning}>{elapsedText(act?.startedAt, until)}</Text>
+                  </Box>
+                  <Button
+                    key={`diff-${a.id}`}
+                    plain
+                    label="diff"
+                    onPress={() => {
+                      void openAgentDiff($, a.id);
+                    }}
+                  />
+                </Box>
+              );
+            })}
           </Box>
         </Box>
         <Box key="context-title" marginTop={1}>

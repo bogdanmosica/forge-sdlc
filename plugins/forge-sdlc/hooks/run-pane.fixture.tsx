@@ -53,6 +53,8 @@ export type Seat = {
   agents: AgentInfo[]; // what agent.list answers
   writeError: string; // a write refused with this reason; '' writes
   calls: string[]; // 'write' per fs.write, in order with what a test adds
+  git: Record<string, string>; // a git command's stdout by its words after `git`; one not listed fails
+  runs: { argv: string[]; cwd?: string }[]; // every process the mod ran, in order
 };
 
 // A subscription's windows, reset times counted from the mock clock's epoch start.
@@ -122,6 +124,8 @@ export function seat(on: On, overrides: Partial<Seat> = {}): Seat {
     ],
     writeError: '',
     calls: [],
+    git: {},
+    runs: [],
     ...overrides,
   };
   mock.env(on, s.env);
@@ -199,10 +203,17 @@ export function seat(on: On, overrides: Partial<Seat> = {}): Seat {
     },
   }));
   on('agent.list', () => ({ value: s.agents }));
-  // No git beneath: the session's directory is the project (run-pane.tsx projectDir).
-  on('process.run', () => ({
-    value: { exitCode: 1, stdout: '', stderr: 'not a git repository', isStdoutTruncated: false, isStderrTruncated: false },
-  }));
+  // Git answers only what a test lists in `git`; otherwise no git beneath, so the
+  // session's directory is the project (run-pane.tsx projectDir).
+  on('process.run', ($, e) => {
+    s.runs.push({ argv: [...e.argv], cwd: e.init?.cwd });
+    const out = e.argv[0] === 'git' ? s.git[e.argv.slice(1).join(' ')] : undefined;
+    if (out !== undefined)
+      return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } };
+    return {
+      value: { exitCode: 1, stdout: '', stderr: 'not a git repository', isStdoutTruncated: false, isStderrTruncated: false },
+    };
+  });
   // The crew presets the plugin ships, as one short preset (crew.json is read under `$.plugin.root`).
   const presets = JSON.stringify({
     presets: { 'star-trek': { label: 'Star Trek', names: { implementer: ['Scotty'], general: ['Nog'] } } },
@@ -270,6 +281,29 @@ export function textsUnder(tree: RenderElement, key: string): string[] {
   };
   walk(tree, false);
   return out;
+}
+
+// The command center's rows under the Box keyed `agents`: each row Box's texts
+// joined with one space, in document order, the diff Button left out.
+export function agentRows(tree: RenderElement): string[] {
+  const rows: string[] = [];
+  const find = (node: unknown): unknown => {
+    if (!node || typeof node !== 'object') return undefined;
+    const el = node as { type?: string; props?: { key?: string }; children?: unknown[] };
+    if (el.type === 'Box' && el.props?.key === 'agents') return el;
+    for (const child of el.children ?? []) {
+      const found = find(child);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  const agents = find(tree) as { children?: unknown[] } | undefined;
+  for (const row of agents?.children ?? []) {
+    const el = row as { type?: string; props?: { key?: string } };
+    if (el?.type === 'Box' && el.props?.key?.startsWith('row-'))
+      rows.push(textsUnder(row as RenderElement, el.props.key).join(' '));
+  }
+  return rows;
 }
 
 // Drives one model request through the mod's turn.step hook, the stream beneath

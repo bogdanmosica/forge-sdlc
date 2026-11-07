@@ -1,10 +1,11 @@
-// Crew: the host config's `## Crew` section, read at each Agent call, names an
-// agent the call left unnamed with the next name of its role's pool: its handle
-// above the prompt (`@Seven-of-Nine`) and the front of its description (`Seven
-// of Nine · review slice 03`). A plugin agent takes its role's pool, any other
-// agent the `general` pool. The loop's own member calls arrive named by
-// bin/crew-name.mjs and are left alone. Display only: the agent type, branches
-// and commits keep their names. Pure: run-pane.tsx reads the files and calls `$`.
+// Crew: the host config's `## Crew` section, read at each spawn, names an agent
+// its call left unnamed with the next name of its role's pool, in front of its
+// description (`Seven of Nine · review slice 03`). A plugin agent takes its
+// role's pool, any other agent the `general` pool. The loop's own member calls
+// arrive named by bin/crew-name.mjs: that handle stays their address and its
+// display form goes in front of the description. Display only: the agent type,
+// branches and commits keep their names. Pure: run-pane.tsx reads the files and
+// calls `$`.
 //
 // Host config (`docs/agents/forge.md`, written by /forge-sdlc:init):
 //   ## Crew
@@ -88,10 +89,15 @@ export function nameAt(pool: string[], index: number): string {
   return round === 0 ? name : `${name} ${round + 1}`;
 }
 
-// A crew name as the Agent tool's `name`, the handle above the prompt: letters,
-// digits, `_` and `-` from a letter or digit, at most 64 (`Seven of Nine` ->
-// `Seven-of-Nine`, `O'Brien` -> `OBrien`, `Padmé` -> `Padme`); undefined when
-// nothing is left.
+export const withCrewName = (name: string, description: string): string => `${name}${SEPARATOR}${description}`;
+
+// Whether a description already carries a crew name in front.
+export const hasCrewName = (description: string): boolean => description.includes(SEPARATOR);
+
+// A display name in the form the Agent tool's `name` takes, as bin/crew-name.mjs
+// prints it: diacritics folded, spaces to `-`, only letters, digits, `_` and `-`
+// from a letter or digit, at most 64 (`Seven of Nine` -> `Seven-of-Nine`,
+// `O'Brien` -> `OBrien`, `Padmé` -> `Padme`); undefined when nothing is left.
 export function handleOf(name: string): string | undefined {
   const handle = name
     .normalize('NFD')
@@ -101,10 +107,22 @@ export function handleOf(name: string): string | undefined {
     .replace(/^[_-]+/, '')
     .slice(0, 64)
     .replace(/-$/, ''); // one at most: runs were collapsed
-  return handle === '' ? undefined : handle;
+  return handle || undefined;
 }
 
-export const withCrewName = (name: string, description: string): string => `${name}${SEPARATOR}${description}`;
+// The display name behind a handle a member call carries: the pool name whose
+// handle it is, its round suffix as the pane writes it (`Seven-of-Nine-2` ->
+// `Seven of Nine 2`); the handle itself when no pool holds it.
+export function displayNameOf(handle: string, pools: CrewPools): string {
+  const m = /^(.*?)(?:-(\d+))?$/.exec(handle);
+  const base = m?.[1] ?? handle;
+  const round = m?.[2];
+  for (const pool of Object.values(pools)) {
+    const name = pool.find((n) => handleOf(n) === base);
+    if (name) return round ? `${name} ${round}` : name;
+  }
+  return handle;
+}
 
 // The crew name withCrewName put in front of a description, as the band names
 // a running agent; the description itself when it carries none.
