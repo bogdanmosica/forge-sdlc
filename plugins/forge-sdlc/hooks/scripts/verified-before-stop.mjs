@@ -8,12 +8,16 @@
 // the count resets. A subagent's SubagentStop carries the lead's root as cwd, never the worktree
 // it cd-ed into: when the cwd names no slice, the slice is the one whose `agent` in the host's
 // state is the payload's agent_id, gated the same way while its worktree exists.
+// A subagent past its context budget (context-budget.mjs) stops without a green record: the
+// budget hook denied its tools, so it cannot verify, and its slice is left open, not marked red,
+// for the lead's continuation member; the denial count is cleared for that member.
 // Quiet outside a slice worktree, outside a repo, and for an agent id no slice carries.
 
 import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { budgetOf, overBudget } from './context-budget.mjs';
 import { DEFAULT_BRANCHES, allow, block, branchRules, currentBranch, cwdOf, effortOf, git, hostDirOf, matchesGlob, readState, run, writeState } from './lib.mjs';
 
 const MAX_DENIALS = 3;
@@ -95,6 +99,15 @@ export function verifiedBeforeStopCheck(payload, { projectDir, config }) {
   if (!why) {
     if (existsSync(denials)) unlinkSync(denials);
     return allow();
+  }
+
+  if (overBudget(payload, config)) {
+    if (existsSync(denials)) unlinkSync(denials);
+    return {
+      systemMessage:
+        `Slice ${slice} stops over its context budget (${Math.round(budgetOf(config) / 1000)}k) without a green verify record (${why}). ` +
+        'It stays open, not red: start a continuation implementer in the same worktree from its report.',
+    };
   }
 
   const count = existsSync(denials) ? Number(readFileSync(denials, 'utf8')) || 0 : 0;
