@@ -75,12 +75,23 @@ function readTail(file, bytes = TAIL_BYTES) {
   }
 }
 
-export function contextBudgetCheck(payload, { config }) {
-  if (!payload.agent_id || HANDBACK_TOOLS.has(payload.tool_name)) return allow();
+/** The calling subagent's context size from its transcript; null for the main session or an unreadable transcript. */
+export function subagentContextOf(payload) {
+  if (!payload.agent_id) return null;
   const file = subagentTranscriptPath(payload);
   const text = file && readTail(file);
-  if (!text) return allow();
-  return decide({ size: contextSizeOf(text), budget: budgetOf(config) });
+  return text ? contextSizeOf(text) : null;
+}
+
+/** Whether the calling subagent's context has reached the host's budget: what the stop gate asks too. */
+export const overBudget = (payload, config) => {
+  const size = subagentContextOf(payload);
+  return size !== null && size >= budgetOf(config);
+};
+
+export function contextBudgetCheck(payload, { config }) {
+  if (!payload.agent_id || HANDBACK_TOOLS.has(payload.tool_name)) return allow();
+  return decide({ size: subagentContextOf(payload), budget: budgetOf(config) });
 }
 
 // Run only when spawned as the hook; the tests import the pieces above.

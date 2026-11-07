@@ -1,0 +1,4 @@
+{ "script": "verified-before-stop.mjs", "expect": "message",
+  "payload": { "hook_event_name": "SubagentStop", "stop_hook_active": false, "agent_id": "a4e1c07b92d35",
+    "session_id": "sess-eval", "transcript_path": ".transcripts/sess-eval.jsonl" },
+  "effect": { "path": ".forge/state.json", "pattern": "\"agent\": \"a4e1c07b92d35\"" } }
