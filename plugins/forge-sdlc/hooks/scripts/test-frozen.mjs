@@ -7,9 +7,10 @@
 // so a session whose project dir is the worktree is held too. Quiet without state, globs, or a
 // branch of either shape.
 
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 
-import { DEFAULT_BRANCHES, allow, branchRules, checkoutRootOf, currentBranch, deny, effortOf, hostDirOf, listOf, matchesGlob, matchesPath, readState, run } from './lib.mjs';
+import { DEFAULT_BRANCHES, allow, branchRules, checkoutRootOf, currentBranch, deny, effortOf, hostDirOf, hostInCheckout, listOf, matchesGlob, matchesPath, nearestExisting, readState, run } from './lib.mjs';
 
 /** The name a branch shape's placeholder stands for: `slice/x-01` under `slice/<slug>-<nn>` is `x-01`. */
 const nameIn = (branch, shape) => branch.slice(shape.indexOf('<'));
@@ -38,10 +39,17 @@ export function testFrozenCheck(payload, { projectDir, config }) {
   if (globs.length === 0) return allow();
   const root = checkoutRootOf(path.dirname(filePath));
   if (!root) return allow();
-  const rel = path.relative(root, path.resolve(filePath)).split(path.sep).join('/');
+  // The globs are relative to the host, which may be a subfolder of the checkout (a monorepo's
+  // projects/<x>, inside a slice worktree too); a file outside the host is matched from the root.
+  const host = hostDirOf(path.dirname(filePath), projectDir);
+  const existing = nearestExisting(path.dirname(filePath));
+  const file = path.join(realpathSync(existing), path.relative(existing, path.resolve(filePath)));
+  const fromHost = path.relative(hostInCheckout(host, root), file);
+  const fromRoot = path.relative(realpathSync(root), file);
+  const rel = (fromHost.startsWith('..') ? fromRoot : fromHost).split(path.sep).join('/');
   const glob = globs.find((g) => matchesPath(rel, g));
   if (!glob) return allow();
-  const state = readState(hostDirOf(root, projectDir));
+  const state = readState(host);
   const branch = currentBranch(root);
   if (!state || !branch) return allow();
   const found = modeOf(state, branch, config, root);

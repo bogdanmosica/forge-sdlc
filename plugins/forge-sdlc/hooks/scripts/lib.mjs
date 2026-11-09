@@ -3,7 +3,7 @@
 // Reasons name branches, paths and pattern names; never a matched value.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 /** The host config `/forge-sdlc:init` writes, relative to the project dir. */
@@ -135,13 +135,41 @@ export function currentBranch(dir) {
 }
 
 /**
- * The host dir whose `.forge/` holds the run state for a path: the main checkout of the repository
- * holding `dir` (the parent of its git common dir), so a slice worktree resolves to its host even
- * for a session whose project dir is a slice worktree. `fallback` outside a repo.
+ * The host dir whose `.forge/` holds the run state for a path, so a slice worktree resolves to its
+ * host even for a session whose project dir is a slice worktree. `fallback` outside a repo.
+ * - In a slice worktree (a checkout at `<host>/.forge/worktrees/<slice>`): that `<host>`.
+ * - Elsewhere: the folder of the main checkout (the parent of the git common dir) at the same place
+ *   as `dir`, then up to the nearest one holding docs/agents/forge.md, else the main checkout. So a
+ *   host that is a subfolder of its repository (a monorepo's `projects/<x>`) resolves to itself,
+ *   and a single-repo host to its root, as before.
  */
 export function hostDirOf(dir, fallback) {
-  const r = git(['-C', nearestExisting(dir), 'rev-parse', '--path-format=absolute', '--git-common-dir']);
-  return r.status === 0 ? path.dirname(r.stdout.trim()) : fallback;
+  const at = realpathSync(nearestExisting(dir));
+  const common = git(['-C', at, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const top = git(['-C', at, 'rev-parse', '--show-toplevel']);
+  if (common.status !== 0 || top.status !== 0) return fallback;
+  const checkout = realpathSync(top.stdout.trim());
+  const slice = path.dirname(path.dirname(checkout));
+  if (path.basename(path.dirname(checkout)) === 'worktrees' && path.basename(slice) === '.forge') {
+    return path.dirname(slice);
+  }
+  const main = realpathSync(path.dirname(common.stdout.trim()));
+  for (let probe = path.join(main, path.relative(checkout, at)); ; probe = path.dirname(probe)) {
+    if (existsSync(path.join(probe, HOST_CONFIG))) return probe;
+    if (probe === main || path.dirname(probe) === probe) return main;
+  }
+}
+
+/** Where `host` sits inside the checkout holding `dir`: `host` mapped from the main checkout onto that checkout (a slice worktree checks out the whole repository). */
+export function hostInCheckout(host, dir) {
+  const at = realpathSync(nearestExisting(dir));
+  const common = git(['-C', at, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const top = git(['-C', at, 'rev-parse', '--show-toplevel']);
+  if (common.status !== 0 || top.status !== 0) return host;
+  const main = realpathSync(path.dirname(common.stdout.trim()));
+  const rel = path.relative(main, realpathSync(nearestExisting(host)));
+  if (rel.startsWith('..') || path.isAbsolute(rel)) return host;
+  return path.join(realpathSync(top.stdout.trim()), rel);
 }
 
 /** The default branch of the repository holding `dir`, or null when it cannot be told. */
