@@ -59,14 +59,14 @@ function markRed(projectDir, slice) {
 }
 
 /** The slice the cwd is a checkout of: `{ slice, branch, worktree, project, head }`, or null. */
-function sliceAtCwd(cwd, config) {
+function sliceAtCwd(cwd, config, projectDir) {
   const branch = currentBranch(cwd);
   if (!branch || !matchesGlob(branch, branchRules(config, cwd).slice)) return null;
   return {
     slice: sliceOf(branch, config),
     branch,
     worktree: gitOut(cwd, ['rev-parse', '--show-toplevel']),
-    project: path.dirname(gitOut(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir'])),
+    project: hostDirOf(cwd, projectDir),
     head: gitOut(cwd, ['rev-parse', 'HEAD']),
   };
 }
@@ -88,7 +88,7 @@ function sliceOfAgent(payload, cwd, projectDir, config) {
 
 export function verifiedBeforeStopCheck(payload, { projectDir, config }) {
   const cwd = cwdOf(payload);
-  const found = sliceAtCwd(cwd, config) ?? sliceOfAgent(payload, cwd, projectDir, config);
+  const found = sliceAtCwd(cwd, config, projectDir) ?? sliceOfAgent(payload, cwd, projectDir, config);
   if (!found) return allow();
 
   const { slice, branch, worktree, project, head } = found;

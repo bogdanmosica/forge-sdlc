@@ -59,7 +59,7 @@ function refOf(slug) {
 /** Whether the effort's PR is past Gate 4: PR.md has ## Evidence, or GitHub says the PR is not a draft. */
 function prReady(slug, ref, names) {
   if (names.has('PR.md')) {
-    const body = git(['-C', dir, 'show', `${ref}:docs/efforts/${slug}/PR.md`]).stdout;
+    const body = git(['-C', dir, 'show', `${ref}:./docs/efforts/${slug}/PR.md`]).stdout; // ./: from the host, which may be a subfolder of the repo
     return /^## Evidence\s*$/m.test(body);
   }
   if (git(['-C', dir, 'remote', 'get-url', 'origin']).status !== 0) return false;
