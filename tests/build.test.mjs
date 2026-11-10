@@ -77,12 +77,12 @@ test('build: the frame bullets of design section 5', () => {
   assert.match(body, /subagent_type[^\n]*forge-sdlc:researcher/);
   assert.match(body, /\.forge\/notes\/<slug>\//);
   assert.match(body, /subagent_type[^\n]*forge-sdlc:implementer/);
-  assert.match(body, /\.forge\/worktrees\/<slug>-<nn>/);
+  assert.match(body, /node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/slice-worktree\.mjs" <slug>-<nn> --project <host> --add/);
+  assert.match(body, /printed path/);
+  assert.doesNotMatch(body, /\.forge\/worktrees|dependency_dir|ln -s/);
   assert.match(body, /slice\/<slug>-<nn>/);
-  assert.match(body, /symlink/i);
   assert.match(body, /## Worktrees/);
-  assert.match(body, /dependency_dir/);
-  for (const dir of ['node_modules', '.venv', 'vendor']) assert.ok(body.includes(dir), `falls back to ${dir}`);
+  assert.match(body, /install/);
   assert.match(body, /pointers/i);
   assert.match(body, /proof/i);
   assert.match(body, /subagent_type[^\n]*forge-sdlc:verifier/);
