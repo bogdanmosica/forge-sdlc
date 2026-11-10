@@ -18,7 +18,7 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 - slice: slice/<slug>-<nn>       # local, one worktree each, never pushed
 
 ## Worktrees
-- dependency_dir: <node_modules | .venv | vendor | none>   # symlinked into each slice worktree, never installed there
+- install: <command | none>   # run at the root of each new slice worktree (beside the repository), e.g. pnpm install --frozen-lockfile --prefer-offline
 
 ## Gates
 - policy: attended               # or: autonomous
