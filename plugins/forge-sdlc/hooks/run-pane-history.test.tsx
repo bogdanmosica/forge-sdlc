@@ -123,6 +123,41 @@ test("the host's state.json gives the stored run its stage and gate", async ($, 
   expect(s.store[RUN]).toMatchObject({ stage: 'build · gate plan · stopped: flagged' });
 });
 
+// A host in a subfolder of its repository (a monorepo's projects/<x>): the state is
+// read in the host bin/host-dir.mjs resolves (hostDirOf, as the hooks), never in the
+// parent of the git common dir, the repository root.
+test("a subfolder host's state.json is read where bin/host-dir.mjs says, not at the repository root", async ($, on) => {
+  const clock = mock.clock(on, { now: Date.UTC(2026, 9, 7, 10, 0, 0) });
+  const s = seat(on, {
+    hostDir: '/repo/projects/a',
+    git: { 'rev-parse --path-format=absolute --git-common-dir': '/repo/.git\n' },
+    files: { '.forge/state.json': JSON.stringify({ version: 1, efforts: { alpha: { stage: 'build', gate: 'none' } } }) },
+  });
+  answerSteps(on);
+  await start($, clock);
+  await threeSteps($, on);
+  await clock.advance(5000);
+  expect(s.store[RUN]).toMatchObject({ stage: 'build' });
+  expect(s.runs.some((r) => r.argv[0] === 'node' && r.argv[1]?.endsWith('/bin/host-dir.mjs') && r.argv[2] === '/host')).toBe(true);
+  expect(s.reads).toContain('/repo/projects/a/.forge/state.json');
+  expect(s.reads).not.toContain('/repo/.forge/state.json');
+  expect(s.runs.some((r) => r.argv.includes('--git-common-dir'))).toBe(false);
+});
+
+// Outside a repository host-dir.mjs exits 2: the session's directory is the host.
+test("outside a repository the state is read under the session's directory", async ($, on) => {
+  const clock = mock.clock(on, { now: Date.UTC(2026, 9, 7, 10, 0, 0) });
+  const s = seat(on, {
+    files: { '.forge/state.json': JSON.stringify({ version: 1, efforts: { alpha: { stage: 'plan', gate: 'plan' } } }) },
+  });
+  answerSteps(on);
+  await start($, clock);
+  await threeSteps($, on);
+  await clock.advance(5000);
+  expect(s.store[RUN]).toMatchObject({ stage: 'plan · gate plan' });
+  expect(s.reads).toContain('/host/.forge/state.json');
+});
+
 // Two runs of the alpha map already in the store and this session's own:
 // history lists every stored run, newest first, with its ticket count, stage and estimate.
 const STORED = {
