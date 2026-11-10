@@ -1,6 +1,6 @@
 ---
 type: regex
-target: {source: file, path: .forge/worktrees/word-count-01/docs/efforts/word-count/spec.md}
+target: {source: file, path: slices/word-count-01/docs/efforts/word-count/spec.md}
 match: 'count:1'
 pattern: 'Reading from stdin'
 ---
