@@ -13,7 +13,7 @@ Each Agent call below is a [member call](../build/MEMBERS.md), and the session r
 
 ## 1. Resolve
 
-- The slice branch reads `slice/<slug>-<nn>`; take `<slug>` and `<nn>` from it. The effort branch, when omitted, is `feat/<slug>`. The worktree is `.forge/worktrees/<slug>-<nn>` (the main checkout when absent).
+- The slice branch reads `slice/<slug>-<nn>`; take `<slug>` and `<nn>` from it. The effort branch, when omitted, is `feat/<slug>`. The worktree is the path `node "${CLAUDE_PLUGIN_ROOT}/bin/slice-worktree.mjs" <slug>-<nn> --project <project dir>` prints, beside the repository (the main checkout when that path does not exist).
 - Both refs resolve: `git rev-parse --verify <effort>` and `git rev-parse --verify <slice>`.
 - The diff `git diff <effort>...<slice>` (three dots: against the merge-base) is non-empty.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" code-review` prints the code-review file; exit 1 stops with the install line it printed.
