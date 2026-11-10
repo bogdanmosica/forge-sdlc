@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { forgeMd, hook, host } from './support/host.mjs';
-import { readState, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
+import { readState, sliceWorktreeDir, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 
 const HOOK = 'verified-before-stop.mjs';
 
@@ -19,10 +19,10 @@ const gitIn = (dir, args) => {
   return r.stdout.trim();
 };
 
-/** A host with a slice worktree for demo-01; `{ dir, worktree }`. */
+/** A host with a slice worktree for demo-01, beside the repository; `{ dir, worktree }`. */
 function sliceHost() {
   const { dir } = host({ config: forgeMd() });
-  const worktree = path.join(dir, '.forge', 'worktrees', 'demo-01');
+  const worktree = sliceWorktreeDir(dir, 'demo-01');
   gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-01', worktree]);
   return { dir, worktree };
 }
@@ -178,9 +178,9 @@ test('quiet outside a repository and on an empty payload', () => {
 const AGENT = 'a7f3c9e2b1d04';
 
 /** A host on feat/demo with a slice worktree for demo-01 whose `agent` is AGENT; `{ dir, worktree }`. */
-function agentHost(slice = { status: 'building', ticket: '#1', agent: AGENT }, config = forgeMd()) {
+function agentHost(slice = { status: 'building', ticket: '#1', agent: AGENT }, config = forgeMd(), { legacy = false } = {}) {
   const { dir } = host({ branch: 'feat/demo', config });
-  const worktree = path.join(dir, '.forge', 'worktrees', 'demo-01');
+  const worktree = legacy ? path.join(dir, '.forge', 'worktrees', 'demo-01') : sliceWorktreeDir(dir, 'demo-01');
   gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-01', worktree]);
   writeState(dir, { efforts: { demo: { stage: 'build', gate: 'none', slices: { 'demo-01': slice } } } });
   return { dir, worktree };
@@ -227,9 +227,16 @@ test('the agent-id branch allows: an unmatched agent_id, a Stop payload with an 
   assert.deepEqual(hook(HOOK, subagentStop(dir, 'someone-else')).decision, {}, 'unmatched');
   assert.deepEqual(hook(HOOK, stop(dir, { agent_id: AGENT })).decision, {}, 'Stop with an agent_id');
   assert.deepEqual(hook(HOOK, subagentStop(dir, '')).decision, {}, 'empty agent_id');
-  gitIn(dir, ['worktree', 'remove', '--force', path.join(dir, '.forge', 'worktrees', 'demo-01')]);
+  gitIn(dir, ['worktree', 'remove', '--force', sliceWorktreeDir(dir, 'demo-01')]);
   assert.deepEqual(hook(HOOK, subagentStop(dir)).decision, {}, 'worktree gone');
   assert.ok(!existsSync(path.join(verifyDir(dir), 'demo-01.denials')));
+});
+
+test('the agent-id branch still finds a pre-0.7.0 worktree under the host\'s .forge/worktrees', () => {
+  const { dir, worktree } = agentHost(undefined, undefined, { legacy: true });
+  const r = hook(HOOK, subagentStop(dir));
+  assert.equal(r.decision.decision, 'block');
+  assert.ok(r.decision.reason.includes(`--worktree "${realpathSync(worktree)}"`), r.decision.reason);
 });
 
 test('the agent-id branch finds the host through git from a cwd inside it, whatever the project dir', () => {
@@ -251,7 +258,7 @@ test('the agent-id branch falls back to the project dir when the cwd is outside 
 
 test('the cwd branch stays first: a slice checkout is gated on its own slice, whatever slice the agent_id names', () => {
   const { dir, worktree } = agentHost({ status: 'building', ticket: '#1' });
-  gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-02', path.join(dir, '.forge', 'worktrees', 'demo-02')]);
+  gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/demo-02', sliceWorktreeDir(dir, 'demo-02')]);
   const state = readState(dir);
   state.efforts.demo.slices['demo-02'] = { status: 'building', ticket: '#2', agent: AGENT };
   writeState(dir, state);

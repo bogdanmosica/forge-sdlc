@@ -7,7 +7,8 @@
 // passes once with the red reason, the slice is marked red in state (its `agent` cleared) and
 // the count resets. A subagent's SubagentStop carries the lead's root as cwd, never the worktree
 // it cd-ed into: when the cwd names no slice, the slice is the one whose `agent` in the host's
-// state is the payload's agent_id, gated the same way while its worktree exists.
+// state is the payload's agent_id, gated the same way while its worktree exists (beside the
+// repository, sliceWorktreeDir, or a pre-0.7.0 one under the host's .forge/worktrees).
 // A subagent past its context budget (context-budget.mjs) stops without a green record: the
 // budget hook denied its tools, so it cannot verify, and its slice is left open, not marked red,
 // for the lead's continuation member; the denial count is cleared for that member.
@@ -18,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { budgetOf, overBudget } from './context-budget.mjs';
-import { DEFAULT_BRANCHES, allow, block, branchRules, currentBranch, cwdOf, effortOf, git, hostDirOf, matchesGlob, readState, run, writeState } from './lib.mjs';
+import { DEFAULT_BRANCHES, allow, block, branchRules, currentBranch, cwdOf, effortOf, git, hostDirOf, legacySliceWorktreeDir, matchesGlob, readState, run, sliceWorktreeDir, writeState } from './lib.mjs';
 
 const MAX_DENIALS = 3;
 const VERIFY_RECORD = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'bin', 'verify-record.mjs');
@@ -78,8 +79,8 @@ function sliceOfAgent(payload, cwd, projectDir, config) {
   for (const effort of Object.values(readState(project)?.efforts ?? {})) {
     for (const [slice, record] of Object.entries(effort?.slices ?? {})) {
       if (record?.agent !== payload.agent_id) continue;
-      const worktree = path.join(project, '.forge', 'worktrees', slice);
-      if (!existsSync(worktree)) return null;
+      const worktree = [sliceWorktreeDir(project, slice), legacySliceWorktreeDir(project, slice)].find((w) => w && existsSync(w));
+      if (!worktree) return null;
       return { slice, branch: sliceShape(config).replace('<slug>-<nn>', slice), worktree, project, head: gitOut(worktree, ['rev-parse', 'HEAD']) };
     }
   }

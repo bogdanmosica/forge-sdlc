@@ -29,6 +29,7 @@ export type RunPaneNotes = {
   routing?: string;
   crew?: string;
   mark?: string;
+  worktrees?: string;
 };
 
 // A subscription's rate-limit window as the pane gauges it.

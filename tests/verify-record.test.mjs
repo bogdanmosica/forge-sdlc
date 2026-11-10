@@ -8,6 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { sliceWorktreeDir } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { forgeMd, host } from './support/host.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'verify-record.mjs');
@@ -18,7 +19,7 @@ const withProof = (proof) => `${forgeMd()}\n## Proof commands\n${Object.entries(
 /** A host with `proof` commands and a slice worktree for demo-01; `{ dir, worktree }`. */
 function sliceHost(proof) {
   const { dir } = host({ config: withProof(proof) });
-  const worktree = path.join(dir, '.forge', 'worktrees', 'demo-01');
+  const worktree = sliceWorktreeDir(dir, 'demo-01');
   const r = spawnSync('git', ['-C', dir, 'worktree', 'add', '-q', '-b', 'slice/demo-01', worktree], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   return { dir, worktree };

@@ -18,7 +18,7 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 - slice: slice/<slug>-<nn>       # local, one worktree each, never pushed
 
 ## Worktrees
-- dependency_dir: none   # symlinked into each slice worktree, never installed there
+- install: none   # run at the root of each new slice worktree (beside the repository); this plugin has no dependencies to install
 
 ## Gates
 - policy: autonomous             # or: attended

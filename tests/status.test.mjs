@@ -35,7 +35,8 @@ test('prints stage, gate, frontier from the tracker doc, red slices from state, 
   assert.match(skill, /blockers are all closed/);
   assert.match(skill, /\.forge\/state\.json/);
   assert.match(skill, /status: red/);
-  assert.match(skill, /\.forge\/worktrees\//);
+  assert.match(skill, /refs\/heads\/slice\/<slug>-<nn>/);
+  assert.doesNotMatch(skill, /\.forge\/worktrees/);
   assert.match(skill, /git worktree list/);
   assert.match(skill, /\/forge-sdlc:wayfinder <slug>/);
 });

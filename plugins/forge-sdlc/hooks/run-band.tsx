@@ -365,7 +365,7 @@ export function registerRunBand(on: On): void {
         <Text dimColor={!running}>{agentsText(s)}</Text>
       </Box>,
     ];
-    for (const key of ['pane', 'routing', 'crew', 'mark'] as const) {
+    for (const key of ['pane', 'routing', 'crew', 'mark', 'worktrees'] as const) {
       const note = n[key];
       if (note)
         second.push(

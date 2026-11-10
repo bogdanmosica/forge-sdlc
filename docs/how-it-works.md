@@ -147,8 +147,8 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     main[("main<br/>protected")] -->|effort starts| feat["feat/slug<br/>map, intent, spec, plan,<br/>research notes, merges"]
-    feat -->|cut from tip| s1["slice/slug-01<br/>.forge/worktrees/slug-01"]
-    feat -->|cut from tip| s2["slice/slug-02<br/>.forge/worktrees/slug-02"]
+    feat -->|cut from tip| s1["slice/slug-01<br/>../repo-worktrees/slug-01"]
+    feat -->|cut from tip| s2["slice/slug-02<br/>../repo-worktrees/slug-02"]
     s1 -->|merger merges, no-ff| feat
     s2 -->|merger merges, no-ff| feat
     feat -->|the only pushed ref| origin(("origin / PR"))

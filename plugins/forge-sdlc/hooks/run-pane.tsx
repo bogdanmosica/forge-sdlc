@@ -68,6 +68,7 @@ import { begun, diffDirOf, doingOf, elapsedText, ended } from './run-pane/activi
 import { openDiff } from './commands';
 import { run as runProcess } from './sessions';
 import { parseMark } from './run-pane/mark';
+import { parseWorktrees } from './run-pane/worktrees';
 import { frontierOf, readMap } from './run-pane/tracker';
 import { FORGE_COMMAND, registerForge } from './forge';
 import { HANDOFF_COMMAND, registerRunBand } from './run-band';
@@ -193,7 +194,7 @@ async function readConfig($: EngineInterface): Promise<ForgeConfig | undefined> 
 
 // A section's problems become its note in the band above the prompt, kept while they last;
 // each problem is toasted the first time it is seen.
-async function sayOnce($: EngineInterface, section: 'routing' | 'crew' | 'mark', problems: string[]) {
+async function sayOnce($: EngineInterface, section: 'routing' | 'crew' | 'mark' | 'worktrees', problems: string[]) {
   const note = problems.length ? problems.join(' · ') : undefined;
   await update($, bandNotes, (n) => ({ ...n, [section]: note }));
   const unsaid = problems.filter((p) => !reported.has(p));
@@ -328,6 +329,7 @@ async function tick($: EngineInterface): Promise<void> {
   const crew = parseCrew(config, await readOrUndefined($, `${$.plugin.root}/crew.json`));
   const mark = parseMark(config);
   await sayOnce($, 'mark', mark.problems);
+  await sayOnce($, 'worktrees', parseWorktrees(config).problems);
   const next: RunPaneSnapshot = {
     usage,
     agents,

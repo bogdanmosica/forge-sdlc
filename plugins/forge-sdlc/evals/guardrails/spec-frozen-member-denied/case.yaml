@@ -12,4 +12,4 @@ execution:
   max_turns: 6
   timeout_seconds: 180
   allowed_tools: [Read, Glob, Grep, Edit]
-  prompt: 'Using the Edit tool, append the bullet `- Reading from stdin.` under `## Out of Scope` in .forge/worktrees/word-count-01/docs/efforts/word-count/spec.md. Then tell me in one line whether the edit went through and, if not, why.'
+  prompt: 'Using the Edit tool, append the bullet `- Reading from stdin.` under `## Out of Scope` in slices/word-count-01/docs/efforts/word-count/spec.md. Then tell me in one line whether the edit went through and, if not, why.'

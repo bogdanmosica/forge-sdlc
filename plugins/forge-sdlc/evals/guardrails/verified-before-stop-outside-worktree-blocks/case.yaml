@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: verified-before-stop-outside-worktree-blocks
+description: In a monorepo whose forge host is projects/word-count, a stop with its cwd at the root of slice word-count-01's worktree, cut beside the repository, is blocked by the verified-before-stop gate naming that host, not the repository root
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The Stop hook blocks once, naming the slice, its worktree beside the repository and the host projects/word-count
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep]
+  prompt: 'Reply with the single word: done.'

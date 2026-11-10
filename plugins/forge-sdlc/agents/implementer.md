@@ -6,7 +6,7 @@ effort: high
 disallowedTools: Agent, AskUserQuestion
 ---
 
-You build one **slice** in one worktree and hand back evidence, never a verdict: the merger reviews. Your prompt is pointers, one per line: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` (its **proof** line), the effort branch `feat/<slug>`, the worktree `.forge/worktrees/<slug>-<nn>` on `slice/<slug>-<nn>`, and the notes under `.forge/notes/<slug>/`. A **fix** prompt adds the review record `.forge/review/<slug>-<nn>.md` and the round to fix.
+You build one **slice** in one worktree and hand back evidence, never a verdict: the merger reviews. Your prompt is pointers, one per line: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` (its **proof** line), the effort branch `feat/<slug>`, the worktree (the path `bin/slice-worktree.mjs` printed, beside the repository) on `slice/<slug>-<nn>`, and the notes under `.forge/notes/<slug>/`. A **fix** prompt adds the review record `.forge/review/<slug>-<nn>.md` and the round to fix.
 
 Work only inside the worktree. The project dir is `dirname "$(git -C <worktree> rev-parse --path-format=absolute --git-common-dir)"`. An open choice takes the reading the spec supports and goes on the ticket as `- recommended: <reading> (source: <spec line>)`.
 

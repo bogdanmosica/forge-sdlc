@@ -1,6 +1,6 @@
 ---
 type: regex
-target: {source: file, path: .forge/worktrees/word-count-01/tests/count.test.mjs}
+target: {source: file, path: slices/word-count-01/tests/count.test.mjs}
 pattern: 'c.\), 3\)'
 ---
 

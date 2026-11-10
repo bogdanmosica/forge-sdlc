@@ -52,7 +52,7 @@ config() {
 - slice: slice/<slug>-<nn>
 
 ## Worktrees
-- dependency_dir: none
+- install: none
 
 ## Gates
 - spec: always
@@ -101,11 +101,19 @@ state() {
 JSON
 }
 
-# worktree <nn> [mode]: slice <nn>'s worktree at .forge/worktrees/$SLUG-<nn>, cut from the checked-out
-# branch as build cuts it, and the slice marked building in .forge/state.json with that mode (default
-# normal). Run after state. A session whose project dir is a slice worktree has no .forge/ of its own there.
+# worktree <nn> [mode]: slice <nn>'s worktree cut by bin/slice-worktree.mjs as build cuts it, beside the
+# repository (<workspace>-worktrees/$SLUG-<nn>, ADR 0022), and the slice marked building in
+# .forge/state.json with that mode (default normal). Run after state, on the effort branch. A case
+# names the worktree through slices/, a link in the current folder (the host) to that folder (git-excluded), since a
+# case cannot know its workspace's name; the hooks resolve it to the real path. A session whose
+# project dir is a slice worktree has no .forge/ of its own there.
 worktree() {
-  git worktree add -q -b "slice/$SLUG-$1" ".forge/worktrees/$SLUG-$1"
+  local dir exclude
+  dir="$(node "$PLUGIN_ROOT/bin/slice-worktree.mjs" "$SLUG-$1" --add)"
+  ln -sfn "$(dirname "$dir")" slices
+  exclude="$(git rev-parse --git-path info/exclude)"
+  mkdir -p "$(dirname "$exclude")"
+  grep -qx slices "$exclude" 2>/dev/null || printf 'slices\n' >> "$exclude"
   node -e 'const fs = require("fs"), [f, slug, slice, mode] = process.argv.slice(1);
     const s = JSON.parse(fs.readFileSync(f, "utf8"));
     Object.assign(s.efforts[slug].slices[slice], { status: "building", mode });
