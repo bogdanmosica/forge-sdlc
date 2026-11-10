@@ -420,6 +420,7 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── skill-path.mjs        # resolver for user-invoked upstream skills; --check is the lock verdict
 │   │   ├── upstream.mjs          # registry, lock and verdict, shared by skill-path and skills-version
 │   │   ├── effort-state.mjs      # an effort's stage, gate and next command, from state or its artifacts
+│   │   ├── host-dir.mjs          # the host of a path, resolved through git as the hooks do (hostDirOf)
 │   │   ├── verify-record.mjs     # runs a slice's proof and the host's commands, writes .forge/verify/<slug>-<nn>.json
 │   │   └── crew-name.mjs         # a member's next name from the host's crew theme, recorded in .forge/state.json
 │   ├── evals/                    # claude plugin eval suites (section 12)

@@ -7,9 +7,13 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { hostDirOf, hostInCheckout, sliceWorktreeDir, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { decisionOf, edit, hook, host, reasonOf } from './support/host.mjs';
+
+const HOST_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'host-dir.mjs');
+const hostDirCli = (args, cwd) => spawnSync(process.execPath, [HOST_DIR, ...args], { cwd, encoding: 'utf8' });
 
 const gitIn = (dir, args) => {
   const r = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
@@ -110,4 +114,23 @@ test('verified-before-stop: a SubagentStop by agent id finds the slice in its ou
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.decision.decision, 'block');
   assert.ok(r.decision.reason.includes(`--worktree "${realpathSync(worktree)}"`), r.decision.reason);
+});
+
+test('bin/host-dir.mjs: an outside worktree of a subfolder host prints the host, not the parent of the git common dir', () => {
+  const { repo, dir, worktree } = subfolderHost();
+  const commonParent = path.dirname(gitIn(worktree, ['rev-parse', '--path-format=absolute', '--git-common-dir']));
+  assert.equal(realpathSync(commonParent), realpathSync(repo), 'the old derivation lands on the repository root');
+  const r = hostDirCli([worktree]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout, `${realpathSync(dir)}\n`);
+  assert.equal(hostDirCli([], worktree).stdout, `${realpathSync(dir)}\n`, 'the cwd when no dir is given');
+});
+
+test('bin/host-dir.mjs: a single-repo host from its outside worktree; exit 2 outside a repository or on bad usage', () => {
+  const { dir } = host({ branch: 'feat/x' });
+  const worktree = cutOutside(dir);
+  writeState(dir, state());
+  assert.equal(hostDirCli([worktree]).stdout, `${realpathSync(dir)}\n`);
+  assert.equal(hostDirCli([path.parse(process.cwd()).root]).status, 2);
+  assert.equal(hostDirCli(['a', 'b']).status, 2);
 });

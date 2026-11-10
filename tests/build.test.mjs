@@ -286,6 +286,12 @@ test('implementer: fix mode set before code, cleared after; never reviews; repor
   assert.match(body, /commits/);
 });
 
+test('implementer: the project dir is the host bin/host-dir.mjs resolves, never the parent of the git common dir', () => {
+  const { body } = frontmatter(read(IMPLEMENTER));
+  assert.match(body, /node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/host-dir\.mjs" <worktree>/);
+  assert.doesNotMatch(body, /git-common-dir/);
+});
+
 /* The merger */
 
 test('merger: Sonnet low, scoped to git, Skill, Agent and read', () => {
