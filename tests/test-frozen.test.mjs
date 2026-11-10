@@ -5,24 +5,24 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-import { matchesPath, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
+import { matchesPath, sliceWorktreeDir, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { bash, decisionOf, edit, hook, host, reasonOf } from './support/host.mjs';
 
 const HOOK = 'test-frozen.mjs';
 const config = (globs = '**/*.test.*, **/*.spec.*, tests/**') =>
   ['# forge-sdlc host config', '', '## Branches', '- default: main', '', '## Test file globs', `- globs: ${globs}`, ''].join('\n');
 
-/** A host on feat/x with a slice worktree for x-01 and x-02; `effort` and `slices` set the modes. */
+/** A host on feat/x with a slice worktree for x-01 and x-02 beside the repository; `effort` and `slices` set the modes. */
 function fixture({ effort = 'normal', slices = {}, globs } = {}) {
   const { dir } = host({ branch: 'feat/x', config: config(globs) });
   for (const nn of ['01', '02']) {
-    const wt = path.join(dir, '.forge', 'worktrees', `x-${nn}`);
+    const wt = sliceWorktreeDir(dir, `x-${nn}`);
     const r = spawnSync('git', ['-C', dir, 'worktree', 'add', '-q', '-b', `slice/x-${nn}`, wt], { encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
   }
   const sliceRecords = Object.fromEntries(['x-01', 'x-02'].map((s) => [s, { status: 'building', mode: slices[s] ?? 'normal' }]));
   writeState(dir, { efforts: { x: { stage: 'build', gate: 'none', mode: effort, branch: 'feat/x', slices: sliceRecords } } });
-  return { dir, wt: (nn) => `.forge/worktrees/x-${nn}` };
+  return { dir, wt: (nn) => path.relative(dir, sliceWorktreeDir(dir, `x-${nn}`)) };
 }
 
 const frozen = (dir, rel, tool = 'Edit') => hook(HOOK, { ...edit(dir, rel), tool_name: tool });

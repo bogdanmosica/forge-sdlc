@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
+import { sliceWorktreeDir, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { bash, decisionOf, edit, hook, host, reasonOf } from './support/host.mjs';
 
 const building = (stage = 'build') => {
@@ -57,7 +57,7 @@ test('map.md stays live, and another effort folder is untouched', () => {
 
 test('the same file inside a slice worktree of the host is frozen: the path tail decides', () => {
   const { dir } = building();
-  const r = frozen(dir, '.forge/worktrees/x-01/docs/efforts/x/spec.md');
+  const r = frozen(dir, path.join(path.relative(dir, sliceWorktreeDir(dir, 'x-01')), 'docs/efforts/x/spec.md'));
   assert.equal(decisionOf(r), 'deny');
 });
 
@@ -72,7 +72,7 @@ function memberHost() {
   writeFileSync(path.join(dir, 'docs', 'efforts', 'x', 'spec.md'), '# Spec\n');
   git(['add', 'docs/efforts/x/spec.md']);
   git(['commit', '-q', '-m', 'spec']);
-  const worktree = path.join(dir, '.forge', 'worktrees', 'x-01');
+  const worktree = sliceWorktreeDir(dir, 'x-01');
   git(['worktree', 'add', '-q', '-b', 'slice/x-01', worktree]);
   return { dir, worktree };
 }

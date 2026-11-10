@@ -66,6 +66,26 @@ export function readHostConfig(projectDir) {
   return parseForgeConfig(readFileSync(file, 'utf8'));
 }
 
+/** The problem a `dependency_dir` other than none is since 0.7.0 (ADR 0022); the run pane's worktrees.ts says the same. */
+export const DEPENDENCY_DIR_PROBLEM =
+  'worktrees: dependency_dir is no longer read (0.7.0): slice worktrees get a real install, never a symlink. ' +
+  'Set `- install: <command>` under ## Worktrees (or `- install: none`) and set dependency_dir to none or drop it';
+
+/**
+ * The host's `## Worktrees` install: `{ command, problems }`. `command` is run at the root of each
+ * new slice worktree, null for `none` or no key. A `dependency_dir` other than none is a problem:
+ * no symlink is made any more, whatever it names.
+ */
+export function worktreeInstall(config) {
+  const section = config?.worktrees ?? {};
+  const install = section.install?.trim() ?? '';
+  const dependencyDir = section.dependency_dir?.trim() ?? '';
+  return {
+    command: install && install.toLowerCase() !== 'none' ? install : null,
+    problems: dependencyDir && dependencyDir.toLowerCase() !== 'none' ? [DEPENDENCY_DIR_PROBLEM] : [],
+  };
+}
+
 /** A comma-separated config value as a list. */
 export const listOf = (value) => (value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -134,42 +154,92 @@ export function currentBranch(dir) {
   return r.status === 0 ? r.stdout.trim() : null;
 }
 
-/**
- * The host dir whose `.forge/` holds the run state for a path, so a slice worktree resolves to its
- * host even for a session whose project dir is a slice worktree. `fallback` outside a repo.
- * - In a slice worktree (a checkout at `<host>/.forge/worktrees/<slice>`): that `<host>`.
- * - Elsewhere: the folder of the main checkout (the parent of the git common dir) at the same place
- *   as `dir`, then up to the nearest one holding docs/agents/forge.md, else the main checkout. So a
- *   host that is a subfolder of its repository (a monorepo's `projects/<x>`) resolves to itself,
- *   and a single-repo host to its root, as before.
- */
-export function hostDirOf(dir, fallback) {
+/** `{ at, checkout, main }` for `dir`: its real path, the root of the checkout holding it, and the main checkout (the parent of the git common dir); null outside a repo. */
+function checkoutsOf(dir) {
   const at = realpathSync(nearestExisting(dir));
   const common = git(['-C', at, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
   const top = git(['-C', at, 'rev-parse', '--show-toplevel']);
-  if (common.status !== 0 || top.status !== 0) return fallback;
-  const checkout = realpathSync(top.stdout.trim());
-  const slice = path.dirname(path.dirname(checkout));
-  if (path.basename(path.dirname(checkout)) === 'worktrees' && path.basename(slice) === '.forge') {
-    return path.dirname(slice);
+  if (common.status !== 0 || top.status !== 0) return null;
+  return { at, checkout: realpathSync(top.stdout.trim()), main: realpathSync(path.dirname(common.stdout.trim())) };
+}
+
+/**
+ * Where slice `<slug>-<nn>`'s worktree lives: outside the repository, beside its main checkout,
+ * `<parent of main checkout>/<main checkout's folder name>-worktrees/<slug>-<nn>` (ADR 0022), for
+ * any `dir` in the repository or in one of its worktrees. Null outside a repo.
+ */
+export function sliceWorktreeDir(dir, slice) {
+  const found = checkoutsOf(dir);
+  if (!found) return null;
+  return path.join(path.dirname(found.main), `${path.basename(found.main)}-worktrees`, slice);
+}
+
+/** The pre-0.7.0 slice worktree of `host`, `<host>/.forge/worktrees/<slice>`: read as a fallback only. */
+export const legacySliceWorktreeDir = (host, slice) => path.join(host, '.forge', 'worktrees', slice);
+
+/** The host dirs of the main checkout `main`: every folder holding docs/agents/forge.md, tracked or not (ignored files skipped). */
+function hostsUnder(main) {
+  const r = git(['-C', main, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', `:(glob)**/${HOST_CONFIG.split(path.sep).join('/')}`]);
+  if (r.status !== 0) return [];
+  const dirs = r.stdout.split('\0').filter(Boolean).map((f) => path.join(main, path.dirname(path.dirname(path.dirname(f)))));
+  return [...new Set(dirs)];
+}
+
+/** The host under `main` whose state holds the slice `branch` names (under that host's slice shape), or null. */
+function hostOfSliceBranch(branch, main) {
+  for (const host of hostsUnder(main)) {
+    const config = readHostConfig(host);
+    const shape = config?.branches?.slice || DEFAULT_BRANCHES.slice;
+    if (!matchesGlob(branch, globOfShape(shape))) continue;
+    const slice = branch.slice(shape.indexOf('<'));
+    let state;
+    try {
+      state = readState(host);
+    } catch {
+      continue;
+    }
+    if (effortOf(state, slice.replace(/-\d+$/, ''))?.slices?.[slice]) return host;
   }
-  const main = realpathSync(path.dirname(common.stdout.trim()));
+  return null;
+}
+
+/**
+ * The host dir whose `.forge/` holds the run state for a path, so a slice worktree resolves to its
+ * host even for a session whose project dir is a slice worktree. `fallback` outside a repo.
+ * - The folder of the main checkout (the parent of the git common dir) at the same place as
+ *   `dir`, then up to the nearest one holding docs/agents/forge.md. So a host that is a subfolder
+ *   of its repository (a monorepo's `projects/<x>`) resolves to itself, from the main checkout and
+ *   from deep inside any worktree, and a single-repo host to its root.
+ * - Else, in a linked worktree (a slice worktree, outside the repository since 0.7.0, ADR 0022):
+ *   the host whose `.forge/state.json` holds the slice its branch names, so a cwd at the worktree
+ *   root or in another project folder still finds a subfolder host.
+ * - Else, in a pre-0.7.0 checkout at `<host>/.forge/worktrees/<slice>`: that `<host>`.
+ * - Else the main checkout.
+ */
+export function hostDirOf(dir, fallback) {
+  const found = checkoutsOf(dir);
+  if (!found) return fallback;
+  const { at, checkout, main } = found;
   for (let probe = path.join(main, path.relative(checkout, at)); ; probe = path.dirname(probe)) {
     if (existsSync(path.join(probe, HOST_CONFIG))) return probe;
-    if (probe === main || path.dirname(probe) === probe) return main;
+    if (probe === main || path.dirname(probe) === probe) break;
   }
+  if (checkout === main) return main;
+  const branch = currentBranch(checkout);
+  const host = branch ? hostOfSliceBranch(branch, main) : null;
+  if (host) return host;
+  const legacy = path.dirname(path.dirname(checkout));
+  if (path.basename(path.dirname(checkout)) === 'worktrees' && path.basename(legacy) === '.forge') return path.dirname(legacy);
+  return main;
 }
 
 /** Where `host` sits inside the checkout holding `dir`: `host` mapped from the main checkout onto that checkout (a slice worktree checks out the whole repository). */
 export function hostInCheckout(host, dir) {
-  const at = realpathSync(nearestExisting(dir));
-  const common = git(['-C', at, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
-  const top = git(['-C', at, 'rev-parse', '--show-toplevel']);
-  if (common.status !== 0 || top.status !== 0) return host;
-  const main = realpathSync(path.dirname(common.stdout.trim()));
-  const rel = path.relative(main, realpathSync(nearestExisting(host)));
+  const found = checkoutsOf(dir);
+  if (!found) return host;
+  const rel = path.relative(found.main, realpathSync(nearestExisting(host)));
   if (rel.startsWith('..') || path.isAbsolute(rel)) return host;
-  return path.join(realpathSync(top.stdout.trim()), rel);
+  return path.join(found.checkout, rel);
 }
 
 /** The default branch of the repository holding `dir`, or null when it cannot be told. */
@@ -410,7 +480,9 @@ export async function run(check, { stdin = process.stdin, stdout = process.stdou
   try {
     const payload = await readPayload(stdin);
     const projectDir = projectDirOf(payload, env);
-    const config = readHostConfig(projectDir);
+    // A session launched in a slice worktree of a subfolder host has no forge.md at its project
+    // dir: the config is its host's, found through git.
+    const config = readHostConfig(projectDir) ?? readHostConfig(hostDirOf(projectDir, projectDir));
     const decision = await check(payload, { projectDir, config, env });
     stdout.write(JSON.stringify(decision ?? {}));
     return 0;

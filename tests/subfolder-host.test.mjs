@@ -1,7 +1,9 @@
 // A host that is a subfolder of its repository, as in a monorepo: docs/agents/forge.md and
 // .forge/ live in projects/a, the session is launched there, and slice worktrees are whole-repo
-// checkouts under projects/a/.forge/worktrees/. The hooks must read the state, the verify records
-// and the test globs from projects/a, not from the repository root.
+// checkouts. The hooks must read the state, the verify records and the test globs from projects/a,
+// not from the repository root. The worktrees here are the pre-0.7.0 shape, under
+// projects/a/.forge/worktrees/, which still resolves; tests/outside-worktree.test.mjs holds the
+// current one, beside the repository (ADR 0022).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -61,14 +63,14 @@ test('hostDirOf: the host of a path in the main checkout is the nearest folder w
   assert.equal(hostDirOf(repo, 'unused'), realpathSync(repo));
 });
 
-test('hostDirOf: a path in a slice worktree resolves to the folder holding .forge/worktrees, wherever in the worktree it is', () => {
+test('hostDirOf: a path in a pre-0.7.0 slice worktree resolves to the folder holding .forge/worktrees, wherever in the worktree it is', () => {
   const { dir, worktree } = subfolderHost();
   const real = realpathSync(dir);
   assert.equal(hostDirOf(worktree, 'unused'), real);
   assert.equal(hostDirOf(path.join(worktree, 'projects', 'a', 'docs'), 'unused'), real);
 });
 
-test('hostDirOf: a single-repo host resolves as before, for the checkout and its slice worktrees', () => {
+test('hostDirOf: a single-repo host resolves as before, for the checkout and its pre-0.7.0 slice worktrees', () => {
   const { dir } = host({ branch: 'feat/x' });
   const worktree = path.join(dir, '.forge', 'worktrees', 'x-01');
   gitIn(dir, ['worktree', 'add', '-q', '-b', 'slice/x-01', worktree]);
