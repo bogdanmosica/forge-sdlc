@@ -1,6 +1,6 @@
 # 21. A host may be a subfolder of its repository
 
-Status: accepted, 2026-11-09
+Status: accepted, 2026-11-09; amended by [ADR 0022](0022-slice-worktrees-beside-the-repository.md), which moves slice worktrees out of `<host>/.forge/worktrees/` to beside the repository and resolves their host through git (the old shape is still read as a fallback)
 
 ## Context
 
