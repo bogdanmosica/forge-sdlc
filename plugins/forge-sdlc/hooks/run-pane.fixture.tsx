@@ -55,6 +55,8 @@ export type Seat = {
   calls: string[]; // 'write' per fs.write, in order with what a test adds
   git: Record<string, string>; // a git command's stdout by its words after `git`; one not listed fails
   runs: { argv: string[]; cwd?: string }[]; // every process the mod ran, in order
+  hostDir: string; // what `node <plugin root>/bin/host-dir.mjs` prints; '' exits 2, as outside a repository
+  reads: string[]; // every path the mod read, as it asked for it
 };
 
 // A subscription's windows, reset times counted from the mock clock's epoch start.
@@ -63,7 +65,7 @@ export const RATE_LIMITS = [
   { kind: 'seven_day', percentUsed: 61, resetsAt: '1970-01-04T06:00:00.000Z' },
 ];
 
-export function virtualFs(on: On, files: Record<string, string>) {
+export function virtualFs(on: On, files: Record<string, string>, reads: string[] = []) {
   // The engine resolves the mod's relative paths against the session's cwd first.
   // The plugin's own prices.json and crew.json are read under `$.plugin.root`,
   // wherever the kit puts it; the host's files by their path under the cwd.
@@ -95,6 +97,7 @@ export function virtualFs(on: On, files: Record<string, string>) {
     return { value: [...entries].map(([name, m]) => ({ name, ...m, isLink: false })) };
   });
   on('fs.read', ($, e) => {
+    reads.push(e.path);
     const text = files[norm(e.path)];
     if (text === undefined) throw new Error(`ENOENT: ${e.path}`);
     return { value: text };
@@ -126,6 +129,8 @@ export function seat(on: On, overrides: Partial<Seat> = {}): Seat {
     calls: [],
     git: {},
     runs: [],
+    hostDir: '',
+    reads: [],
     ...overrides,
   };
   mock.env(on, s.env);
@@ -207,6 +212,12 @@ export function seat(on: On, overrides: Partial<Seat> = {}): Seat {
   // session's directory is the project (run-pane.tsx projectDir).
   on('process.run', ($, e) => {
     s.runs.push({ argv: [...e.argv], cwd: e.init?.cwd });
+    if (e.argv[0] === 'node' && e.argv[1]?.endsWith('/bin/host-dir.mjs')) {
+      const ok = s.hostDir !== '';
+      return {
+        value: { exitCode: ok ? 0 : 2, stdout: ok ? `${s.hostDir}\n` : '', stderr: ok ? '' : 'not in a git repository', isStdoutTruncated: false, isStderrTruncated: false },
+      };
+    }
     const out = e.argv[0] === 'git' ? s.git[e.argv.slice(1).join(' ')] : undefined;
     if (out !== undefined)
       return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } };
@@ -220,7 +231,7 @@ export function seat(on: On, overrides: Partial<Seat> = {}): Seat {
   });
   // One object, the seat's own: a test lays a file after the start by writing to `s.files`.
   s.files = { ...FIXTURE, 'prices.json': s.prices, 'crew.json': presets, ...s.files };
-  virtualFs(on, s.files);
+  virtualFs(on, s.files, s.reads);
   return s;
 }
 
