@@ -9,7 +9,7 @@ The shapes every slice of the build order (design, section 15) agrees on, so sli
 | Effort slug | kebab-case, from the map title; `<slug>` below |
 | Effort branch | `feat/<slug>` (host config `branches.effort`, glob via `globOfShape`) |
 | Slice branch | `slice/<slug>-<nn>`, `nn` two digits from `01`, the ticket's order in `plan.md` |
-| Slice worktree | `.forge/worktrees/<slug>-<nn>` in the host, branch above, the host's dependency dir (`## Worktrees` / `dependency_dir` in forge.md, default: whichever of `node_modules`, `.venv`, `vendor` exists) symlinked from the host |
+| Slice worktree | `<parent of main checkout>/<main checkout folder>-worktrees/<slug>-<nn>`, beside the repository (`bin/slice-worktree.mjs <slug>-<nn> --project <host>` prints it, `--add` cuts it), branch above, the host's `## Worktrees` `install` command run at its root (`none` or absent: no install; `dependency_dir` other than `none` is a config problem). Not stored in state: its host is resolved through git |
 | Effort folder | `docs/efforts/<slug>/` with `map.md`, `intent.md`, `spec.md`, `plan.md` |
 | Research notes | `docs/research/<slug>/<topic>.md`, committed on the effort branch |
 | Exploration notes for a build | `.forge/notes/<slug>/*.md`, not committed |

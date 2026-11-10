@@ -8,7 +8,7 @@ The leading words of forge-sdlc, one line each. The design ([docs/design.md](doc
 - **crew theme**: the host's choice of names for its members, one pool per role, picked at init; display only, never a branch, commit or record name.
 - **map**: the wayfinder map of an effort, `docs/efforts/<slug>/map.md`: its Destination, notes, decisions so far, and the tickets (on the tracker) still to resolve before the way is clear.
 - **Destination**: where the effort is going, written under the intent headings Problem, Outcome, Users, Constraints, Open questions; named first, it becomes `intent.md`.
-- **slice**: one tracer-bullet ticket of the plan, `<slug>-<nn>`, built test-first on its own local branch `slice/<slug>-<nn>` in its own worktree, then merged into the effort branch.
+- **slice**: one tracer-bullet ticket of the plan, `<slug>-<nn>`, built test-first on its own local branch `slice/<slug>-<nn>` in its own worktree beside the repository (`<repo>-worktrees/<slug>-<nn>`), then merged into the effort branch.
 - **frontier**: the open tickets whose blockers are all closed (or merged): what can start now.
 - **gate**: a point where the effort waits for a decision (Gate 1 intent, 2 spec, 3 plan, 4 PR): the owner's under the attended gate policy, or the policy's own when the gate's artifact is complete and nothing in it asks for a human; the effort waits there in `.forge/state.json`, and the PR body or `PR.md` is the gate record either way.
 - **gate policy**: the host's choice, in `forge.md`, of who passes Gates 1 to 3: `attended`, the owner at each one, or `autonomous`, the policy whenever the artifact has no open line, no flagged concern and normal risk. Gate 4 is always the owner's.
