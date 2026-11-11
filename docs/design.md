@@ -95,7 +95,7 @@ docs/efforts/<slug>/
 ├── map.md        # Plan:   the wayfinder map: Destination, Notes, Decisions so far, Not yet specified, Out of scope
 ├── intent.md     # Plan:   problem, outcome, users, constraints, open questions, assumptions
 ├── spec.md       # Design: to-spec template + Affected systems + Flagged concerns + Assumptions
-└── plan.md       # Build:  slices (title, blocked by, delivers, proof), order of work, risks, prefactoring
+└── plan.md       # Build:  slices (title, blocked by, delivers), a proof block per slice, order of work, risks, prefactoring
 ```
 
 | Artifact | Written by | Committed on | Frozen when | Source of truth |
@@ -185,7 +185,7 @@ Shapes or reshapes one map's Destination through a short grilling, without chart
 
 1. Precondition: `spec.md` committed and the gate passed.
 2. Follow `to-tickets` (read its file): tracer-bullet slices, blocking edges, prefactoring first, expand–contract for wide refactors. Its quiz step **is Gate 3**: present the breakdown, iterate until the engineer approves. Under `autonomous` with `risk: normal` the quiz's answer is the drafted breakdown: its four answers are `recommended:` lines in a `## Quiz` block of `plan.md` after `## Prefactoring` and under the PR body's slice table, and the report says `Gate 3 passed`.
-3. Each slice gets a **proof** line: the command and the observable that show it done (a test file, an e2e tag, a build target). This is the playbook's "proof" column and what the verifier runs.
+3. Each slice gets a **proof**: the command and the observable that show it done (a test file, an e2e tag, a build target). This is the playbook's "proof" and what the verifier runs. Decision: the command is a fenced block under the slice table, not a table column, so it is the exact text the verifier runs ([ADR 0023](adr/0023-proofs-in-fenced-blocks.md)).
 4. Publish the tickets to the tracker (blockers first, native blocking edges on GitHub, `Blocked by` text locally), label `ready-for-agent`. Write `docs/efforts/<slug>/plan.md` from the approved breakdown: the slice table, order of work (the initial frontier), risks, prefactoring. Commit. Update the PR body.
 
 ### `build` (Build and Test, unattended)
@@ -195,7 +195,7 @@ Shapes or reshapes one map's Destination through a short grilling, without chart
 - **Integration branch** = `feat/<slug>`. Fetch, switch, never create a second one.
 - **Members**: every agent below is a member call (`skills/build/MEMBERS.md`) with its role, named from the host's crew theme; the Gate 4 report gives `<slug>-<nn>: <member>` per slice.
 - **Exploration subagent** (step 2) = the researcher agent, notes under `.forge/notes/<slug>/`, outside every worktree, readable by all.
-- **Implementer subagents** (step 4) = the implementer agent, `subagent_type: "forge-sdlc:implementer"`, one worktree per slice, cut by `bin/slice-worktree.mjs <slug>-<nn> --project <host> --add` beside the repository, on a local branch `slice/<slug>-<nn>` cut from the tip of `feat/<slug>`, prompt is pointers only: ticket, spec, plan, effort branch, worktree path, proof line. It calls `mattpocock-skills:tdd`. It never reviews. It starts in the background and the lead records its id as the slice's `agent`, which the Stop hook gates on.
+- **Implementer subagents** (step 4) = the implementer agent, `subagent_type: "forge-sdlc:implementer"`, one worktree per slice, cut by `bin/slice-worktree.mjs <slug>-<nn> --project <host> --add` beside the repository, on a local branch `slice/<slug>-<nn>` cut from the tip of `feat/<slug>`, prompt is pointers only: ticket, spec, plan, effort branch, worktree path, proof block. It calls `mattpocock-skills:tdd`. It never reviews. It starts in the background and the lead records its id as the slice's `agent`, which the Stop hook gates on.
 - **Verifier** runs when an implementer reports done: the verifier agent runs the slice's proof and the host's proof commands in the worktree and writes `.forge/verify/<slug>-<nn>.json` (commands, exit codes, trimmed output, timestamp, HEAD). The implementer's Stop hook reads this record: no green record, no stop (section 7).
 - **Merger** (step 5) = the merger agent, one member call per finished slice. It reads the evidence record, runs `/forge-sdlc:slice-review`, merges the slice branch `--no-ff` into `feat/<slug>`, pushes `feat/<slug>`, deletes the slice branch and its worktree, resolves the ticket, and clears the slice's `agent`. Two fix rounds at most; then the slice is **red**: its branch and worktree stay for its implementer, it is listed in the PR and never merged, and never pushed. A slice blocked by a red slice is red too. Once the merger reports `merged` or `red`, the lead ends that slice's implementer and the merger.
 - **Frontier** (step 6): after every merge, start implementers for every ticket now unblocked, in the background, as many as the host config allows (`max_parallel_slices`, default 3; the playbook says start with two or three and add only while review keeps pace).

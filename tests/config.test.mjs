@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { block, branchRules, effortOf, globOfShape, listOf, parseForgeConfig, readState, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { forgeMd, host } from './support/host.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc');
@@ -66,6 +66,20 @@ test('bin/forge-config.mjs prints the config with rules, and fails loud on a hos
   const missing = spawnSync(process.execPath, [path.join(root, 'bin', 'forge-config.mjs'), bare.dir], { encoding: 'utf8' });
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /forge-sdlc:init/);
+});
+
+test('bin/forge-config.mjs at a monorepo root with no config of its own lists the hosts below it to cd into', () => {
+  const mono = host({ branch: 'main', config: null });
+  for (const name of ['shop', 'scout']) {
+    mkdirSync(path.join(mono.dir, 'projects', name, 'docs', 'agents'), { recursive: true });
+    writeFileSync(path.join(mono.dir, 'projects', name, 'docs', 'agents', 'forge.md'), forgeMd());
+  }
+  const r = spawnSync(process.execPath, [path.join(root, 'bin', 'forge-config.mjs'), mono.dir], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /cd into one/);
+  assert.match(r.stderr, new RegExp(`^  ${path.join('projects', 'scout')}$`, 'm'));
+  assert.match(r.stderr, new RegExp(`^  ${path.join('projects', 'shop')}$`, 'm'));
+  assert.doesNotMatch(r.stderr, /forge-sdlc:init/);
 });
 
 const repoRoot = path.resolve(root, '..', '..');

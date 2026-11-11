@@ -188,7 +188,7 @@ test('REVIEW.md: quotes no credential-looking value and names no company', () =>
 test('slice-review: the verifier gets its own four pointers, the fix implementer its build pointers plus the round', () => {
   const body = read('skills/slice-review/SKILL.md');
   assert.match(body, /in the verifier's order: `<slug>-<nn>`, the worktree, the project dir[^\n]*proof command/);
-  assert.match(body, /implementer's build pointers plus the fix[^\n]*plan\.md` row `<nn>` and its proof line[^\n]*the round to fix/);
+  assert.match(body, /implementer's build pointers plus the fix[^\n]*plan\.md` row `<nn>` and its proof block[^\n]*the round to fix/);
 });
 
 /* Members (the member call of skills/build/MEMBERS.md) */

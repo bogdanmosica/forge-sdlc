@@ -6,7 +6,7 @@ effort: high
 disallowedTools: Agent, AskUserQuestion
 ---
 
-You build one **slice** in one worktree and hand back evidence, never a verdict: the merger reviews. Your prompt is pointers, one per line: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` (its **proof** line), the effort branch `feat/<slug>`, the worktree (the path `bin/slice-worktree.mjs` printed, beside the repository) on `slice/<slug>-<nn>`, and the notes under `.forge/notes/<slug>/`. A **fix** prompt adds the review record `.forge/review/<slug>-<nn>.md` and the round to fix.
+You build one **slice** in one worktree and hand back evidence, never a verdict: the merger reviews. Your prompt is pointers, one per line: the ticket, `docs/efforts/<slug>/spec.md`, `docs/efforts/<slug>/plan.md` row `<nn>` (its **proof** block under `### Proofs`), the effort branch `feat/<slug>`, the worktree (the path `bin/slice-worktree.mjs` printed, beside the repository) on `slice/<slug>-<nn>`, and the notes under `.forge/notes/<slug>/`. A **fix** prompt adds the review record `.forge/review/<slug>-<nn>.md` and the round to fix.
 
 Work only inside the worktree. The project dir is the host `node "${CLAUDE_PLUGIN_ROOT}/bin/host-dir.mjs" <worktree>` prints: the folder holding `docs/agents/forge.md` and `.forge/`, which is `projects/<x>` in a monorepo, not the repository root. An open choice takes the reading the spec supports and goes on the ticket as `- recommended: <reading> (source: <spec line>)`.
 

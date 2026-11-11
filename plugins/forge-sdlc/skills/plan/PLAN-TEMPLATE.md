@@ -12,10 +12,28 @@ Spec: [spec.md](spec.md). Tickets: <`#n`…`#m` on the tracker, or `.scratch/<sl
 
 ## Slices
 
-| nn | title | blocked by | delivers | proof |
-| --- | --- | --- | --- | --- |
-| 01 | <title> | none | <the end-to-end behaviour this slice makes work> | `<command>` → <observable> |
-| 02 | <title> | 01 | <behaviour> | `<command>` → <observable> |
+| nn | title | blocked by | delivers |
+| --- | --- | --- | --- |
+| 01 | <title> | none | <the end-to-end behaviour this slice makes work> |
+| 02 | <title> | 01 | <behaviour> |
+
+### Proofs
+
+#### 01
+
+```sh
+<command>
+```
+
+<observable>
+
+#### 02
+
+```sh
+<command>
+```
+
+<observable>
 
 ## Order of work
 
