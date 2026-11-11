@@ -177,8 +177,8 @@ export function sliceWorktreeDir(dir, slice) {
 /** The pre-0.7.0 slice worktree of `host`, `<host>/.forge/worktrees/<slice>`: read as a fallback only. */
 export const legacySliceWorktreeDir = (host, slice) => path.join(host, '.forge', 'worktrees', slice);
 
-/** The host dirs of the main checkout `main`: every folder holding docs/agents/forge.md, tracked or not (ignored files skipped). */
-function hostsUnder(main) {
+/** The host dirs under `main` (a checkout or any folder in one): every folder holding docs/agents/forge.md, tracked or not (ignored files skipped). */
+export function hostsUnder(main) {
   const r = git(['-C', main, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', `:(glob)**/${HOST_CONFIG.split(path.sep).join('/')}`]);
   if (r.status !== 0) return [];
   const dirs = r.stdout.split('\0').filter(Boolean).map((f) => path.join(main, path.dirname(path.dirname(path.dirname(f)))));

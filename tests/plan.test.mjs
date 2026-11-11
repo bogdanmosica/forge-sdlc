@@ -79,8 +79,9 @@ test('the quiz is Gate 3: AskUserQuestion until the engineer approves', () => {
   assert.match(skill, /approve/i);
 });
 
-test('every slice carries a proof line the verifier runs', () => {
+test('every slice carries a proof the verifier runs, as a fenced block, never a table cell', () => {
   assert.match(skill, /\bproof\b/i);
+  assert.match(stepOf(skill, 2), /fenced `sh` block[^\n]*never in a table cell/);
   assert.match(skill, /verifier/i);
   assert.match(skill, /observable/i);
 });
@@ -129,7 +130,9 @@ test('PLAN-TEMPLATE.md: frontmatter per contracts, the slice table columns, the 
   const header = template.split('\n').find((l) => /^\|\s*nn\s*\|/.test(l));
   assert.ok(header, 'a table whose first column is nn');
   const columns = header.split('|').map((c) => c.trim()).filter(Boolean);
-  assert.deepEqual(columns, ['nn', 'title', 'blocked by', 'delivers', 'proof']);
+  assert.deepEqual(columns, ['nn', 'title', 'blocked by', 'delivers']);
+  const proofs = template.slice(template.indexOf('### Proofs'), template.indexOf('## Order of work'));
+  assert.match(proofs, /^#### 01\n\n```sh\n<command>\n```\n\n<observable>$/m, 'a fenced proof block per slice under the table');
   for (const heading of ['## Slices', '## Order of work', '## Risks', '## Prefactoring']) {
     assert.match(template, new RegExp(`^${heading}$`, 'm'), heading);
   }

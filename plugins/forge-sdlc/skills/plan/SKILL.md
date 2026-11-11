@@ -21,7 +21,7 @@ Done when spec.md is committed, the state reads `gate: spec` or `stage: plan`, a
 Follow to-tickets from `Gather context` through `Draft vertical slices`. The context is `spec.md`, `intent.md`, `map.md` and its closed tickets, the glossary and the ADRs: tracer-bullet slices, each a blocking edge list, prefactoring first, expand–contract for a wide refactor, every rule as the file states it.
 
 - Number the slices `nn` from `01` in dependency order, blockers first. `nn` is the slice branch and worktree, `slice/<slug>-<nn>`, so it is fixed once published.
-- Give every slice a **proof** line: one command and the observable that shows the slice done (`node --test tests/x.test.mjs` passes; `pnpm build` emits `dist/x`; an e2e tag runs green). The verifier runs it verbatim in the slice worktree, so it exits non-zero while the slice is missing.
+- Give every slice a **proof**: one command and the observable that shows the slice done (`node --test tests/x.test.mjs` passes; `pnpm build` emits `dist/x`; an e2e tag runs green). The verifier runs it verbatim in the slice worktree, so it exits non-zero while the slice is missing. Write the command in a fenced `sh` block and the observable on the line after it, never in a table cell: a cell needs a pipe escaped as `\|`, so the cell is not the text the verifier runs. Prefer a proof that observes behaviour (a test file or tag that passes) over one that counts tests by name.
 - A slice fits one fresh context window; split one that does not.
 
 Done when every slice has `nn`, title, blocked by, delivers and a proof the host can run.
@@ -37,19 +37,19 @@ Done when the engineer has answered that the breakdown is approved, or, under `a
 
 ## 4. Publish the tickets
 
-To-tickets' `Publish the tickets` against `docs/agents/issue-tracker.md`: one ticket per slice, blockers first, label `ready-for-agent`. Title `<slug>-<nn>: <title>`; body is to-tickets' template for the tracker (issue or local file) plus `## Proof` (the proof line) and a link to `docs/efforts/<slug>/spec.md` (the path, never a copy). GitHub: the native blocking edges the tracker doc names. Local: `.scratch/<slug>/issues/<nn>-<title>.md` with a `Blocked by:` line. Keep each slice's ticket pointer (`#45`, or the file path) for steps 5 and 6.
+To-tickets' `Publish the tickets` against `docs/agents/issue-tracker.md`: one ticket per slice, blockers first, label `ready-for-agent`. Title `<slug>-<nn>: <title>`; body is to-tickets' template for the tracker (issue or local file) plus `## Proof` (the slice's fenced block and observable, verbatim) and a link to `docs/efforts/<slug>/spec.md` (the path, never a copy). GitHub: the native blocking edges the tracker doc names. Local: `.scratch/<slug>/issues/<nn>-<title>.md` with a `Blocked by:` line. Keep each slice's ticket pointer (`#45`, or the file path) for steps 5 and 6.
 
 Done when the tracker lists one ticket per slice and every blocking edge is on it.
 
 ## 5. Write plan.md and commit
 
-Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines when step 3 wrote them (`autonomous` only); otherwise the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
+Write `docs/efforts/<slug>/plan.md` from [PLAN-TEMPLATE.md](PLAN-TEMPLATE.md): frontmatter (`risk` from intent.md, `updated` today), one row per slice and each slice's proof block under `### Proofs` below the table, order of work as the initial frontier (every slice with no blocker) then what each merge unblocks, risks, prefactoring (or none). Write `## Quiz` after `## Prefactoring` with step 3's four Quiz lines when step 3 wrote them (`autonomous` only); otherwise the template's section is left out. Commit it, with spec.md when step 1 changed it, on `feat/<slug>`: `plan(<slug>): <n> slices`. Push `feat/<slug>` when origin exists.
 
 Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 
 ## 6. Gate record and state
 
-- PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by, proof) and each ticket's link, and step 3's four Quiz lines under the slice table when step 3 wrote them (`autonomous` only); every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
+- PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by) and each ticket's link, each slice's proof block below the table, and step 3's four Quiz lines under the slice table when step 3 wrote them (`autonomous` only); every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
 - State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now, and set or drop `stop` beside `gate` as the reference's State write says.
 
 Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop: risk-high`, or no `stop`.
