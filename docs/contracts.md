@@ -13,7 +13,7 @@ The shapes every slice of the build order (design, section 15) agrees on, so sli
 | Effort folder | `docs/efforts/<slug>/` with `map.md`, `intent.md`, `spec.md`, `plan.md` |
 | Research notes | `docs/research/<slug>/<topic>.md`, committed on the effort branch |
 | Exploration notes for a build | `.forge/notes/<slug>/*.md`, not committed |
-| Verify record | `.forge/verify/<slug>-<nn>.json`, written by `node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs" --slice <slug>-<nn> --worktree <path> --project <host> --proof "<proof>"` (exit 0 green, 1 red, 2 bad usage); the Stop hook's block count beside it as `<slug>-<nn>.denials` |
+| Verify record | `.forge/verify/<slug>-<nn>.json`, written by `node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs" --slice <slug>-<nn> --worktree <path> [--project <host>] --proof "<proof>"` (exit 0 green, 1 red, 2 bad usage; `--project` defaults to the worktree's host in the main checkout, and one inside a worktree is refused); the Stop hook's block count beside it as `<slug>-<nn>.denials` |
 | Review record | `.forge/review/<slug>-<nn>.md` |
 | Effort position | `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" [host] <slug>` prints `{ slug, stage, gate, next, why, source, policy, stop }` (`--list [host]` for every effort); `source` is `state`, or `artifacts` when re-derived from `feat/<slug>`; `policy` is the host's gate policy read from `## Gates` of forge.md on each call (`attended` or `autonomous`, `attended` when the key is missing or any other value); `stop` is the state's `stop` (`open`, `flagged`, `risk-high`), or `none` when absent or when `source` is `artifacts` |
 | Agent types | `forge-sdlc:researcher`, `forge-sdlc:prototyper`, `forge-sdlc:spec-writer`, `forge-sdlc:implementer`, `forge-sdlc:verifier`, `forge-sdlc:reviewer`, `forge-sdlc:merger` |
@@ -114,6 +114,8 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | `## Plan` | plan | the slice table: nn, title, blocked by; below it each slice's proof as a fenced block, then plan.md's four Quiz lines (its `## Quiz`) under `autonomous` with `risk: normal` only |
 | `## Summary`, `## Evidence`, `## Merge Danger` | build | the `pr` template, Evidence one bullet per slice from its verify record |
 | `## Red slices` | build | one line per red slice with its ticket and reason, or `none` |
+
+Below the last section, build writes one closing line per still-open issue the merge resolves, one keyword per issue (`Closes #55`, then `Closes #57`): GitHub reads `Closes #55, #57` as closing #55 only.
 
 Local tracker (no remote): the same text is written to `docs/efforts/<slug>/PR.md` instead, so the gate record exists.
 

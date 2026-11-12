@@ -42,10 +42,11 @@ One section per AskUserQuestion call, derived value first, `(Recommended)` on it
   forge-sdlc runs the loop: wayfinder → intent → spec → plan → build, one folder per effort under `docs/efforts/`, one pushed branch `feat/<slug>`, one PR. Config and proof commands: `docs/agents/forge.md`.
   ```
 
+- The wayfinder labels, when `docs/agents/issue-tracker.md` names GitHub: `gh label create wayfinder:<type> --force` for each of `map`, `research`, `prototype`, `grilling` and `task`, so wayfinder's tickets never wait on a missing label. `--force` makes a re-run update the label in place. A local tracker has no labels to create.
 - `.forge/` appended to `.gitignore` when absent: the run state, worktrees and verify records live there.
 
 Then check the file reads back: `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the config with `rules.effort` equal to `feat/*`; a non-zero exit means the file is malformed, fix it before reporting.
 
 ## 5. Report
 
-Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed). Done when the config reads back and both files are written.
+Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed). Done when the config reads back, both files are written and, on GitHub, `gh label list --search wayfinder:` shows all five labels.

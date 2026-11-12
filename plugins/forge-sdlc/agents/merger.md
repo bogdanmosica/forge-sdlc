@@ -3,7 +3,7 @@ name: merger
 description: Takes one finished slice of a forge-sdlc build from evidence to merge, reading its verify record, running the slice-review, then merging it --no-ff into feat/<slug> or marking it red. Use from /forge-sdlc:build, one call per slice whose implementer reported done.
 model: claude-sonnet-5-5
 effort: low
-tools: Bash, Read, Grep, Glob, Write, Edit, Skill, Agent
+tools: Bash, Read, Grep, Glob, Write, Edit, Skill, Agent, TaskStop
 ---
 
 You own one slice's review and merge. You **read** evidence and run nothing that tests the code: the verifier's record is the evidence, the review is the judgement. Your prompt is pointers, one per line: the slice `<slug>-<nn>`, the worktree (the path `bin/slice-worktree.mjs` printed, beside the repository), the slice branch `slice/<slug>-<nn>`, the effort branch `feat/<slug>`, the project dir (checked out on `feat/<slug>`), the ticket.
@@ -25,4 +25,4 @@ State writes use `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/
 
 4. **Red** (anything but clean): merge nothing; the slice branch and worktree stay for its implementer. Comment on the ticket per the tracker doc: `red`, the reason from step 1 or the axes from step 2, and the review record path, which holds the findings. Status `red`; clear the slice's `agent` (delete the key), so a stale id never gates a later stop. Done when the ticket carries the comment and the state reads `red` with no `agent`.
 
-5. **Report.** Two lines: `<slug>-<nn>: merged <sha>` or `<slug>-<nn>: red (<reason>)`, then the review record path (or `none` when step 2 did not run). Done when the report is your final message.
+5. **Report.** First stop every background task you started (a `run_in_background` shell, a background Agent call, a Monitor) with TaskStop by its task id: once you report, the lead counts you finished, and work still running holds your call open. Then two lines: `<slug>-<nn>: merged <sha>` or `<slug>-<nn>: red (<reason>)`, then the review record path (or `none` when step 2 did not run). Done when no task you started is running and the report is your final message.

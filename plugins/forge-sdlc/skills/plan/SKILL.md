@@ -23,6 +23,7 @@ Follow to-tickets from `Gather context` through `Draft vertical slices`. The con
 - Number the slices `nn` from `01` in dependency order, blockers first. `nn` is the slice branch and worktree, `slice/<slug>-<nn>`, so it is fixed once published.
 - Give every slice a **proof**: one command and the observable that shows the slice done (`node --test tests/x.test.mjs` passes; `pnpm build` emits `dist/x`; an e2e tag runs green). The verifier runs it verbatim in the slice worktree, so it exits non-zero while the slice is missing. Write the command in a fenced `sh` block and the observable on the line after it, never in a table cell: a cell needs a pipe escaped as `\|`, so the cell is not the text the verifier runs. Prefer a proof that observes behaviour (a test file or tag that passes) over one that counts tests by name.
 - A slice fits one fresh context window; split one that does not.
+- A slice that adds a page **and** a server module **and** touches a file matching a `risk.high` glob (`node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"`) outgrows one context: split it at the seam between the server module and the page, the module first, so each half carries its own proof.
 
 Done when every slice has `nn`, title, blocked by, delivers and a proof the host can run.
 

@@ -41,8 +41,9 @@ Done when no slice is `open` or `building` and every implementer and merger has 
 
 - `## Summary`, `## Evidence`, `## Merge Danger`: the `pr` template over `git diff <default>...feat/<slug>`. Evidence is one bullet per slice from its verify record: `<slug>-<nn>`, the proof command and its exit code, each host command and its exit code, `head`, `at`.
 - `## Red slices`: one line per red slice, its ticket and reason (the merger's report or the blocker), or `none`.
+- Closing keywords, after the last section: one line per issue the merge resolves that is still open (`gh issue view <n> --json state`), one keyword each, `Closes #55` then `Closes #57` on its own line. GitHub binds a keyword to the one reference after it, so `Closes #55, #57` closes #55 alone. A red slice's ticket stays open and gets no line.
 
-Without a remote the same text goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`. Done when the PR body (or PR.md) holds every section above.
+Without a remote the same text goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`. Done when the PR body (or PR.md) holds every section above and each closing line names one issue.
 
 ## 4. Gate 4
 

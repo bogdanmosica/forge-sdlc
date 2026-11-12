@@ -238,3 +238,9 @@ test('design: plan step 2 has no Gate 3 stop on an open: Quiz line', () => {
   assert.match(plan, /`Gate 3 passed`/);
   assert.doesNotMatch(plan, /`stop: open`/);
 });
+
+test('plan step 2: a slice adding a page and a server module and touching a risk.high file is split, the module first (retro legal-compliance)', () => {
+  const step2 = stepOf(skill, 2);
+  assert.match(step2, /page \*\*and\*\* a server module \*\*and\*\* touches a file matching a `risk\.high` glob/);
+  assert.match(step2, /split it at the seam between the server module and the page, the module first/);
+});

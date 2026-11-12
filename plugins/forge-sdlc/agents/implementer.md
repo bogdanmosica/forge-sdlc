@@ -21,10 +21,10 @@ Work only inside the worktree. The project dir is the host `node "${CLAUDE_PLUGI
 5. **Verify.** One Bash call, the proof verbatim from the plan row:
 
    ```sh
-   node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs" --slice <slug>-<nn> --worktree <worktree> --project <project> --proof "<proof>"
+   node "${CLAUDE_PLUGIN_ROOT}/bin/verify-record.mjs" --slice <slug>-<nn> --worktree <worktree> --proof "<proof>"
    ```
 
-   Exit 1 (red): read the failing runs' tails, fix, commit, run it again. Exit 2: fix the arguments. Done when it exits 0 and `.forge/verify/<slug>-<nn>.json` reads `green: true` with `head` equal to `git -C <worktree> rev-parse HEAD`. The Stop hook checks that same record.
+   The script writes the record under the host it finds from the worktree, in the main checkout. Exit 1 (red): read the failing runs' tails, fix, commit, run it again. Exit 2: fix the arguments; a `--project` inside a worktree is refused. Done when it exits 0 and `.forge/verify/<slug>-<nn>.json` reads `green: true` with `head` equal to `git -C <worktree> rev-parse HEAD`. The Stop hook checks that same record.
 
 6. **Leave fix mode** (fix prompt only). Set the slice's `mode: normal` the same way as step 2. Done when the slice reads back `mode: normal`.
 
