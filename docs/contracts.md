@@ -115,6 +115,8 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | `## Summary`, `## Evidence`, `## Merge Danger` | build | the `pr` template, Evidence one bullet per slice from its verify record |
 | `## Red slices` | build | one line per red slice with its ticket and reason, or `none` |
 
+Below the last section, build writes one closing line per still-open issue the merge resolves, one keyword per issue (`Closes #55`, then `Closes #57`): GitHub reads `Closes #55, #57` as closing #55 only.
+
 Local tracker (no remote): the same text is written to `docs/efforts/<slug>/PR.md` instead, so the gate record exists.
 
 ## Hooks

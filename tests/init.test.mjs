@@ -98,3 +98,9 @@ test('init: the template carries ## Crew with theme none, and Write keeps hand-w
   assert.match(template, /^## Crew\n- theme: none\b/m);
   assert.match(body, /`names\.<role>`[^\n]*kept/, 'a re-run keeps names bullets while the theme stays');
 });
+
+test('init step 4: creates the five wayfinder labels on GitHub, idempotently (retro legal-compliance)', () => {
+  assert.match(body, /`gh label create wayfinder:<type> --force`/);
+  assert.match(body, /`map`, `research`, `prototype`, `grilling` and `task`/);
+  assert.match(body, /Done when [^\n]*`gh label list --search wayfinder:` shows all five labels/);
+});

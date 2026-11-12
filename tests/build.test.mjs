@@ -368,3 +368,11 @@ test('merger: stops every background task it started before it reports (retro le
   assert.match(report, /First stop every background task you started[^\n]*TaskStop/);
   assert.match(report, /Done when no task you started is running and the report is your final message/);
 });
+
+test('build section 3: one closing keyword per issue, never a comma list (retro legal-compliance)', () => {
+  const section = stepOf(read(SKILL), 3);
+  assert.match(section, /one keyword each, `Closes #55` then `Closes #57` on its own line/);
+  assert.match(section, /`Closes #55, #57` closes #55 alone/);
+  assert.match(section, /red slice's ticket stays open/);
+  assert.match(readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8'), /one keyword per issue/);
+});
