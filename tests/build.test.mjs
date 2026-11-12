@@ -343,7 +343,7 @@ test('merger: a member the lead starts, clearing the slice\'s agent when it writ
   const { fields, body } = frontmatter(read(MERGER));
   assert.doesNotMatch(fields.description, /foreground/);
   const merge = body.slice(body.indexOf('3. **Merge**'), body.indexOf('4. **Red**'));
-  const red = body.slice(body.indexOf('4. **Red**'), body.indexOf('5. **Report**'));
+  const red = body.slice(body.indexOf('4. **Red**'), body.indexOf('5. **Report.**'));
   for (const [step, text] of [['merge', merge], ['red', red]]) {
     assert.match(text, /clear[^\n]*`agent`/, `${step} clears agent`);
   }
@@ -359,4 +359,12 @@ test('seams: the members reference is read by path, so build hands it the resolv
   assert.ok(line, 'build has the by-path sentence');
   assert.match(line, /\(MEMBERS\.md\)[^\n]*plugin-root variable unresolved[^\n]*\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.match(read(MEMBERS), /read by path[^\n]*plugin-root variable unresolved[^\n]*plugin root the linking skill resolved/);
+});
+
+test('merger: stops every background task it started before it reports (retro legal-compliance)', () => {
+  const { fields, body } = frontmatter(read(MERGER));
+  assert.ok(toolsOf(fields.tools).includes('TaskStop'), 'TaskStop in tools');
+  const report = body.slice(body.indexOf('5. **Report.**'));
+  assert.match(report, /First stop every background task you started[^\n]*TaskStop/);
+  assert.match(report, /Done when no task you started is running and the report is your final message/);
 });
