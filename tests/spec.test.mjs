@@ -169,3 +169,12 @@ test('spec/SKILL.md: every numbered step ends on a completion criterion', () => 
   assert.equal(stepOf(skill, 8), '', 'seven numbered steps');
   for (const n of [1, 2, 3, 4, 5, 6, 7]) assert.match(stepOf(skill, n).trimEnd(), /Done when [^\n]+$/, `step ${n}`);
 });
+
+test('agents/spec-writer.md: the draft is written before any policy skill runs (retro legal-compliance)', () => {
+  const { body } = split(agent);
+  const draft = body.indexOf('**Write the draft**');
+  const policy = body.indexOf('**Apply the policy skills.**');
+  assert.ok(draft > 0 && policy > draft, 'Write the draft comes before Apply the policy skills');
+  assert.match(body, /before any policy skill runs/);
+  assert.match(body, /Write the revised spec over the draft/);
+});
