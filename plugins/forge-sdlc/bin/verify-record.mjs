@@ -3,7 +3,11 @@
 // docs/agents/forge.md, in the slice worktree; write .forge/verify/<slice>.json under the project
 // dir (docs/contracts.md, "verify record"); print it; exit 0 when green, 1 when red, 2 on bad usage.
 //
-//   node verify-record.mjs --slice <slug-nn> --worktree <dir> --project <hostDir> [--proof "<command>"]
+//   node verify-record.mjs --slice <slug-nn> --worktree <dir> [--project <hostDir>] [--proof "<command>"]
+//
+// The project dir defaults to the host the worktree belongs to, in the main checkout (`hostDirOf`),
+// where build and the merger read the record. A --project inside a worktree is refused (exit 2):
+// a record written there is never read.
 //
 // Every command runs, a failure does not stop the next one. Output tails are masked for secret
 // shapes before they reach the record or stdout.
@@ -13,7 +17,7 @@ import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { git, readHostConfig } from '../hooks/scripts/lib.mjs';
+import { git, hostDirOf, readHostConfig } from '../hooks/scripts/lib.mjs';
 
 /** The host's proof commands, in the order they run. */
 const PROOF_KEYS = ['test', 'typecheck', 'lint', 'build'];
@@ -52,8 +56,15 @@ function commandsOf(config, proof) {
   return [...(proof ? [['proof', proof]] : []), ...PROOF_KEYS.filter((k) => set(host[k])).map((k) => [k, host[k]])];
 }
 
+/** True when `dir` sits in a linked worktree rather than the repository's main checkout. */
+function inLinkedWorktree(dir) {
+  const gitDir = git(['-C', dir, 'rev-parse', '--path-format=absolute', '--git-dir']);
+  const common = git(['-C', dir, 'rev-parse', '--path-format=absolute', '--git-common-dir']);
+  return gitDir.status === 0 && common.status === 0 && gitDir.stdout.trim() !== common.stdout.trim();
+}
+
 function main(argv) {
-  const usage = 'usage: verify-record.mjs --slice <slug-nn> --worktree <dir> --project <hostDir> [--proof "<command>"]';
+  const usage = 'usage: verify-record.mjs --slice <slug-nn> --worktree <dir> [--project <hostDir>] [--proof "<command>"]';
   let values;
   try {
     ({ values } = parseArgs({ args: argv, options: { slice: { type: 'string' }, worktree: { type: 'string' }, project: { type: 'string' }, proof: { type: 'string' } } }));
@@ -61,13 +72,22 @@ function main(argv) {
     process.stderr.write(`${e.message}\n${usage}\n`);
     return 2;
   }
-  const missing = ['slice', 'worktree', 'project'].filter((k) => !values[k]);
+  const missing = ['slice', 'worktree'].filter((k) => !values[k]);
   if (missing.length) {
     process.stderr.write(`missing ${missing.map((k) => `--${k}`).join(', ')}\n${usage}\n`);
     return 2;
   }
   const worktree = path.resolve(values.worktree);
-  const project = path.resolve(values.project);
+  const host = hostDirOf(worktree, null);
+  if (!host) {
+    process.stderr.write(`${worktree} is not in a git repository\n`);
+    return 2;
+  }
+  if (values.project && inLinkedWorktree(path.resolve(values.project))) {
+    process.stderr.write(`--project ${values.project} is inside a worktree, where no one reads the record; use the host in the main checkout, ${host}, or drop --project\n`);
+    return 2;
+  }
+  const project = values.project ? path.resolve(values.project) : host;
   const head = git(['-C', worktree, 'rev-parse', 'HEAD']);
   if (head.status !== 0) {
     process.stderr.write(`${worktree} is not a git worktree with a commit\n`);

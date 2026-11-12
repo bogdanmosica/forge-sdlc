@@ -4,11 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { sliceWorktreeDir } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
+import { sliceWorktreeDir, writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { forgeMd, host } from './support/host.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'verify-record.mjs');
@@ -113,4 +113,44 @@ test('nothing to run (no --proof, every host command none) is red, exit 1: an em
   assert.equal(r.status, 1);
   assert.deepEqual(recordOf(dir).runs, []);
   assert.equal(recordOf(dir).green, false);
+});
+
+/** A monorepo host at `projects/shop` with `proof` commands, and a slice worktree for demo-01; `{ main, shop, worktree }`. */
+function subfolderHost(proof) {
+  const { dir } = host({ config: null });
+  const shop = path.join(dir, 'projects', 'shop');
+  mkdirSync(path.join(shop, 'docs', 'agents'), { recursive: true });
+  writeFileSync(path.join(shop, 'docs', 'agents', 'forge.md'), withProof(proof));
+  for (const args of [['add', '-A'], ['commit', '-q', '-m', 'shop host']]) spawnSync('git', ['-C', dir, ...args]);
+  // The run state lists the slice, as build writes it: that is how a worktree finds its host.
+  writeState(shop, { version: 1, efforts: { demo: { stage: 'build', slices: { 'demo-01': { status: 'building' } } } } });
+  const worktree = sliceWorktreeDir(dir, 'demo-01');
+  const r = spawnSync('git', ['-C', dir, 'worktree', 'add', '-q', '-b', 'slice/demo-01', worktree], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return { main: dir, shop, worktree };
+}
+
+test('without --project the record goes to the host the worktree belongs to, in the main checkout', () => {
+  const { shop, worktree } = subfolderHost({ test: 'true' });
+  const r = verify(['--slice', 'demo-01', '--worktree', worktree, '--proof', 'true']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(recordOf(shop).green, true);
+  assert.ok(!existsSync(path.join(worktree, 'projects', 'shop', '.forge')), 'nothing written inside the worktree');
+});
+
+test('a --project inside a slice worktree is refused: exit 2, the host named, no record anywhere', () => {
+  const { shop, worktree } = subfolderHost({ test: 'true' });
+  const inWorktree = path.join(worktree, 'projects', 'shop');
+  const r = verify(['--slice', 'demo-01', '--worktree', worktree, '--project', inWorktree, '--proof', 'true']);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /inside a worktree/);
+  assert.ok(r.stderr.includes(realpathSync(shop)), 'stderr names the host dir to use');
+  assert.ok(!existsSync(path.join(inWorktree, '.forge')));
+  assert.ok(!existsSync(path.join(shop, '.forge', 'verify', 'demo-01.json')));
+});
+
+test('an explicit --project in the main checkout still works', () => {
+  const { shop, worktree } = subfolderHost({ test: 'true' });
+  assert.equal(verify(['--slice', 'demo-01', '--worktree', worktree, '--project', shop]).status, 0);
+  assert.equal(recordOf(shop).green, true);
 });
