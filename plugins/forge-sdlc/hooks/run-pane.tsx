@@ -462,10 +462,12 @@ export const register: Register = (on) => {
   });
 
   // The agent listing, passed through: each type the engine offers the model is
-  // noted, so the roster swaps only to an agent this session can dispatch.
+  // noted, so the roster swaps only to an agent this session can dispatch; a
+  // type later answered not offered is dropped again.
   on('agent.offer', async ($, e, next) => {
     const result = await next(e);
     if (result.isOffered) offered.add(e.agent);
+    else offered.delete(e.agent);
     return result;
   });
 
