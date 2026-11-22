@@ -421,11 +421,13 @@ test('a Policy skills name that is no skill name is reported and skipped', () =>
   assert.ok(r.problems.some((p) => /^## Policy skills: .*not a skill name/.test(p)), JSON.stringify(r.problems));
 });
 
-test('a Routing bullet naming a role with its forge-sdlc: prefix applies to that role', () => {
-  const r = resolveRoster(undefined, forgeMd('## Routing', '- model.forge-sdlc:reviewer: opus', '- effort.forge-sdlc:merger: low'));
-  assert.deepEqual(r.roles.reviewer, { agent: 'forge-sdlc:reviewer', model: 'opus', swapped: false });
-  assert.deepEqual(r.roles.merger, { agent: 'forge-sdlc:merger', effort: 'low', swapped: false });
-  assert.match(r.problems[0], /roles\.reviewer\.model/);
+test('a Routing bullet naming a role with its forge-sdlc: prefix applies nothing, as in the mod: forge.md splits it at the first colon', () => {
+  const config = forgeMd('## Routing', '- model.forge-sdlc:reviewer: opus');
+  assert.deepEqual(config.routing, { 'model.forge-sdlc': 'reviewer: opus' });
+  const r = resolveRoster(undefined, config);
+  assert.deepEqual(r.roles, DEFAULT_ROLES);
+  assert.equal(r.problems.length, 1);
+  assert.match(r.problems[0], /^## Routing: model\.forge-sdlc .*no docs\/agents\/forge\.yaml equivalent/);
 });
 
 test('slots.policy, when present, replaces Policy skills whole', () => {
