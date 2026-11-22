@@ -58,3 +58,19 @@ test('CLAUDE.md: the host-config convention names forge.md plus the optional for
   assert.match(claude, /`node plugins\/forge-sdlc\/bin\/roster\.mjs [^`]*--project <host>`/, 'lists the roster command');
   assert.match(claude, /`\/forge` help panel[^)]*roster/, 'the /forge description names what the panel shows of the roster');
 });
+
+test('hooks/ROUTING.md is the roster and routing reference: shape, precedence, deprecation, invalid entries, the mark', () => {
+  const doc = read(plugin, 'hooks', 'ROUTING.md');
+  assert.match(doc, /^# [^\n]*[Rr]oster/m, 'the title names the roster');
+  for (const heading of ['Shape', 'Precedence', 'Deprecated', 'Invalid entries', 'Enforcement', 'In the pane'])
+    assert.match(doc, new RegExp(`^## ${heading}`, 'm'), heading);
+  assert.match(doc, /```yaml\nversion: 1/, 'a forge.yaml example');
+  assert.match(doc, /before filling a role with another agent[^\n]*ROLES\.md|ROLES\.md[^\n]*before filling a role with another agent/);
+  assert.match(doc, /⇄ routed/);
+  assert.match(doc, /0\.9\.0/, 'when the deprecated sections go');
+  assert.match(doc, /agent\.offer/, 'a swap needs an offered type');
+  assert.match(doc, /hot reload/i, 'the offered set does not survive a hot reload');
+  // the roster's own words, so the reference quotes what the band shows
+  assert.match(doc, /## Routing: model\.implementer is deprecated; move it to roles\.implementer\.model in docs\/agents\/forge\.yaml/);
+  assert.match(doc, /names no offered agent/);
+});
