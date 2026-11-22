@@ -286,10 +286,14 @@ async function routedSpawn(
   const config = await readConfig($);
   const table = parseRouting(config);
   const roster = resolveRoster(await readOrUndefined($, ROSTER_FILE), config);
-  await sayOnce($, 'routing', table.problems);
+  // every swap target not offered, read fresh, so the band holds it while it lasts
+  const unoffered = Object.entries(roster.roles)
+    .filter(([, r]) => r.swapped && !offered.has(r.agent))
+    .map(([role, r]) => `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`);
+  await sayOnce($, 'routing', [...table.problems, ...unoffered]);
   const role = pluginRoleOf(e.subagentType);
   const cast = role ? roster.roles[role] : undefined;
-  const swap = cast?.swapped && !e.resume && !e.workflow ? cast.agent : undefined;
+  const swap = cast?.swapped && offered.has(cast.agent) && !e.resume && !e.workflow ? cast.agent : undefined;
   const routed = entryFor(table.table, e.subagentType);
   const entry = {
     ...routed,

@@ -6,7 +6,7 @@
 // with a fixed response, and reads back what the mod rewrote.
 import { test, expect, mock } from 'claude-code/testing';
 import type { Engine } from 'claude-code/testing';
-import { HOST_CONFIG, agentRows as rowsOf, forgeConfig, pane } from './run-pane.fixture';
+import { HOST_CONFIG, agentRows as rowsOf, band, forgeConfig, pane } from './run-pane.fixture';
 import type { AgentInfo, AgentSpawnInput, On, TurnStepInput } from 'claude-code';
 
 const ROSTER = 'docs/agents/forge.yaml';
@@ -205,4 +205,28 @@ test('an unswapped role, a fork, a resume and a workflow agent keep their type a
   ]);
   expect(s.spawns.map((e) => e.prompt)).toEqual([PROMPT, PROMPT, PROMPT, PROMPT]);
   expect(s.spawns[0]?.model).toBeUndefined();
+});
+
+test('a roster agent the session never offered is not swapped in: the default spawns and the entry is reported once', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    config: forgeConfig(),
+    roster: 'version: 1\nroles:\n  reviewer:\n    agent: ghost-plugin:reviewer\n',
+  });
+  await start($, clock);
+  await offer($, 'forge-sdlc:reviewer');
+  await spawn($, 'forge-sdlc:reviewer');
+  await spawn($, 'forge-sdlc:reviewer');
+  expect(s.spawns.map((e) => [e.subagentType, e.prompt])).toEqual([
+    ['forge-sdlc:reviewer', PROMPT],
+    ['forge-sdlc:reviewer', PROMPT],
+  ]);
+  const said = s.toasts.filter((t) => t.includes('names no offered agent'));
+  expect(said).toEqual([
+    'forge-sdlc: roster: roles.reviewer.agent "ghost-plugin:reviewer" names no offered agent; forge-sdlc:reviewer spawns',
+  ]);
+  await clock.advance(5000);
+  expect(await band($)).toContain('roles.reviewer.agent "ghost-plugin:reviewer" names no offered agent');
+  const rows = await agentRows($, clock);
+  for (const row of rows) expect(row).not.toMatch(/routed/);
 });
