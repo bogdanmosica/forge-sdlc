@@ -93,3 +93,24 @@ test('under enforcement an Agent call with no type reads as general-purpose', ()
   denied(check(agentCall(rosterHost(enforced()), undefined)));
   passes(check(agentCall(rosterHost(enforced('allow:', '  agents: [general-purpose]')), undefined)));
 });
+
+test('under enforcement a Skill call passes for a slot skill, a policy entry, a forge-sdlc skill or allow.skills', () => {
+  const dir = rosterHost(
+    enforced(
+      'slots:',
+      '  implementer.tdd: other-plugin:tdd',
+      '  domain-modeling: disabled',
+      '  policy: [house-style:writing-rules]',
+      'allow:',
+      '  skills: [util:format]',
+    ),
+  );
+  passes(check(skillCall(dir, 'other-plugin:tdd')));
+  passes(check(skillCall(dir, 'mattpocock-skills:grilling')));
+  passes(check(skillCall(dir, 'house-style:writing-rules')));
+  passes(check(skillCall(dir, 'forge-sdlc:spec')));
+  passes(check(skillCall(dir, 'util:format')));
+  denied(check(skillCall(dir, 'mattpocock-skills:tdd')), 'a swapped-out slot default');
+  denied(check(skillCall(dir, 'mattpocock-skills:domain-modeling')), 'a disabled slot');
+  denied(check(skillCall(dir, 'disabled')), 'the disabled marker is no skill');
+});

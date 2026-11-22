@@ -42,13 +42,26 @@ function agentDecision(input, roster) {
   return accounted(type, rosterAgents(roster)) ? allow() : deny(AGENT_REASON);
 }
 
+/** The skills the roster accounts for: each slot's resolved skill (none when disabled), the policy entries and allow.skills. */
+const rosterSkills = (roster) => [
+  ...Object.values(roster.slots).filter((skill) => skill !== 'disabled'),
+  ...roster.policy,
+  ...roster.allow.skills,
+];
+
+/** A Skill call's decision: the loop's own `forge-sdlc:*` skills always pass. */
+function skillDecision(input, roster) {
+  const skill = input.skill;
+  return skill.startsWith(`${PLUGIN}:`) || accounted(skill, rosterSkills(roster)) ? allow() : deny(SKILL_REASON);
+}
+
 export function rosterGuardCheck(payload, { projectDir }) {
   const host = hostOf(projectDir);
   if (!existsSync(path.join(host, ROSTER_FILE))) return allow();
   const roster = readRoster(host);
   if (roster.enforce !== 'on') return allow();
   if (payload.tool_name === 'Agent') return agentDecision(payload.tool_input, roster);
-  if (payload.tool_name === 'Skill') return deny(SKILL_REASON);
+  if (payload.tool_name === 'Skill') return skillDecision(payload.tool_input, roster);
   return allow();
 }
 
