@@ -61,3 +61,44 @@ test('an empty policy list prints none, even over a ## Policy skills value', () 
   assert.equal(line(rosterHost({ config }).dir, 'policy'), 'writing-for-agents', 'without forge.yaml the deprecated section still applies');
   assert.equal(line(rosterHost({ config, yaml: 'version: 1\nslots:\n  policy: []\n' }).dir, 'policy'), 'none');
 });
+
+/** The JSON roster printed for `dir`, exit 0. */
+function json(dir) {
+  const r = roster('--project', dir);
+  assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout);
+}
+
+test('the JSON form carries the resolved roster and every problem', () => {
+  const { dir } = rosterHost({
+    yaml: [
+      'version: 1',
+      'roles:',
+      '  reviewer:',
+      '    agent: my-plugin:reviewer',
+      '    effort: medium',
+      'slots:',
+      '  grilling: disabled',
+      '  spec-writer.codebase-design: disabled',
+      '',
+    ].join('\n'),
+  });
+  const r = json(dir);
+  assert.equal(r.present, true);
+  assert.equal(r.enforce, 'off');
+  assert.deepEqual(r.roles.reviewer, { agent: 'my-plugin:reviewer', effort: 'medium', swapped: true });
+  assert.deepEqual(r.roles.implementer, { agent: 'forge-sdlc:implementer', swapped: false });
+  assert.equal(r.slots.grilling, 'mattpocock-skills:grilling', 'a required slot keeps its default');
+  assert.equal(r.slots['spec-writer.codebase-design'], 'disabled');
+  assert.deepEqual(r.problems, ['roster: slots.grilling is required and cannot be disabled; mattpocock-skills:grilling kept']);
+});
+
+test('the JSON form without forge.yaml is the defaults with no problems', () => {
+  const r = json(rosterHost().dir);
+  assert.equal(r.present, false);
+  assert.equal(r.enforce, 'off');
+  assert.deepEqual(r.policy, []);
+  assert.deepEqual(r.problems, []);
+  assert.equal(r.roles.merger.agent, 'forge-sdlc:merger');
+  assert.equal(r.slots['implementer.tdd'], 'mattpocock-skills:tdd');
+});
