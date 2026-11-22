@@ -141,23 +141,24 @@ export function resolveRoster(yamlText, forgeConfig) {
 }
 
 /**
- * Whether the text is too broken to tell what `enforce` says: the file is no
- * map, or it sets no `enforce` and an error sits on a top-level line whose key
- * cannot be read as another one.
+ * Whether the text is too broken to tell what `enforce` says: nothing in it
+ * parsed though it has errors, the file is no map, or it sets no `enforce` and
+ * an error sits on a line whose key is `enforce` (whatever its indent) or on a
+ * top-level line whose key cannot be read as another one.
  * @param {string} text
  * @param {unknown} value
  * @param {YamlError[]} errors
  */
 function enforceHidden(text, value, errors) {
-  if (value === null) return false;
+  if (value === null) return errors.length > 0;
   if (!isMap(value)) return true;
   if (Object.hasOwn(value, 'enforce')) return false;
   const lines = text.split(/\r?\n/);
   return errors.some(({ line }) => {
     const raw = lines[line - 1] ?? '';
-    if (raw.startsWith(' ')) return false;
-    const key = /^([A-Za-z0-9_.-]+)\s*:/.exec(raw)?.[1];
-    return key === undefined || key === 'enforce';
+    const key = /^([A-Za-z0-9_.-]+)\s*:/.exec(raw.trimStart())?.[1];
+    if (key === 'enforce') return true;
+    return key === undefined && !/^\s/.test(raw);
   });
 }
 
