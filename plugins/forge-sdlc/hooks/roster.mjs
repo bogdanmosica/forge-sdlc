@@ -85,7 +85,10 @@ export function resolveRoster(yamlText, forgeConfig) {
   else if (file.version !== 1) say(`version ${JSON.stringify(file.version)} is not supported; read as version 1`);
 
   if (file.enforce === true) roster.enforce = 'on';
-  else if (file.enforce !== false && file.enforce !== undefined && file.enforce !== null)
+  else if (enforceHidden(yamlText, value, errors)) {
+    roster.enforce = 'unreadable';
+    say('enforce is unreadable; the roster is not enforced until the file is fixed');
+  } else if (file.enforce !== false && file.enforce !== undefined && file.enforce !== null)
     say(`enforce ${JSON.stringify(file.enforce)} is not true or false; the roster is not enforced`);
 
   for (const [role, entry] of entriesOf(file, 'roles', say)) {
@@ -138,6 +141,27 @@ export function resolveRoster(yamlText, forgeConfig) {
     if (names) roster.allow[kind] = names;
   }
   return roster;
+}
+
+/**
+ * Whether the text is too broken to tell what `enforce` says: the file is no
+ * map, or it sets no `enforce` and an error sits on a top-level line whose key
+ * cannot be read as another one.
+ * @param {string} text
+ * @param {unknown} value
+ * @param {YamlError[]} errors
+ */
+function enforceHidden(text, value, errors) {
+  if (value === null) return false;
+  if (!isMap(value)) return true;
+  if (Object.hasOwn(value, 'enforce')) return false;
+  const lines = text.split(/\r?\n/);
+  return errors.some(({ line }) => {
+    const raw = lines[line - 1] ?? '';
+    if (raw.startsWith(' ')) return false;
+    const key = /^([A-Za-z0-9_.-]+)\s*:/.exec(raw)?.[1];
+    return key === undefined || key === 'enforce';
+  });
 }
 
 const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];

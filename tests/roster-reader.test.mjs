@@ -301,3 +301,28 @@ test('each YAML error is a roster problem naming its line', () => {
   assert.deepEqual(r.problems.length, 1);
   assert.match(r.problems[0], /^roster: line 3: /);
 });
+
+test('enforce stays on whenever enforce: true parses, other entries bad or not', () => {
+  const r = resolveRoster(yaml('version: 1', 'enforce: true', 'roles:', '  tester: x', 'slots: &s', '  - no', 'enforce: false'), undefined);
+  assert.equal(r.enforce, 'on');
+});
+
+test('enforce is unreadable when the file is too broken to read it, and the problem says it is not enforced', () => {
+  for (const text of [
+    'version: 1\nenforce: &on true',
+    'version: 1\n\tenforce: true',
+    'version: 1\n"enforce: true',
+    '- version: 1',
+    'just words',
+  ]) {
+    const r = resolveRoster(text, undefined);
+    assert.equal(r.enforce, 'unreadable', text);
+    assert.ok(r.problems.some((p) => /^roster: .*enforce.*not enforced/.test(p)), JSON.stringify(r.problems));
+  }
+});
+
+test('an error that cannot hide enforce leaves it readable', () => {
+  assert.equal(resolveRoster('version: 1\nroles:\n  reviewer:\n    agent: &a x', undefined).enforce, 'off');
+  assert.equal(resolveRoster('version: 1\nslots: [a,\nenforce: false', undefined).enforce, 'off');
+  assert.equal(resolveRoster('version: 1\nslots: [a,', undefined).enforce, 'off');
+});
