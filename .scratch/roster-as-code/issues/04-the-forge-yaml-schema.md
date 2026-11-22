@@ -1,7 +1,7 @@
 # The forge.yaml schema
 
 Type: grilling
-Status: open
+Status: claimed
 Labels: wayfinder:grilling
 Blocked by: 01, 02, 03
 Map: ../map.md
