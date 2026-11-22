@@ -206,8 +206,11 @@ function fromForgeMd(roster, config) {
       .map((s) => s.trim())
       .filter((s) => s && s !== 'none');
     if (!names.length) continue;
-    roster.policy.push(...names);
+    const good = names.filter(isName);
+    roster.policy.push(...good);
     roster.problems.push(`## Policy skills: ${key} is deprecated; move it to slots.policy in docs/agents/forge.yaml`);
+    if (good.length < names.length)
+      roster.problems.push(`## Policy skills: ${key} holds an item that is not a skill name; it is skipped`);
   }
 }
 
