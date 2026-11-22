@@ -22,3 +22,5 @@ npm run check
 exits 0: validate, typecheck and every test green
 
 ## Comments
+
+- recommended: ADR 0025, since 0024 is taken by hide-wrapped-commands (source: PR #4)
