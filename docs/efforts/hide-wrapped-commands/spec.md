@@ -1,7 +1,7 @@
 ---
 effort: hide-wrapped-commands
 stage: spec
-status: draft
+status: accepted
 risk: high
 updated: 2026-11-22
 ---
