@@ -1,7 +1,7 @@
 # 15: roster-as-code-10: Docs, ADR and version
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -24,3 +24,7 @@ exits 0: validate, typecheck and every test green
 ## Comments
 
 - recommended: ADR 0025, since 0024 is taken by hide-wrapped-commands (source: PR #4)
+
+## Answer
+
+Resolved: clean review, record .forge/review/roster-as-code-10.md, merged at 4bf559f.
