@@ -28,7 +28,7 @@ type Seat = {
 // Everything the engine would answer beneath the mod, from memory. `config` is
 // the host config's text and `roster` forge.yaml's; undefined means the host
 // has none.
-function seat(on: On, files: { config?: string; roster?: string }): Seat {
+function seat(on: On, files: { config?: string; roster?: string; hidden?: string[] }): Seat {
   const s: Seat = { spawns: [], steps: [], toasts: [], agents: [] };
   on('session.start', ($, e) => ({ cwd: e.cwd }));
   on('command.register', ($, e) => ({ value: { command: e.name } }));
@@ -53,7 +53,7 @@ function seat(on: On, files: { config?: string; roster?: string }): Seat {
   on('process.run', () => {
     throw new Error('spawn git ENOENT');
   });
-  on('agent.offer', () => ({ isOffered: true }));
+  on('agent.offer', ($, e) => ({ isOffered: !files.hidden?.includes(e.agent) }));
   on('agent.list', () => ({ value: s.agents }));
   on('agent.spawn', ($, e) => {
     s.spawns.push(e);
@@ -89,8 +89,13 @@ async function start($: Engine, clock: ReturnType<typeof mock.clock>) {
 
 // The agent listing: the engine offers each type to the model before dispatch.
 async function offer($: Engine, ...types: string[]) {
+  const answers: boolean[] = [];
   for (const agent of types)
-    await $.agent.offer({ agent, description: `the ${agent}`, source: 'plugin', provider: { plugin: 'x', tier: 'user' } });
+    answers.push(
+      (await $.agent.offer({ agent, description: `the ${agent}`, source: 'plugin', provider: { plugin: 'x', tier: 'user' } }))
+        .isOffered,
+    );
+  return answers;
 }
 
 async function agentRows($: Engine, clock: ReturnType<typeof mock.clock>) {
@@ -229,4 +234,34 @@ test('a roster agent the session never offered is not swapped in: the default sp
   expect(await band($)).toContain('roles.reviewer.agent "ghost-plugin:reviewer" names no offered agent');
   const rows = await agentRows($, clock);
   for (const row of rows) expect(row).not.toMatch(/routed/);
+});
+
+test('without forge.yaml a spawn goes through exactly as the Agent call made it, and nothing is said', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, { config: forgeConfig() });
+  await start($, clock);
+  await offer($, 'forge-sdlc:reviewer', 'my-plugin:reviewer');
+  await spawn($, 'forge-sdlc:reviewer');
+  expect(s.spawns).toHaveLength(1);
+  expect(s.spawns[0]?.subagentType).toBe('forge-sdlc:reviewer');
+  expect(s.spawns[0]?.prompt).toBe(PROMPT);
+  expect(s.spawns[0]?.model).toBeUndefined();
+  expect(s.toasts).toEqual([]);
+  await clock.advance(5000);
+  expect(await band($)).not.toContain('roster');
+  for (const row of await agentRows($, clock)) expect(row).not.toMatch(/routed/);
+});
+
+test('the offer passes through as the engine answered it, and a type it hid is no swap target', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    config: forgeConfig(),
+    roster: 'version: 1\nroles:\n  reviewer:\n    agent: hidden-plugin:reviewer\n',
+    hidden: ['hidden-plugin:reviewer'],
+  });
+  await start($, clock);
+  expect(await offer($, 'forge-sdlc:reviewer', 'hidden-plugin:reviewer')).toEqual([true, false]);
+  await spawn($, 'forge-sdlc:reviewer');
+  expect(s.spawns[0]?.subagentType).toBe('forge-sdlc:reviewer');
+  expect(s.toasts.join('\n')).toContain('roles.reviewer.agent "hidden-plugin:reviewer" names no offered agent');
 });
