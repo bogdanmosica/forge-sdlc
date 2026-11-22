@@ -1,7 +1,7 @@
 # 11: roster-as-code-06: ROLES.md and the self-resolving slot call sites
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -9,9 +9,9 @@ Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
 **Blocked by:** roster-as-code-02
 
-- [ ] ROLES.md holds the seven role contracts and the slot rule
-- [ ] each of the four call sites names its slot, default skill and command
-- [ ] existing text tests on the default skill names keep holding
+- [x] ROLES.md holds the seven role contracts and the slot rule
+- [x] each of the four call sites names its slot, default skill and command
+- [x] existing text tests on the default skill names keep holding
 
 ## Proof
 
@@ -22,3 +22,8 @@ node --test tests/roster-slots.test.mjs tests/agents.test.mjs tests/wayfinder.te
 passes: the slot call-site checks and the existing text tests green
 
 ## Comments
+
+- recommended: wayfinder and intent run the roster command with `--project .`; the prototyper resolves against the project dir its prompt names (source: spec "The slot rule"; round 0 finding)
+- recommended: ROLES.md names context-budget and protected-branch on every member; roster-guard (slice 05, merged) and the spec-writer's codebase-design line (slice 07) are added by slice 10's docs (source: spec "Role-contract reference")
+
+clean. Review record: .forge/review/roster-as-code-06.md. Merged at 51bceb3.
