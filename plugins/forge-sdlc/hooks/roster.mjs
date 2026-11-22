@@ -296,14 +296,14 @@ const put = (/** @type {Record<string, unknown>} */ obj, /** @type {string} */ k
  * @param {string} line
  */
 function stripComment(line) {
-  let quote = '';
+  let open = '';
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (quote) {
-      if (c === '\\' && quote === '"') i++;
-      else if (c === quote) quote = '';
+    if (open) {
+      if (c === '\\' && open === '"') i++;
+      else if (c === open) open = '';
     } else if (c === '"' || c === "'") {
-      if (i === 0 || /[\s:[,-]/.test(line[i - 1] ?? '')) quote = c;
+      if (i === 0 || /[\s:[,-]/.test(line[i - 1] ?? '')) open = c;
     } else if (c === '#' && (i === 0 || /\s/.test(line[i - 1] ?? ''))) {
       return line.slice(0, i);
     }
@@ -516,14 +516,14 @@ export function parseYamlSubset(text) {
 function splitFlow(inner) {
   /** @type {string[]} */
   const parts = [];
-  let quote = '';
+  let open = '';
   let start = 0;
   for (let i = 0; i < inner.length; i++) {
     const c = inner[i];
-    if (quote) {
-      if (c === '\\' && quote === '"') i++;
-      else if (c === quote) quote = '';
-    } else if (c === '"' || c === "'") quote = c;
+    if (open) {
+      if (c === '\\' && open === '"') i++;
+      else if (c === open) open = '';
+    } else if (c === '"' || c === "'") open = c;
     else if (c === ',') {
       parts.push(inner.slice(start, i));
       start = i + 1;
