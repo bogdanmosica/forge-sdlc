@@ -17,7 +17,7 @@ Default `forge-sdlc:researcher`, started by wayfinder for a `wayfinder:research`
 
 Default `forge-sdlc:prototyper`, started by wayfinder for a `wayfinder:prototype` ticket, with `isolation: "worktree"` on the call. Calls the `prototyper.prototype` slot.
 
-- **Inputs.** The effort `<slug>`, the ticket pointer and its question.
+- **Inputs.** The effort `<slug>`, the ticket pointer and its question, the host project dir (its isolation worktree is on no `slice/*` branch, so it cannot resolve the host itself).
 - **Report.** The verdict as its final message: `## Verdict`, `## Evidence` (one line per case run), `## Run it`, `## Gist`, ready to paste as the ticket's resolution and the map's gist.
 - **Evidence.** None kept: the code is throwaway and goes with its worktree, nothing is pushed or merged, and nothing is committed to `feat/<slug>`. The lead posts the verdict on the ticket and the map.
 - **Hooks.** `context-budget`, `protected-branch`.
