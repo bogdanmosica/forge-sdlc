@@ -1,7 +1,7 @@
 # 14: roster-as-code-09: Init writes forge.yaml
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -30,3 +30,7 @@ passes: the init roster checks and the updated init tests green
 red (Bugs and security): merged before slice 07, a host that re-ran init loses its policy skills, because spec and slice-review still read the forge.md bullets. Merge after 07 lands (add 07 as a dependency of 09 in plan.md), then re-review. Findings: .forge/review/roster-as-code-09.md
 
 - recommended: roster-as-code-07 added as a blocker of 09 during build; 09 re-runs its merge after 07 merges, from this worktree (source: the red finding above; build step 6)
+
+## Answer
+
+Resolved: clean review, record .forge/review/roster-as-code-09.md, merged at 5555bf7.
