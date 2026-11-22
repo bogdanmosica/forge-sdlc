@@ -59,8 +59,9 @@ export function resolveRoster(yamlText, forgeConfig) {
   /** @type {Record<string, string>} */
   const slots = {};
   for (const [slot, { skill }] of Object.entries(SLOTS)) slots[slot] = skill;
-  return {
-    present: false,
+  /** @type {Roster} */
+  const roster = {
+    present: typeof yamlText === 'string',
     version: null,
     enforce: 'off',
     roles,
@@ -69,7 +70,40 @@ export function resolveRoster(yamlText, forgeConfig) {
     allow: { agents: [], skills: [] },
     problems: [],
   };
+  if (typeof yamlText !== 'string') return roster;
+
+  const { value } = parseYamlSubset(yamlText);
+  const file = isMap(value) ? value : {};
+  if (typeof file.version === 'number') roster.version = file.version;
+  if (file.enforce === true) roster.enforce = 'on';
+
+  for (const [role, entry] of Object.entries(isMap(file.roles) ? file.roles : {})) {
+    if (!isMap(entry)) continue;
+    const agent = typeof entry.agent === 'string' ? entry.agent : `${PLUGIN}:${role}`;
+    roles[role] = {
+      agent,
+      ...(isModel(entry.model) ? { model: entry.model } : {}),
+      ...(isEffort(entry.effort) ? { effort: entry.effort } : {}),
+      swapped: agent !== `${PLUGIN}:${role}`,
+    };
+  }
+
+  for (const [slot, skill] of Object.entries(isMap(file.slots) ? file.slots : {})) {
+    if (slot === 'policy') {
+      if (Array.isArray(skill)) roster.policy = skill.filter((s) => typeof s === 'string');
+    } else if (typeof skill === 'string') slots[slot] = skill;
+  }
+
+  const allow = isMap(file.allow) ? file.allow : {};
+  for (const kind of /** @type {const} */ (['agents', 'skills'])) {
+    const list = allow[kind];
+    if (Array.isArray(list)) roster.allow[kind] = list.filter((s) => typeof s === 'string');
+  }
+  return roster;
 }
+
+/** @param {unknown} v @returns {v is Record<string, unknown>} */
+const isMap = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 // --- The YAML subset ---------------------------------------------------------
 // 2-space maps; scalar lists, block (`- x`, at the key's indent or 2 deeper) or

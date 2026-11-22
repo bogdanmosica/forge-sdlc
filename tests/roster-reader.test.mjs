@@ -143,3 +143,56 @@ test('the parser never throws, whatever the input', () => {
   assert.equal(parseYamlSubset('a: [b, [c]]').errors.length, 1);
   assert.equal(parseYamlSubset('a:\n    b: 1').errors[0]?.line, 2);
 });
+
+const ROSTER = yaml(
+  'version: 1',
+  'enforce: true',
+  'roles:',
+  '  reviewer:',
+  '    agent: my-plugin:reviewer',
+  '    model: sonnet',
+  '    effort: medium',
+  '  implementer:',
+  '    effort: high',
+  '  merger:',
+  '    agent: forge-sdlc:merger',
+  'slots:',
+  '  implementer.tdd: other-plugin:tdd',
+  '  domain-modeling: disabled',
+  '  spec-writer.codebase-design: my-design',
+  '  policy: [writing-for-agents, security]',
+  'allow:',
+  '  agents: [Explore]',
+  '  skills:',
+  '    - pr',
+);
+
+test('a roster swaps roles, sets model and effort, swaps and disables slots, lists policy and allow, and enforces', () => {
+  assert.deepEqual(resolveRoster(ROSTER, undefined), {
+    present: true,
+    version: 1,
+    enforce: 'on',
+    roles: {
+      ...DEFAULT_ROLES,
+      reviewer: { agent: 'my-plugin:reviewer', model: 'sonnet', effort: 'medium', swapped: true },
+      implementer: { agent: 'forge-sdlc:implementer', effort: 'high', swapped: false },
+      merger: { agent: 'forge-sdlc:merger', swapped: false },
+    },
+    slots: {
+      ...DEFAULT_SLOTS,
+      'implementer.tdd': 'other-plugin:tdd',
+      'domain-modeling': 'disabled',
+      'spec-writer.codebase-design': 'my-design',
+    },
+    policy: ['writing-for-agents', 'security'],
+    allow: { agents: ['Explore'], skills: ['pr'] },
+    problems: [],
+  });
+});
+
+test('enforce is on only for the literal true', () => {
+  const enforce = (value) => resolveRoster(`version: 1\nenforce: ${value}`, undefined).enforce;
+  assert.equal(enforce('true'), 'on');
+  assert.equal(enforce('false'), 'off');
+  assert.equal(resolveRoster('version: 1', undefined).enforce, 'off');
+});
