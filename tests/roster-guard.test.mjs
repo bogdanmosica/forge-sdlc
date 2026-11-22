@@ -9,7 +9,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -187,4 +187,11 @@ test('a deny reason never contains the value the call used', () => {
     assert.equal(reason, SKILL_REASON);
     assert.ok(!reason.includes(skill), skill);
   }
+});
+
+test('hooks.json runs it on PreToolUse for Agent and Skill calls', () => {
+  const file = path.join(import.meta.dirname, '..', 'plugins', 'forge-sdlc', 'hooks', 'hooks.json');
+  const entries = JSON.parse(readFileSync(file, 'utf8')).hooks.PreToolUse;
+  const guard = entries.filter((e) => e.hooks.some((h) => h.args?.some((a) => a.endsWith('/roster-guard.mjs'))));
+  assert.deepEqual(guard.map((e) => e.matcher), ['Agent|Skill']);
 });
