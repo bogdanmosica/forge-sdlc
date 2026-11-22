@@ -179,3 +179,47 @@ test('a roster file that does not parse still shows the defaults it falls back t
   expect(textsUnder(tree, 'slots')).toContainEqual(expect.stringMatching(/^grilling +mattpocock-skills:grilling$/));
   await ui.unmount();
 });
+
+test("a swapped role that sets neither model nor effort shows only its agent, not the default's frontmatter", async ($, on) => {
+  const roster = ['version: 1', 'roles:', '  reviewer:', '    agent: my-plugin:reviewer', ''].join('\n');
+  seat(on, { ...AGENTS, 'docs/agents/forge.yaml': roster });
+  await start($);
+  await forge($, 'agents');
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const agents = textsUnder(await ui.drawn(), 'agents').join('\n');
+    // the swapped-in agent's own frontmatter is unknown: no model or effort is shown for it
+    expect(agents, surface).toMatch(/forge-sdlc:reviewer\n {2}⇄ my-plugin:reviewer\n {2}Reviews one axis of one slice\.\n/);
+    await ui.unmount();
+  }
+});
+
+test("forge.yaml and forge.md together: a ## Routing bullet the roster leaves unset and ## Policy skills still show", async ($, on) => {
+  const forgeMd = [
+    '# forge',
+    '',
+    '## Routing',
+    '',
+    '- effort.implementer: low',
+    '',
+    '## Policy skills',
+    '',
+    '- skills: writing-for-agents, security',
+    '',
+  ].join('\n');
+  const roster = ['version: 1', 'roles:', '  merger:', '    effort: high', ''].join('\n');
+  seat(on, { ...AGENTS, 'docs/agents/forge.yaml': roster, 'docs/agents/forge.md': forgeMd });
+  await start($);
+  await forge($, 'agents');
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const tree = await ui.drawn();
+    const agents = textsUnder(tree, 'agents').join('\n');
+    expect(agents, surface).toMatch(/forge-sdlc:implementer\n {2}claude-opus-5-5 · low\n/);
+    expect(agents, surface).toMatch(/forge-sdlc:merger\n {2}claude-sonnet-5-5 · high\n/);
+    expect(textsUnder(tree, 'slots'), surface).toContainEqual(
+      expect.stringMatching(/^policy +writing-for-agents, security$/),
+    );
+    await ui.unmount();
+  }
+});
