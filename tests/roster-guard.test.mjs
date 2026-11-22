@@ -114,3 +114,44 @@ test('under enforcement a Skill call passes for a slot skill, a policy entry, a 
   denied(check(skillCall(dir, 'mattpocock-skills:domain-modeling')), 'a disabled slot');
   denied(check(skillCall(dir, 'disabled')), 'the disabled marker is no skill');
 });
+
+test('a qualified entry matches exactly, a bare entry with or without any plugin prefix', () => {
+  const dir = rosterHost(enforced('allow:', '  agents: [scout, tools:mapper]', '  skills: [fmt, util:lint]'));
+  passes(check(agentCall(dir, 'scout')));
+  passes(check(agentCall(dir, 'any-plugin:scout')));
+  passes(check(agentCall(dir, 'tools:mapper')));
+  denied(check(agentCall(dir, 'mapper')));
+  denied(check(agentCall(dir, 'other:mapper')));
+  denied(check(agentCall(dir, 'scouts')));
+  passes(check(skillCall(dir, 'fmt')));
+  passes(check(skillCall(dir, 'house:fmt')));
+  passes(check(skillCall(dir, 'util:lint')));
+  denied(check(skillCall(dir, 'lint')));
+  denied(check(skillCall(dir, 'other:lint')));
+});
+
+test('the lead and a member are held alike: agent_id is not consulted', () => {
+  const dir = rosterHost(enforced());
+  const member = { agent_id: 'a1b2c3', agent_type: 'forge-sdlc:implementer' };
+  denied(check(agentCall(dir, 'Explore')));
+  denied(check(agentCall(dir, 'Explore', member)));
+  denied(check(skillCall(dir, 'some-plugin:unrelated', member)));
+  passes(check(skillCall(dir, 'mattpocock-skills:tdd', member)));
+});
+
+test('enforcement holds when enforce: true parses beside bad entries (fail closed)', () => {
+  const dir = rosterHost(
+    ['version: 7', 'enforce: true', 'roles:', '  bogus:', '    agent: Explore', 'slots:', '  nope: x', 'allow:', '  weird: [Explore]', 'later: 1', ''].join('\n'),
+  );
+  denied(check(agentCall(dir, 'Explore')));
+  denied(check(skillCall(dir, 'x')));
+  passes(check(agentCall(dir, 'forge-sdlc:reviewer')));
+});
+
+test('a file too broken to read enforce gets no decision (fail open)', () => {
+  for (const yaml of ['version: 1\nenforce: &on true\n', 'version: 1\n\tenforce: true\n', 'just words\n']) {
+    const dir = rosterHost(yaml);
+    assert.deepEqual(check(agentCall(dir, 'Explore')), {}, yaml);
+    assert.deepEqual(check(skillCall(dir, 'some-plugin:unrelated')), {}, yaml);
+  }
+});
