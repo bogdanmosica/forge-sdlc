@@ -13,7 +13,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { forgeMd } from './support/host.mjs';
+import { forgeMd, hook } from './support/host.mjs';
 import { rosterGuardCheck } from '../plugins/forge-sdlc/hooks/scripts/roster-guard.mjs';
 
 /** A host dir with forge.md and, when given, this forge.yaml text. No git: the files sit at the project dir. */
@@ -153,5 +153,38 @@ test('a file too broken to read enforce gets no decision (fail open)', () => {
     const dir = rosterHost(yaml);
     assert.deepEqual(check(agentCall(dir, 'Explore')), {}, yaml);
     assert.deepEqual(check(skillCall(dir, 'some-plugin:unrelated')), {}, yaml);
+  }
+});
+
+test('a malformed Agent or Skill payload under enforcement gets a deny, never a throw', () => {
+  const dir = rosterHost(enforced('allow:', '  agents: [general-purpose]', '  skills: [fmt]'));
+  const call = (tool_name, tool_input) => ({ hook_event_name: 'PreToolUse', tool_name, tool_input, cwd: dir });
+  for (const input of [undefined, null, 'Explore', 42, [], { subagent_type: 7 }, { subagent_type: {} }, { subagent_type: '' }])
+    denied(check(call('Agent', input)));
+  for (const input of [undefined, null, 'fmt', 42, [], {}, { skill: 7 }, { skill: ['fmt'] }, { skill: '' }])
+    denied(check(call('Skill', input)));
+});
+
+test('spawned as the hook, it exits 0 with one JSON decision for any stdin', () => {
+  const dir = rosterHost(enforced());
+  const deny = hook('roster-guard.mjs', { hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: null, cwd: dir });
+  assert.equal(deny.status, 0, deny.stderr);
+  assert.equal(deny.decision.hookSpecificOutput?.permissionDecision, 'deny');
+  const none = hook('roster-guard.mjs', agentCall(rosterHost(), 'Explore'));
+  assert.equal(none.status, 0, none.stderr);
+  assert.deepEqual(none.decision, {});
+});
+
+test('a deny reason never contains the value the call used', () => {
+  const dir = rosterHost(enforced('allow:', '  agents: [scout]', '  skills: [fmt]'));
+  for (const type of ['Explore', 'secret-plugin:spy-agent']) {
+    const reason = check(agentCall(dir, type)).hookSpecificOutput.permissionDecisionReason;
+    assert.equal(reason, AGENT_REASON);
+    assert.ok(!reason.includes(type), type);
+  }
+  for (const skill of ['secret-plugin:exfiltrate', 'tdd-but-other']) {
+    const reason = check(skillCall(dir, skill)).hookSpecificOutput.permissionDecisionReason;
+    assert.equal(reason, SKILL_REASON);
+    assert.ok(!reason.includes(skill), skill);
   }
 });

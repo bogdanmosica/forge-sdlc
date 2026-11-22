@@ -36,10 +36,17 @@ const rosterAgents = (roster) => [
   ...roster.allow.agents,
 ];
 
-/** An Agent call's decision: its type, absent read as general-purpose. */
+/** The named field of a tool input: a non-empty string, `fallback` when absent, else null (malformed). */
+function nameIn(input, key, fallback = null) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const value = input[key] ?? fallback;
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/** An Agent call's decision: its type, absent read as general-purpose; a malformed input is denied. */
 function agentDecision(input, roster) {
-  const type = input.subagent_type ?? 'general-purpose';
-  return accounted(type, rosterAgents(roster)) ? allow() : deny(AGENT_REASON);
+  const type = nameIn(input, 'subagent_type', 'general-purpose');
+  return type && accounted(type, rosterAgents(roster)) ? allow() : deny(AGENT_REASON);
 }
 
 /** The skills the roster accounts for: each slot's resolved skill (none when disabled), the policy entries and allow.skills. */
@@ -49,10 +56,11 @@ const rosterSkills = (roster) => [
   ...roster.allow.skills,
 ];
 
-/** A Skill call's decision: the loop's own `forge-sdlc:*` skills always pass. */
+/** A Skill call's decision: the loop's own `forge-sdlc:*` skills always pass; a malformed input is denied. */
 function skillDecision(input, roster) {
-  const skill = input.skill;
-  return skill.startsWith(`${PLUGIN}:`) || accounted(skill, rosterSkills(roster)) ? allow() : deny(SKILL_REASON);
+  const skill = nameIn(input, 'skill');
+  const passes = skill && (skill.startsWith(`${PLUGIN}:`) || accounted(skill, rosterSkills(roster)));
+  return passes ? allow() : deny(SKILL_REASON);
 }
 
 export function rosterGuardCheck(payload, { projectDir }) {
