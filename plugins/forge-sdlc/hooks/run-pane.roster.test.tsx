@@ -265,3 +265,20 @@ test('the offer passes through as the engine answered it, and a type it hid is n
   expect(s.spawns[0]?.subagentType).toBe('forge-sdlc:reviewer');
   expect(s.toasts.join('\n')).toContain('roles.reviewer.agent "hidden-plugin:reviewer" names no offered agent');
 });
+
+test('a type offered once and hidden later is no swap target: the role keeps its own agent', async ($, on) => {
+  const clock = mock.clock(on);
+  const hidden: string[] = [];
+  const s = seat(on, {
+    config: forgeConfig(),
+    roster: 'version: 1\nroles:\n  reviewer:\n    agent: my-plugin:reviewer\n',
+    hidden,
+  });
+  await start($, clock);
+  expect(await offer($, 'forge-sdlc:reviewer', 'my-plugin:reviewer')).toEqual([true, true]);
+  hidden.push('my-plugin:reviewer');
+  expect(await offer($, 'forge-sdlc:reviewer', 'my-plugin:reviewer')).toEqual([true, false]);
+  await spawn($, 'forge-sdlc:reviewer');
+  expect(s.spawns[0]?.subagentType).toBe('forge-sdlc:reviewer');
+  expect(s.spawns[0]?.prompt).toBe(PROMPT);
+});
