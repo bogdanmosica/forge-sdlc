@@ -71,10 +71,192 @@ export function resolveRoster(yamlText, forgeConfig) {
   };
 }
 
+// --- The YAML subset ---------------------------------------------------------
+// 2-space maps; scalar lists, block (`- x`, at the key's indent or 2 deeper) or
+// one-line flow (`[a, b]`); plain, 'single' and "double" quoted scalars (only
+// \" and \\ escaped); true, false, integers, null, ~ and empty as null; `#`
+// comments at a line's start or after a space. Each unsupported construct is
+// an error naming its line; the line (and anything nested under it) is skipped
+// and the rest is still read.
+
+/** @typedef {{ line: number, message: string }} YamlError */
+/** @typedef {{ line: number, indent: number, text: string }} Row */
+
+/** A plain object whose own keys may be any string, `__proto__` included. */
+const put = (/** @type {Record<string, unknown>} */ obj, /** @type {string} */ key, /** @type {unknown} */ value) =>
+  Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
+
+/**
+ * A line without its comment: `#` at the start or after whitespace, outside quotes.
+ * @param {string} line
+ */
+function stripComment(line) {
+  let quote = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quote) {
+      if (c === '\\' && quote === '"') i++;
+      else if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") {
+      if (i === 0 || /[\s:[,-]/.test(line[i - 1] ?? '')) quote = c;
+    } else if (c === '#' && (i === 0 || /\s/.test(line[i - 1] ?? ''))) {
+      return line.slice(0, i);
+    }
+  }
+  return line;
+}
+
+const KEY = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[A-Za-z0-9_.-]+)\s*:(?:\s+(.*))?$/;
+const isItem = (/** @type {string} */ text) => text === '-' || text.startsWith('- ');
+
 /**
  * @param {string} text
- * @returns {{ value: unknown, errors: { line: number, message: string }[] }}
+ * @returns {{ value: unknown, errors: YamlError[] }}
  */
 export function parseYamlSubset(text) {
-  return { value: null, errors: [] };
+  /** @type {YamlError[]} */
+  const errors = [];
+  const fail = (/** @type {number} */ line, /** @type {string} */ message) => {
+    errors.push({ line, message });
+  };
+
+  /** @type {Row[]} */
+  const rows = [];
+  String(text ?? '')
+    .split(/\r?\n/)
+    .forEach((raw, i) => {
+      const line = i + 1;
+      const body = stripComment(raw).trimEnd();
+      if (!body.trim()) return;
+      const indent = body.length - body.trimStart().length;
+      rows.push({ line, indent, text: body.trimStart() });
+    });
+
+  let at = 0;
+  // Skip a row and every row nested deeper than `indent` under it.
+  const skipFrom = (/** @type {number} */ indent) => {
+    at++;
+    while (at < rows.length && /** @type {Row} */ (rows[at]).indent > indent) at++;
+  };
+
+  /**
+   * A scalar or a one-line flow list.
+   * @param {string} text
+   * @param {number} line
+   * @returns {{ ok: true, value: unknown } | { ok: false }}
+   */
+  function scalar(text, line) {
+    if (text.startsWith('[')) {
+      if (!text.endsWith(']')) return fail(line, 'a flow list must close on its own line'), { ok: false };
+      const inner = text.slice(1, -1).trim();
+      if (!inner) return { ok: true, value: [] };
+      /** @type {unknown[]} */
+      const items = [];
+      for (const part of splitFlow(inner)) {
+        const item = scalar(part.trim(), line);
+        if (!item.ok) return { ok: false };
+        items.push(item.value);
+      }
+      return { ok: true, value: items };
+    }
+    if (text.startsWith('"')) {
+      const m = /^"((?:[^"\\]|\\.)*)"$/.exec(text);
+      if (!m) return fail(line, 'a double-quoted value must close at the end of its line'), { ok: false };
+      return { ok: true, value: (m[1] ?? '').replace(/\\(.)/g, '$1') };
+    }
+    if (text.startsWith("'")) {
+      const m = /^'((?:[^']|'')*)'$/.exec(text);
+      if (!m) return fail(line, 'a single-quoted value must close at the end of its line'), { ok: false };
+      return { ok: true, value: (m[1] ?? '').replace(/''/g, "'") };
+    }
+    if (text === '' || text === '~' || text === 'null') return { ok: true, value: null };
+    if (text === 'true') return { ok: true, value: true };
+    if (text === 'false') return { ok: true, value: false };
+    if (/^-?\d+$/.test(text)) return { ok: true, value: Number(text) };
+    return { ok: true, value: text };
+  }
+
+  /**
+   * The block starting at the current row, at `indent`.
+   * @param {number} indent
+   * @returns {unknown}
+   */
+  function block(indent) {
+    const first = rows[at];
+    return first && isItem(first.text) ? list(indent) : map(indent);
+  }
+
+  /** @param {number} indent */
+  function list(indent) {
+    /** @type {unknown[]} */
+    const items = [];
+    while (at < rows.length) {
+      const row = /** @type {Row} */ (rows[at]);
+      if (row.indent !== indent || !isItem(row.text)) break;
+      const item = scalar(row.text.slice(1).trim(), row.line);
+      skipFrom(indent);
+      if (item.ok) items.push(item.value);
+    }
+    return items;
+  }
+
+  /** @param {number} indent */
+  function map(indent) {
+    /** @type {Record<string, unknown>} */
+    const out = {};
+    while (at < rows.length) {
+      const row = /** @type {Row} */ (rows[at]);
+      if (row.indent < indent) break;
+      const m = KEY.exec(row.text);
+      if (!m) {
+        fail(row.line, 'expected `key: value`');
+        skipFrom(row.indent);
+        continue;
+      }
+      const raw = /** @type {string} */ (m[1]);
+      const key = raw.startsWith('"') || raw.startsWith("'") ? /** @type {{ value: string }} */ (scalar(raw, row.line)).value : raw;
+      const rest = (m[2] ?? '').trim();
+      at++;
+      /** @type {unknown} */
+      let value = null;
+      const next = rows[at];
+      if (rest) {
+        const v = scalar(rest, row.line);
+        if (v.ok) value = v.value;
+      } else if (next && next.indent === indent && isItem(next.text)) {
+        value = list(indent);
+      } else if (next && next.indent > indent) {
+        value = block(next.indent);
+      }
+      put(out, key, value);
+    }
+    return out;
+  }
+
+  const value = rows.length ? block(0) : null;
+  return { value, errors };
+}
+
+/**
+ * The items of a flow list's inside, split at commas outside quotes.
+ * @param {string} inner
+ */
+function splitFlow(inner) {
+  /** @type {string[]} */
+  const parts = [];
+  let quote = '';
+  let start = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i];
+    if (quote) {
+      if (c === '\\' && quote === '"') i++;
+      else if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === ',') {
+      parts.push(inner.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(inner.slice(start));
+  return parts;
 }
