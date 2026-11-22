@@ -113,6 +113,7 @@ const REJECTED = {
   'text that is no key': 'just words',
   'escape other than \\" and \\\\': 'b: "one\\ntwo"',
   'reserved indicator': 'b: @x',
+  'quoted key with an unsupported escape': '"b\\nc": 1',
 };
 
 for (const [name, line2] of Object.entries(REJECTED)) {
@@ -132,6 +133,24 @@ test('a rejected line is skipped and the rest of the text is still read', () => 
     errors.map((e) => e.line),
     [2, 4],
   );
+});
+
+test('a quoted key that cannot be read is skipped with what is nested under it, no key made up', () => {
+  const { value, errors } = parseYamlSubset(yaml('a: 1', '"b\\nc": 1', '"d\\te":', '  f: 2', 'g: 3'));
+  assert.deepEqual(value, { a: 1, g: 3 });
+  assert.deepEqual(
+    errors.map((e) => e.line),
+    [2, 3],
+  );
+});
+
+test('a top-level list followed by `key: value` rows is an error, not a silent drop', () => {
+  const { value, errors } = parseYamlSubset(yaml('- a', 'version: 1', 'enforce: true'));
+  assert.deepEqual(value, ['a']);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.equal(errors[0].line, 2);
+  const r = resolveRoster(yaml('- a', 'version: 1', 'enforce: true'), undefined);
+  assert.equal(r.enforce, 'unreadable');
 });
 
 test('a duplicate key keeps the first value', () => {
@@ -315,6 +334,14 @@ test('enforce is unreadable when the file is too broken to read it, and the prob
     'version: 1\n"enforce: true',
     '- version: 1',
     'just words',
+    // nothing parses at all, yet the text tried to say something
+    'enforce:\ttrue',
+    '\tversion: 1\n\tenforce: true',
+    ' enforce: true',
+    // a misindented enforce line, whatever its indent
+    'version: 1\n  enforce: true',
+    'version: 1\n   enforce: true',
+    'version: 1\nroles:\n  reviewer:\n     enforce: true',
   ]) {
     const r = resolveRoster(text, undefined);
     assert.equal(r.enforce, 'unreadable', text);
@@ -326,6 +353,18 @@ test('an error that cannot hide enforce leaves it readable', () => {
   assert.equal(resolveRoster('version: 1\nroles:\n  reviewer:\n    agent: &a x', undefined).enforce, 'off');
   assert.equal(resolveRoster('version: 1\nslots: [a,\nenforce: false', undefined).enforce, 'off');
   assert.equal(resolveRoster('version: 1\nslots: [a,', undefined).enforce, 'off');
+  assert.equal(resolveRoster('version: 1\nroles:\n   reviewer: x', undefined).enforce, 'off');
+});
+
+test('an empty or comment-only forge.yaml leaves enforce off: nothing in it is broken', () => {
+  assert.equal(resolveRoster('', undefined).enforce, 'off');
+  assert.equal(resolveRoster('# nothing yet\n', undefined).enforce, 'off');
+});
+
+test('a problem line names a key with control bytes JSON-escaped', () => {
+  const r = resolveRoster(yaml('version: 1', '"pro\u0007cedures": 1', 'roles:', "  'tes\u001bter':", '    agent: x'), undefined);
+  assert.equal(r.problems.length, 2, JSON.stringify(r.problems));
+  for (const p of r.problems) assert.doesNotMatch(p, /[\u0000-\u001f\u007f]/, JSON.stringify(p));
 });
 
 // forge.md as the hooks parse it: the config resolveRoster is handed.
@@ -373,6 +412,20 @@ test('without slots.policy the Policy skills list applies, with a deprecation li
   assert.deepEqual(r.policy, ['writing-for-agents', 'security']);
   assert.equal(r.problems.length, 1);
   assert.match(r.problems[0], /^## Policy skills: .*slots\.policy.*docs\/agents\/forge\.yaml/);
+});
+
+test('a Policy skills name that is no skill name is reported and skipped', () => {
+  const r = resolveRoster(undefined, forgeMd('## Policy skills', '- skills: writing-for-agents, two words, security'));
+  assert.deepEqual(r.policy, ['writing-for-agents', 'security']);
+  assert.equal(r.problems.length, 2, JSON.stringify(r.problems));
+  assert.ok(r.problems.some((p) => /^## Policy skills: .*not a skill name/.test(p)), JSON.stringify(r.problems));
+});
+
+test('a Routing bullet naming a role with its forge-sdlc: prefix applies to that role', () => {
+  const r = resolveRoster(undefined, forgeMd('## Routing', '- model.forge-sdlc:reviewer: opus', '- effort.forge-sdlc:merger: low'));
+  assert.deepEqual(r.roles.reviewer, { agent: 'forge-sdlc:reviewer', model: 'opus', swapped: false });
+  assert.deepEqual(r.roles.merger, { agent: 'forge-sdlc:merger', effort: 'low', swapped: false });
+  assert.match(r.problems[0], /roles\.reviewer\.model/);
 });
 
 test('slots.policy, when present, replaces Policy skills whole', () => {
