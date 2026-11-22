@@ -102,3 +102,14 @@ test('the JSON form without forge.yaml is the defaults with no problems', () => 
   assert.equal(r.roles.merger.agent, 'forge-sdlc:merger');
   assert.equal(r.slots['implementer.tdd'], 'mattpocock-skills:tdd');
 });
+
+test('exit 2 with the usage on stderr and nothing on stdout for an unknown slot, a missing --project, or extra words', () => {
+  const { dir } = rosterHost();
+  for (const args of [['tdd', '--project', dir], ['implementer.tdd'], [], ['grilling', 'policy', '--project', dir], ['grilling', '--project']]) {
+    const r = roster(...args);
+    assert.equal(r.status, 2, `exit 2 for ${JSON.stringify(args)}`);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /^usage: roster\.mjs .*--project <host>/);
+    assert.match(r.stderr, /implementer\.tdd, prototyper\.prototype, grilling, spec-writer\.codebase-design, domain-modeling, policy/);
+  }
+});
