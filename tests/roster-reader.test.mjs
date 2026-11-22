@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseYamlSubset, resolveRoster } from '../plugins/forge-sdlc/hooks/roster.mjs';
+import { parseForgeConfig } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 
 const yaml = (...lines) => lines.join('\n');
 
@@ -325,4 +326,58 @@ test('an error that cannot hide enforce leaves it readable', () => {
   assert.equal(resolveRoster('version: 1\nroles:\n  reviewer:\n    agent: &a x', undefined).enforce, 'off');
   assert.equal(resolveRoster('version: 1\nslots: [a,\nenforce: false', undefined).enforce, 'off');
   assert.equal(resolveRoster('version: 1\nslots: [a,', undefined).enforce, 'off');
+});
+
+// forge.md as the hooks parse it: the config resolveRoster is handed.
+const forgeMd = (...lines) => parseForgeConfig(['# forge-sdlc host config', '', ...lines].join('\n'));
+
+test('a forge.md with no Routing bullets and Policy skills none changes nothing and says nothing', () => {
+  const config = forgeMd('## Proof commands', '- test: npm test', '', '## Routing', '', '## Policy skills', '- skills: none');
+  assert.deepEqual(resolveRoster(undefined, config), resolveRoster(undefined, undefined));
+});
+
+test('without forge.yaml the Routing bullets of a role still apply, each with a deprecation line', () => {
+  const config = forgeMd('## Routing', '- model.reviewer: opus', '- effort.reviewer: low', '- model.Explore: haiku');
+  const r = resolveRoster(undefined, config);
+  assert.deepEqual(r.roles.reviewer, { agent: 'forge-sdlc:reviewer', model: 'opus', effort: 'low', swapped: false });
+  assert.equal(r.problems.length, 3);
+  for (const p of r.problems) {
+    assert.match(p, /^## Routing: /);
+    assert.match(p, /docs\/agents\/forge\.yaml/);
+  }
+  assert.match(r.problems[0], /roles\.reviewer\.model/);
+  assert.match(r.problems[1], /roles\.reviewer\.effort/);
+});
+
+test('forge.yaml wins over Routing key by key; a key it leaves unset still comes from Routing', () => {
+  const config = forgeMd('## Routing', '- model.reviewer: opus', '- effort.reviewer: low', '- model.implementer: haiku');
+  const r = resolveRoster(yaml('version: 1', 'roles:', '  reviewer:', '    agent: mine', '    model: sonnet'), config);
+  assert.deepEqual(r.roles.reviewer, { agent: 'mine', model: 'sonnet', effort: 'low', swapped: true });
+  assert.deepEqual(r.roles.implementer, { agent: 'forge-sdlc:implementer', model: 'haiku', swapped: false });
+});
+
+test('a Routing bullet with a bad value applies nothing to the roster', () => {
+  const r = resolveRoster(undefined, forgeMd('## Routing', '- model.reviewer: gpt-9', '- effort.reviewer: huge'));
+  assert.deepEqual(r.roles.reviewer, { agent: 'forge-sdlc:reviewer', swapped: false });
+});
+
+test('a Routing bullet for a non-role type is deprecated with no forge.yaml equivalent', () => {
+  const r = resolveRoster(undefined, forgeMd('## Routing', '- model.Explore: haiku'));
+  assert.deepEqual(r.roles, DEFAULT_ROLES);
+  assert.equal(r.problems.length, 1);
+  assert.match(r.problems[0], /^## Routing: model\.Explore .*docs\/agents\/forge\.yaml.*removed/);
+});
+
+test('without slots.policy the Policy skills list applies, with a deprecation line', () => {
+  const r = resolveRoster(undefined, forgeMd('## Policy skills', '- skills: writing-for-agents, security'));
+  assert.deepEqual(r.policy, ['writing-for-agents', 'security']);
+  assert.equal(r.problems.length, 1);
+  assert.match(r.problems[0], /^## Policy skills: .*slots\.policy.*docs\/agents\/forge\.yaml/);
+});
+
+test('slots.policy, when present, replaces Policy skills whole', () => {
+  const config = forgeMd('## Policy skills', '- skills: writing-for-agents');
+  assert.deepEqual(resolveRoster('version: 1\nslots:\n  policy: [security]', config).policy, ['security']);
+  assert.deepEqual(resolveRoster('version: 1\nslots:\n  policy: []', config).policy, []);
+  assert.deepEqual(resolveRoster('version: 1', config).policy, ['writing-for-agents']);
 });

@@ -70,6 +70,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     allow: { agents: [], skills: [] },
     problems: [],
   };
+  fromForgeMd(roster, forgeConfig);
   if (typeof yamlText !== 'string') return roster;
 
   const say = (/** @type {string} */ line) => roster.problems.push(`roster: ${line}`);
@@ -103,19 +104,15 @@ export function resolveRoster(yamlText, forgeConfig) {
     }
     for (const field of Object.keys(entry))
       if (!ROLE_FIELDS.includes(field)) say(`roles.${role}.${field} is not agent, model or effort; ignored`);
-    let agent = `${PLUGIN}:${role}`;
+    const base = /** @type {RosterRole} */ (roles[role]);
+    let agent = base.agent;
     if (isName(entry.agent)) agent = entry.agent;
     else if (entry.agent != null) say(`roles.${role}.agent ${JSON.stringify(entry.agent)} is not an agent type; the default kept`);
     if (entry.model != null && !isModel(entry.model))
       say(`roles.${role}.model ${JSON.stringify(entry.model)} is no model alias or claude-* id; ignored`);
     if (entry.effort != null && !isEffort(entry.effort))
       say(`roles.${role}.effort ${JSON.stringify(entry.effort)} is not ${EFFORTS.join('|')}; ignored`);
-    roles[role] = {
-      agent,
-      ...(isModel(entry.model) ? { model: entry.model } : {}),
-      ...(isEffort(entry.effort) ? { effort: entry.effort } : {}),
-      swapped: agent !== `${PLUGIN}:${role}`,
-    };
+    roles[role] = roleOf(role, agent, isModel(entry.model) ? entry.model : base.model, isEffort(entry.effort) ? entry.effort : base.effort);
   }
 
   for (const [slot, skill] of entriesOf(file, 'slots', say)) {
@@ -162,6 +159,55 @@ function enforceHidden(text, value, errors) {
     const key = /^([A-Za-z0-9_.-]+)\s*:/.exec(raw)?.[1];
     return key === undefined || key === 'enforce';
   });
+}
+
+/**
+ * A role entry with only the keys that are set.
+ * @param {string} role
+ * @param {string} agent
+ * @param {string | undefined} model
+ * @param {Effort | undefined} effort
+ * @returns {RosterRole}
+ */
+const roleOf = (role, agent, model, effort) => ({
+  agent,
+  ...(model ? { model } : {}),
+  ...(effort ? { effort } : {}),
+  swapped: agent !== `${PLUGIN}:${role}`,
+});
+
+/**
+ * forge.md's deprecated sections, read while they last: each valid `## Routing`
+ * bullet for a role sets that role's model or effort (forge.yaml, read after,
+ * wins key by key), and `## Policy skills` is the policy list until
+ * `slots.policy` replaces it. Every bullet still there is one deprecation line.
+ * @param {Roster} roster
+ * @param {ForgeConfig | undefined} config
+ */
+function fromForgeMd(roster, config) {
+  for (const [key, value] of Object.entries(config?.routing ?? {})) {
+    const m = /^(model|effort)\.(.+)$/.exec(key);
+    const role = m?.[2] ?? '';
+    if (!m || !ROLES.includes(role)) {
+      roster.problems.push(
+        `## Routing: ${key} is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Routing is removed`,
+      );
+      continue;
+    }
+    roster.problems.push(`## Routing: ${key} is deprecated; move it to roles.${role}.${m[1]} in docs/agents/forge.yaml`);
+    const r = /** @type {RosterRole} */ (roster.roles[role]);
+    if (m[1] === 'model' && isModel(value)) roster.roles[role] = roleOf(role, r.agent, value, r.effort);
+    if (m[1] === 'effort' && isEffort(value)) roster.roles[role] = roleOf(role, r.agent, r.model, value);
+  }
+  for (const [key, value] of Object.entries(config?.['policy-skills'] ?? {})) {
+    const names = value
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s && s !== 'none');
+    if (!names.length) continue;
+    roster.policy.push(...names);
+    roster.problems.push(`## Policy skills: ${key} is deprecated; move it to slots.policy in docs/agents/forge.yaml`);
+  }
 }
 
 const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];
