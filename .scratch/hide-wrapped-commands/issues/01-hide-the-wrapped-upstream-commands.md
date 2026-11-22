@@ -1,7 +1,7 @@
 # 01: hide-wrapped-commands-01: Hide the wrapped upstream commands
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/hide-wrapped-commands/spec.md` on `feat/hide-wrapped-commands`
 
@@ -23,3 +23,7 @@ node --test tests/hidden-commands.test.mjs && test -f plugins/forge-sdlc/hooks/r
 passes: the node seam and the new mod seam green, every existing mod test green, the mod typechecks
 
 ## Comments
+
+## Comments
+
+merged fc7d33e: review record /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/hide-wrapped-commands-01.md
