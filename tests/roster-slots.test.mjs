@@ -101,3 +101,25 @@ test('wayfinder: the grilling ticket row calls the slot skills step 2 resolved',
   assert.match(row, /`grilling`[^|]*`domain-modeling`/);
   assert.match(row, /step 2/);
 });
+
+// Review roster-as-code-06 round 0: the prototyper runs in an isolation worktree whose branch is not
+// slice/*, so host-dir.mjs falls back to the repository root there and misses a subfolder host's
+// roster. Wayfinder passes the host project dir in the prompt; the prototyper resolves against it.
+test('prototyper: resolves its slot against the project dir from its prompt, never host-dir.mjs', () => {
+  const body = read('agents/prototyper.md');
+  assert.doesNotMatch(body, /host-dir\.mjs/, 'host-dir.mjs misresolves inside an isolation worktree');
+  assert.ok(body.includes('bin/roster.mjs" prototyper.prototype --project "<project dir>"'), 'the roster command takes the prompt\'s project dir');
+  assert.match(body.split('\n').find((l) => l.includes('Your prompt names')), /project dir/, 'the prompt names the project dir');
+});
+
+test('wayfinder: the prototype ticket row passes the host project dir in the prompt', () => {
+  const row = read('skills/wayfinder/SKILL.md')
+    .split('\n')
+    .find((l) => l.startsWith('| `wayfinder:prototype`'));
+  assert.ok(row);
+  assert.match(row.split('|').at(-2), /project dir/);
+});
+
+test('ROLES.md: the prototyper\'s inputs include the host project dir', () => {
+  assert.match(section(read(ROLES_FILE), 'prototyper'), /\*\*Inputs\.\*\*[^\n]*project dir/);
+});
