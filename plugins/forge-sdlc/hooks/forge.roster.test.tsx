@@ -111,3 +111,34 @@ test("/forge agents shows a swapped role's agent and the roster's model and effo
     await ui.unmount();
   }
 });
+
+test("/forge agents lists every slot with its skill or disabled, the roster's over the defaults", async ($, on) => {
+  seat(on, { ...AGENTS, 'docs/agents/forge.yaml': ROSTER });
+  await start($);
+  await forge($, 'agents');
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const slots = textsUnder(await ui.drawn(), 'slots');
+    expect(slots[0], surface).toBe('slots');
+    expect(slots.slice(1), surface).toEqual([
+      expect.stringMatching(/^implementer\.tdd +other-plugin:tdd$/),
+      expect.stringMatching(/^prototyper\.prototype +mattpocock-skills:prototype$/),
+      expect.stringMatching(/^grilling +mattpocock-skills:grilling$/),
+      expect.stringMatching(/^spec-writer\.codebase-design +mattpocock-skills:codebase-design$/),
+      expect.stringMatching(/^domain-modeling +disabled$/),
+      expect.stringMatching(/^policy +writing-for-agents, house-style$/),
+    ]);
+    await ui.unmount();
+  }
+});
+
+test('a roster with no policy shows the policy slot as none', async ($, on) => {
+  seat(on, { ...AGENTS, 'docs/agents/forge.yaml': 'version: 1\n' });
+  await start($);
+  await forge($, 'agents');
+  const ui = await mount($, 'terminal');
+  const slots = textsUnder(await ui.drawn(), 'slots');
+  expect(slots).toContainEqual(expect.stringMatching(/^policy +none$/));
+  expect(slots).toContainEqual(expect.stringMatching(/^implementer\.tdd +mattpocock-skills:tdd$/));
+  await ui.unmount();
+});

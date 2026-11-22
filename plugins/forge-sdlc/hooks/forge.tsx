@@ -26,6 +26,7 @@ import {
   newestVersionFirst,
   parseAgent,
   parseSkill,
+  slotLines,
   upstreamGroup,
 } from './forge/help';
 import type { Agent, Group, Skill } from './forge/help';
@@ -242,6 +243,18 @@ export function registerForge(on: On): void {
                 <Text dimColor wrap="truncate-end">{`  ${r.description}`}</Text>
               </Box>
             ))}
+            {s.roster && (
+              <Box key="slots" flexDirection="column">
+                <Text bold underline>
+                  slots
+                </Text>
+                {slotLines(s.roster).map((line) => (
+                  <Text key={line} wrap="truncate-end">
+                    {line}
+                  </Text>
+                ))}
+              </Box>
+            )}
           </Box>
         )}
         {v.tab === 'loop' && (

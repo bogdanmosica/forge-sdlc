@@ -157,6 +157,18 @@ export const agentRows = (agents: Agent[], roster?: PanelRoster): Row[] =>
       return { command: `${PLUGIN}:${a.name}`, ...(hint ? { hint } : {}), description: a.description };
     });
 
+// The roster's slots as the panel's table, in the reader's order, each a line:
+// the slot, padded to the longest, and its skill or `disabled`; `policy` last,
+// its skills comma-separated or `none`.
+export function slotLines(roster: PanelRoster): string[] {
+  const rows: [string, string][] = [
+    ...Object.entries(roster.slots),
+    ['policy', roster.policy.length ? roster.policy.join(', ') : 'none'],
+  ];
+  const width = Math.max(...rows.map(([slot]) => slot.length));
+  return rows.map(([slot, skill]) => `${slot.padEnd(width)}  ${skill}`);
+}
+
 const row = (plugin: string, s: Skill): Row => ({
   command: `/${plugin}:${s.name}`,
   ...(s.hint ? { hint: s.hint } : {}),
