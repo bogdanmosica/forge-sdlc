@@ -60,6 +60,7 @@ Engineering, in this plugin. Sessions read `docs/design.md`, `plugins/forge-sdlc
   - Bad entries ignored one by one and reported in the band; no file, no change.
   - Enforcement accepted at `risk: high`, so the effort runs attended from Gate 1.
 - [Inventory of roles and skill slots](../../../.scratch/roster-as-code/issues/03-inventory-of-roles-and-skill-slots.md): seven roles, all dispatched through MEMBERS.md; six proposed skill slots (required: `implementer.tdd`, `prototyper.prototype`, `grilling`; optional: `spec-writer.codebase-design`, `domain-modeling`, `policy`); the upstream procedures read by file are not slots in v1.
+- [YAML without a dependency](../../../.scratch/roster-as-code/issues/01-yaml-without-a-dependency.md): a strict-subset parser in one pure no-import `.mjs` under `hooks/`, shared by `lib.mjs` and the mod, errors located and per entry; no vendored parser.
 
 ## Not yet specified
 
