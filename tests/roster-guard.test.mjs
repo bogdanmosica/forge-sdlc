@@ -76,3 +76,20 @@ test('under enforcement an unrelated skill is denied with the fixed Skill reason
   assert.equal(decisionOf(d), 'deny');
   assert.equal(d.hookSpecificOutput.permissionDecisionReason, SKILL_REASON);
 });
+
+const passes = (d) => assert.equal(decisionOf(d), 'none', JSON.stringify(d));
+const denied = (d) => assert.equal(decisionOf(d), 'deny', JSON.stringify(d));
+
+test('under enforcement an Agent call passes for a role default, a roster agent or allow.agents', () => {
+  const dir = rosterHost(enforced('roles:', '  reviewer:', '    agent: my-plugin:reviewer', 'allow:', '  agents: [Explore]'));
+  for (const role of ['researcher', 'prototyper', 'spec-writer', 'implementer', 'verifier', 'reviewer', 'merger'])
+    passes(check(agentCall(dir, `forge-sdlc:${role}`)));
+  passes(check(agentCall(dir, 'my-plugin:reviewer')));
+  passes(check(agentCall(dir, 'Explore')));
+  denied(check(agentCall(dir, 'Plan')));
+});
+
+test('under enforcement an Agent call with no type reads as general-purpose', () => {
+  denied(check(agentCall(rosterHost(enforced()), undefined)));
+  passes(check(agentCall(rosterHost(enforced('allow:', '  agents: [general-purpose]')), undefined)));
+});

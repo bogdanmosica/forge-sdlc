@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PLUGIN, ROLES } from '../roster.mjs';
 import { HOST_CONFIG, ROSTER_FILE, allow, deny, hostDirOf, readRoster, run } from './lib.mjs';
 
 /** The fixed reasons: they name the file and the keys, never the value the call used. */
@@ -22,12 +23,31 @@ function hostOf(projectDir) {
   return here ? projectDir : hostDirOf(projectDir, projectDir);
 }
 
+/** A plugin-qualified entry matches that name exactly; a bare entry matches it with or without any plugin prefix. */
+export const matches = (name, entry) =>
+  entry.includes(':') ? name === entry : name === entry || name.endsWith(`:${entry}`);
+
+const accounted = (name, entries) => entries.some((entry) => matches(name, entry));
+
+/** The Agent types the roster accounts for: each role's default and its resolved agent, and allow.agents. */
+const rosterAgents = (roster) => [
+  ...ROLES.map((role) => `${PLUGIN}:${role}`),
+  ...Object.values(roster.roles).map((r) => r.agent),
+  ...roster.allow.agents,
+];
+
+/** An Agent call's decision: its type, absent read as general-purpose. */
+function agentDecision(input, roster) {
+  const type = input.subagent_type ?? 'general-purpose';
+  return accounted(type, rosterAgents(roster)) ? allow() : deny(AGENT_REASON);
+}
+
 export function rosterGuardCheck(payload, { projectDir }) {
   const host = hostOf(projectDir);
   if (!existsSync(path.join(host, ROSTER_FILE))) return allow();
   const roster = readRoster(host);
   if (roster.enforce !== 'on') return allow();
-  if (payload.tool_name === 'Agent') return deny(AGENT_REASON);
+  if (payload.tool_name === 'Agent') return agentDecision(payload.tool_input, roster);
   if (payload.tool_name === 'Skill') return deny(SKILL_REASON);
   return allow();
 }
