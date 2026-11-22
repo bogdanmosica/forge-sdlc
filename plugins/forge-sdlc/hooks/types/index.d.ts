@@ -119,11 +119,13 @@ export type RunPanePrices = {
 };
 
 // What routing applied to one spawned agent, keyed by agent id: the type it was
-// spawned as, the model and/or effort the host config set, and whether that
-// changed the default (the Agent call's model, else the frontmatter's; the
-// frontmatter's effort). Only an overridden agent's row is marked.
+// called as (the role), the agent the roster swapped in for it, the model and/or
+// effort the roster or host config set, and whether that changed the default
+// (the Agent call's model, else the frontmatter's; the frontmatter's effort; any
+// swap). Only an overridden agent's row is marked.
 export type AgentRouting = {
   type: string;
+  agent?: string; // the swapped-in type (docs/agents/forge.yaml roles.<role>.agent); absent when not swapped
   model?: string;
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   overridden: boolean;

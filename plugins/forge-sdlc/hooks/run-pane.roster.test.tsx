@@ -93,6 +93,20 @@ async function offer($: Engine, ...types: string[]) {
     await $.agent.offer({ agent, description: `the ${agent}`, source: 'plugin', provider: { plugin: 'x', tier: 'user' } });
 }
 
+async function agentRows($: Engine, clock: ReturnType<typeof mock.clock>) {
+  await clock.advance(5000);
+  await $.command.run({
+    command: 'forge-pane',
+    args: '',
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: false, columns: 160 },
+  });
+  const ui = await pane($, 'terminal');
+  const rows = rowsOf(await ui.drawn());
+  await ui.unmount();
+  return rows;
+}
+
 const PROMPT = 'Review slice 03.\nworktree: /w/03';
 
 // The Agent tool starting an agent, as the engine raises it; `extra` sets fork,
@@ -124,4 +138,19 @@ test("a role the roster fills with another offered agent spawns that agent, its 
   const lines = s.spawns[0]?.prompt.split('\n') ?? [];
   expect(lines.slice(0, -1).join('\n')).toBe(PROMPT);
   expect(lines.at(-1)).toMatch(/^role contract: \S+\/skills\/build\/ROLES\.md#reviewer$/);
+});
+
+// The routing record's `agent` is held by the state contract (AgentRouting.agent);
+// a test reads no $.state, so the row's mark is what it sees of the record.
+test("a swapped agent's row is marked routed though its model and effort are the defaults", async ($, on) => {
+  const clock = mock.clock(on);
+  seat(on, {
+    config: forgeConfig(),
+    roster: 'version: 1\nroles:\n  reviewer:\n    agent: my-plugin:reviewer\n',
+  });
+  await start($, clock);
+  await offer($, 'forge-sdlc:reviewer', 'my-plugin:reviewer');
+  await spawn($, 'forge-sdlc:reviewer');
+  const rows = await agentRows($, clock);
+  expect(rows[0]).toMatch(/^● review slice 03.*⇄ routed/);
 });
