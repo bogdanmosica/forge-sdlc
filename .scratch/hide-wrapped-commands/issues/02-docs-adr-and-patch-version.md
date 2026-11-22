@@ -1,7 +1,7 @@
 # 02: hide-wrapped-commands-02: Docs, ADR and patch version
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/hide-wrapped-commands/spec.md` on `feat/hide-wrapped-commands`
 
@@ -22,3 +22,5 @@ npm run check && grep -q hidden-commands CLAUDE.md
 exits 0: validate, typecheck and every test green, and CLAUDE.md names the module
 
 ## Comments
+
+resolved: clean, review record /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/hide-wrapped-commands-02.md, merged afd8cd6 on feat/hide-wrapped-commands.
