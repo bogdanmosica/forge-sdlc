@@ -49,3 +49,30 @@ test('without forge.yaml no call gets a decision', () => {
   assert.deepEqual(check(agentCall(dir, 'Explore')), {});
   assert.deepEqual(check(skillCall(dir, 'some-plugin:unrelated')), {});
 });
+
+const AGENT_REASON =
+  'Agent call outside the roster (docs/agents/forge.yaml, enforce: true): fill a role with it or list it under allow.agents, or use a roster agent.';
+const SKILL_REASON =
+  'Skill call outside the roster (docs/agents/forge.yaml, enforce: true): fill a slot with it or list it under allow.skills, or use a roster skill.';
+
+const enforced = (...lines) => ['version: 1', 'enforce: true', ...lines, ''].join('\n');
+
+test('with enforce false, absent or another value no call gets a decision', () => {
+  for (const yaml of ['version: 1\nenforce: false\n', 'version: 1\n', 'version: 1\nenforce: yes-please\n']) {
+    const dir = rosterHost(yaml);
+    assert.deepEqual(check(agentCall(dir, 'Explore')), {}, yaml);
+    assert.deepEqual(check(skillCall(dir, 'some-plugin:unrelated')), {}, yaml);
+  }
+});
+
+test('under enforcement a built-in agent not allowed is denied with the fixed Agent reason', () => {
+  const d = check(agentCall(rosterHost(enforced()), 'Explore'));
+  assert.equal(decisionOf(d), 'deny');
+  assert.equal(d.hookSpecificOutput.permissionDecisionReason, AGENT_REASON);
+});
+
+test('under enforcement an unrelated skill is denied with the fixed Skill reason', () => {
+  const d = check(skillCall(rosterHost(enforced()), 'some-plugin:unrelated'));
+  assert.equal(decisionOf(d), 'deny');
+  assert.equal(d.hookSpecificOutput.permissionDecisionReason, SKILL_REASON);
+});

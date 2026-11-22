@@ -8,7 +8,13 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { HOST_CONFIG, ROSTER_FILE, allow, hostDirOf, run } from './lib.mjs';
+import { HOST_CONFIG, ROSTER_FILE, allow, deny, hostDirOf, readRoster, run } from './lib.mjs';
+
+/** The fixed reasons: they name the file and the keys, never the value the call used. */
+export const AGENT_REASON =
+  'Agent call outside the roster (docs/agents/forge.yaml, enforce: true): fill a role with it or list it under allow.agents, or use a roster agent.';
+export const SKILL_REASON =
+  'Skill call outside the roster (docs/agents/forge.yaml, enforce: true): fill a slot with it or list it under allow.skills, or use a roster skill.';
 
 /** The host holding the roster: the project dir when it holds forge.md or forge.yaml, else its host through git. */
 function hostOf(projectDir) {
@@ -19,6 +25,10 @@ function hostOf(projectDir) {
 export function rosterGuardCheck(payload, { projectDir }) {
   const host = hostOf(projectDir);
   if (!existsSync(path.join(host, ROSTER_FILE))) return allow();
+  const roster = readRoster(host);
+  if (roster.enforce !== 'on') return allow();
+  if (payload.tool_name === 'Agent') return deny(AGENT_REASON);
+  if (payload.tool_name === 'Skill') return deny(SKILL_REASON);
   return allow();
 }
 
