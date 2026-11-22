@@ -35,3 +35,7 @@ Resolved 2026-11-22 by grilling the owner, seven questions, every recommendation
 5. **Role contract.** A per-role contract doc (inputs, report shape, evidence) beside `MEMBERS.md`; a replacement gets the forge brief unchanged; no runtime check beyond the existing hooks.
 6. **Glossary.** roster and slot added; host config and policy skill redefined (done in `GLOSSARY.md` on this branch).
 7. **Visibility.** `bin/roster.mjs --project <host>` alone prints the resolved roster as JSON with problems; the `/forge` help panel shows resolved agents, models and slot skills.
+
+## Comments
+
+2026-11-22, owner at Gate 2: question 5 revised. On a swap the mod appends one line, `role contract: <plugin root>/skills/build/ROLES.md#<role>`, to the spawn's prompt; the rest of the brief stays unchanged (settles the spec's writing-for-agents flagged concern). Also: init writes `forge.yaml` (`version: 1`, `slots.policy`), overturning the intent's "init does not write forge.yaml".

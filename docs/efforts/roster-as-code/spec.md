@@ -36,7 +36,7 @@ Observable: on this repo, a `forge.yaml` that names another agent for `reviewer`
 6. As a host owner, I want to set a role's `model` and `effort` in the roster, so that cost and quality are tuned in the same file that picks the agent.
 7. As a host owner, I want to set only the model or only the effort of a role without swapping its agent, so that the roster replaces `## Routing` without forcing a swap.
 8. As a lead (a forge-sdlc command or the merger), I want to keep calling `forge-sdlc:<role>` unchanged, so that no dispatching skill learns about the roster.
-9. As a swapped-in agent, I want to receive the forge brief unchanged, so that the pointers, the report shape and the evidence the loop expects reach me as they reach the default agent.
+9. As a swapped-in agent, I want to receive the forge brief with one added line pointing at `ROLES.md`, so that the pointers, the report shape and the evidence the loop expects reach me as they reach the default agent, and the role contract behind them reaches me too.
 10. As a host owner, I want a role-contract reference listing each role's inputs, report shape and evidence, so that I can tell whether a replacement agent can fill the role before I swap it in.
 11. As a host owner, I want the band to show `⇄ routed` on the row of an agent the roster swapped or re-routed, so that I can see at a glance that the roster took effect.
 12. As a host owner, I want a roster role naming an agent that is not installed to be skipped and reported, so that a typo does not refuse every dispatch of that role.
@@ -73,7 +73,7 @@ Observable: on this repo, a `forge.yaml` that names another agent for `reviewer`
 43. As a maintainer, I want the first slice to prove live that the mod's type rewrite passes auto mode and that the mod loads the shared `.mjs`, so that the rest of the build does not rest on an unproven mechanism.
 44. As a maintainer, I want an ADR and a `Decision:` line for the second host config file, so that the change to "hosts configure the plugin in forge.md only" is recorded.
 45. As the prior-sdlc maintainer, I want a short port section naming the schema, the parser file, the hook and the mod change, so that the port is its own effort with one source of truth for the schema.
-46. As a host owner running `/forge-sdlc:init`, I want init not to write `forge.yaml`, so that the roster stays an optional, deliberate choice.
+46. As a host owner running `/forge-sdlc:init`, I want init to ask for policy skills and write them to `forge.yaml` (`version: 1`, `slots.policy`), so that a new host starts with the roster file in place and the deprecated `## Policy skills` section is never written again.
 47. As a host owner, I want the README and `hooks/ROUTING.md` to document the roster, so that I can learn the shape without reading the code.
 48. As a maintainer editing a skill or agent file, I want the slot rule defined once and each call site to be one line naming its slot, so that changing how slots resolve is a one-place edit.
 
@@ -126,7 +126,7 @@ allow:
   - The reasons are fixed text: `Agent call outside the roster (docs/agents/forge.yaml, enforce: true): fill a role with it or list it under allow.agents, or use a roster agent.` The Skill form reads `Skill call outside the roster (docs/agents/forge.yaml, enforce: true): fill a slot with it or list it under allow.skills, or use a roster skill.` A reason names the file and the keys, never the matched value.
   - The hook stays under the design's 100 ms per call. It returns a decision for every payload, malformed ones included, because a thrown error is exit 1 with no decision, which lets the call through.
 - **Run pane mod, spawn routing** (the run pane's routing module and its `agent.spawn` handler): at each spawn it reads forge.yaml and forge.md fresh and resolves the roster through the shared reader.
-  - Only a plain spawn of `forge-sdlc:<role>` is swapped. A swapped role rewrites `subagentType` to the role's `agent` in the same `next({...})` that applies the model.
+  - Only a plain spawn of `forge-sdlc:<role>` is swapped. A swapped role rewrites `subagentType` to the role's `agent` in the same `next({...})` that applies the model, and appends one line to the spawn's `prompt`: `role contract: <plugin root>/skills/build/ROLES.md#<role>`. The rest of the brief is unchanged; an unswapped spawn's prompt is untouched.
   - Forks, `resume` spawns and workflow agents keep their type.
   - The effort is applied on the agent's `turn.step`s, as today.
   - A swap target is used only when the session's `agent.offer` events have offered that type. The mod registers a pass-through `agent.offer` hook to collect them. Otherwise the default agent spawns and the entry is reported as naming no offered agent.
@@ -150,7 +150,7 @@ allow:
   - `hooks/ROUTING.md` and the README link it, with the condition "before filling a role with another agent".
   - `MEMBERS.md` stays unchanged, since leads make the same calls.
   - No runtime check beyond the existing hooks.
-- **Init**: init does not write `forge.yaml`. Init also stops asking for policy skills, and its template drops `## Policy skills`, because that section is deprecated. The README points owners to `slots.policy`.
+- **Init**: init keeps asking for policy skills and writes the answer to `docs/agents/forge.yaml` as `version: 1` with `slots.policy` (an empty list for none), creating the file or rewriting only that key when it exists; every other roster key is left as the owner wrote it. Its forge.md template drops `## Policy skills`, because that section is deprecated. The README points owners to the rest of the roster.
 - **Docs**:
   - `hooks/ROUTING.md` becomes the roster and routing reference: shape, precedence, deprecation, invalid entries, the `⇄ routed` mark.
   - The README gets a roster section.
@@ -216,7 +216,7 @@ allow:
 - **Regression**: without `forge.yaml`, `npm test`, `npm run typecheck`, `npm run validate` and the guardrails evals pass with no change to their expectations other than the text tests above.
 - **Live checks, by hand**:
   - The first slice is a spike. In an auto-mode session on this repo, a swapped `subagentType` at `agent.spawn` spawns the swapped agent and is not refused, and the mod loads the shared `.mjs` from a `.ts` file (`claude plugin validate`, `claude plugin test`, one session). The spike also confirms that `agent.offer` offers plugin and host-local agent types before dispatch.
-  - At Gate 4, one build slice is run with a swapped implementer from the unchanged brief.
+  - At Gate 4, one build slice is run with a swapped implementer from the brief with its `role contract:` line.
 
 ## Out of Scope
 
@@ -235,7 +235,7 @@ allow:
 ## Further Notes
 
 - **Limits of enforcement.** The guard sees Agent and Skill tool calls only. A slash command the human types bypasses PreToolUse, and the procedures read by file are not Skill calls. Enforcement governs what agents call; the human's own commands stay theirs. Like every guardrail here, it is a reminder backed by review, not a sandbox: a crash in the hook means no decision, which is why the guard's tests cover malformed payloads.
-- **Roles keep their contract.** A swapped-in agent runs its own definition with the forge brief unchanged. The worktree, the proof, the verify record and the Stop gate still hold it, and ADR 0011's write scopes become the replacement's to honour. A swapped implementer that skips `verify-record.mjs` is stopped by the Stop gate exactly as the default would be. See the flagged concern on how the replacement reaches `ROLES.md`.
+- **Roles keep their contract.** A swapped-in agent runs its own definition with the forge brief plus one `role contract:` line pointing at its `ROLES.md` section. The worktree, the proof, the verify record and the Stop gate still hold it, and ADR 0011's write scopes become the replacement's to honour. A swapped implementer that skips `verify-record.mjs` is stopped by the Stop gate exactly as the default would be.
 - **`## Routing` for non-role types.** `model.Explore` and similar bullets have no roster equivalent, because roles are closed. They work until the section is removed in 0.9.0, and the deprecation toast names this.
 - **Shape stays open.** `version: 1` plus "unknown keys reported" lets a later version add `procedures:`, workflow or measurement keys while v1 readers keep working.
 
@@ -267,7 +267,7 @@ That plugin's state contract takes the same two type additions. No code outside 
 - Agents `implementer`, `prototyper`, `spec-writer`: their slot call sites are rewritten, and spec-writer's prompt list gains the codebase-design slot line. `reviewer`, `researcher`, `verifier` and `merger` are unchanged.
 - Skills `wayfinder`, `intent`, `spec`, `slice-review`: their slot call sites and policy-skill reading are rewritten. `build` and `MEMBERS.md` are unchanged.
 - `ROLES.md` (new, beside `MEMBERS.md`): written. Holds the role contracts and the slot rule.
-- `init` skill and its forge.md template: the Policy skills question and section are removed.
+- `init` skill and its forge.md template: the Policy skills answer is written to `forge.yaml`'s `slots.policy`; the forge.md section is removed.
 - `GLOSSARY.md`, `docs/design.md`, `docs/adr/` (0024), `CLAUDE.md` (one clause), README, `hooks/ROUTING.md`: written.
 - `.claude-plugin/plugin.json`: writes version 0.8.0 and the description. A sensitive path (`.claude-plugin/**`, `risk: high`).
 - Tests under `tests/`, mod tests under `hooks/`, guardrails evals: written and extended.
@@ -276,13 +276,14 @@ That plugin's state contract takes the same two type additions. No code outside 
 
 ## Flagged concerns
 
-- writing-for-agents: a swapped-in agent gets the forge brief, which is pointers only, while the steps behind those pointers (`bin/` commands, worktree, verify record, report shape) live in the default agent's own file. With the brief unchanged, nothing in the replacement's context points it at `ROLES.md`, so the role contract reaches only the owner. The owner settles whether the mod appends a one-line `ROLES.md` pointer to the prompt on a swap, which would revise "the brief unchanged" (The forge.yaml schema, question 5), or whether the Gate 4 hand check stays the only guard. (section: Implementation Decisions)
+- none
 
 ## Assumptions to confirm
 
+- recommended: on a swap the mod appends one line, `role contract: <plugin root>/skills/build/ROLES.md#<role>`, to the spawn's prompt, so the replacement reaches the role contract; this revises The forge.yaml schema's "brief unchanged" (source: owner at Gate 2, settling the writing-for-agents flagged concern)
 - recommended: the first slice is a spike proving the two live hypotheses before the rest builds on them: the mod's `subagentType` rewrite at `agent.spawn` passes auto mode, and the mod bundler loads the shared `.mjs` parser from a `.ts` file (source: Rewriting a call's target; YAML without a dependency)
-- recommended: whether a swapped-in implementer completes a slice from the unchanged brief is checked by hand once at Gate 4, not by an automated proof; the role-contract doc is the guard (source: Rewriting a call's target)
-- recommended: `/forge-sdlc:init` does not write `forge.yaml`; the roster is optional, like `## Routing` today, and the README and `hooks/ROUTING.md` document it (source: none)
+- recommended: whether a swapped-in implementer completes a slice from the brief with its `role contract:` line is checked by hand once at Gate 4, not by an automated proof; the role-contract doc is the guard (source: Rewriting a call's target)
+- recommended: `/forge-sdlc:init` writes `forge.yaml` with `version: 1` and `slots.policy` from its policy-skills question; every other roster key stays optional and untouched by init (source: owner at Gate 2, overturning the intent's "init does not write forge.yaml"; workflow-as-code The workflow schema, Q3)
 - recommended: forge.md `## Routing` and `## Policy skills` are removed in the minor version after this one ships; the toast names `forge.yaml` and the key to move (source: The forge.yaml schema)
 - recommended: `roster-guard.mjs` prints no decision when there is no `forge.yaml` or `enforce` is not `true`, so hosts without a roster pay nothing (source: Enforcement scope)
 - recommended: the ADR is 0024, "The roster in forge.yaml", with a `Decision:` line in `docs/design.md` amending the forge.md-only convention in CLAUDE.md (source: CLAUDE.md Conventions)
@@ -302,7 +303,7 @@ That plugin's state contract takes the same two type additions. No code outside 
 - recommended: an Agent call with no `subagent_type` is treated as `general-purpose` by the guard (source: none)
 - recommended: only the literal `enforce: true` enforces; another value is a reported problem and not enforced, a file too broken to read `enforce` is not enforced and the band warns (source: Enforcement scope)
 - recommended: a missing or unsupported `version` is reported and the file is still read entry by entry as version 1, so enforcement neither drops silently nor locks out (source: The forge.yaml schema; Enforcement scope)
-- recommended: init stops asking for policy skills and its forge.md template drops `## Policy skills`, since the section is deprecated and init does not write `forge.yaml`; the README points owners to `slots.policy` (source: intent Constraints and the init assumption above)
+- recommended: init keeps its policy-skills question and writes the answer to `forge.yaml`'s `slots.policy`; its forge.md template drops `## Policy skills`, which is deprecated (source: owner at Gate 2)
 - recommended: the deprecation toasts fire only when `## Routing` has bullets or `## Policy skills` holds a value other than `none` (source: `hooks/ROUTING.md`, a missing section says nothing)
 - recommended: the role-contract reference is `ROLES.md` beside `MEMBERS.md`, written for the owner and linked from `hooks/ROUTING.md` and the README; `MEMBERS.md` stays unchanged, as the intent requires (source: The forge.yaml schema; intent Outcome)
 - recommended: the state contract gains `RunPaneNotes.roster` and `AgentRouting.agent` only (source: the codebase, `types/index.d.ts`)

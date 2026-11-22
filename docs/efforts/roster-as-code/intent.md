@@ -85,7 +85,7 @@ none
 
 - recommended: the first slice is a spike proving the two live hypotheses before the rest builds on them: the mod's `subagentType` rewrite at `agent.spawn` passes auto mode, and the mod bundler loads the shared `.mjs` parser from a `.ts` file (source: Rewriting a call's target; YAML without a dependency)
 - recommended: whether a swapped-in implementer completes a slice from the unchanged brief is checked by hand once at Gate 4, not by an automated proof; the role-contract doc is the guard (source: Rewriting a call's target)
-- recommended: `/forge-sdlc:init` does not write `forge.yaml`; the roster is optional, like `## Routing` today, and the README and `hooks/ROUTING.md` document it (source: none)
+- recommended: `/forge-sdlc:init` writes `forge.yaml` with `version: 1` and `slots.policy` from its policy-skills question; every other roster key stays optional (source: owner at Gate 2, overturning the earlier "init does not write forge.yaml")
 - recommended: forge.md `## Routing` and `## Policy skills` are removed in the minor version after this one ships; the toast names `forge.yaml` and the key to move (source: The forge.yaml schema)
 - recommended: `roster-guard.mjs` prints no decision when there is no `forge.yaml` or `enforce` is not `true`, so hosts without a roster pay nothing (source: Enforcement scope)
 - recommended: the ADR is 0024, "The roster in forge.yaml", with a `Decision:` line in `docs/design.md` amending the forge.md-only convention in CLAUDE.md (source: CLAUDE.md Conventions)
