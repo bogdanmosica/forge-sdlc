@@ -1,7 +1,7 @@
 # 08: roster-as-code-03: The mod swaps roles at spawn
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -29,3 +29,5 @@ passes: the new roster spawn tests and every existing mod test green, the mod ty
 - recommended: until slice 04 adds the `roster` band section, an unoffered swap target is reported through the existing `routing` note (toasted once, kept in the band while any swapped role names a type not offered), computed for every swapped role at each spawn (source: spec, "Otherwise the default agent spawns and the entry is reported as naming no offered agent"; state contract adds only `AgentRouting.agent` in this slice)
 - recommended: the offered types live in a module-level set, refilled by the next agent listing after a hot reload, since the state contract gains no new atom (source: spec, State contract: "Only these run-pane types change")
 - recommended: `AgentRouting.agent` is held by the type contract and the `⇄ routed` mark; the test kit reads no `$.state`, so no test reads the record directly (source: spec, Testing Decisions, Mod spawn routing)
+
+- resolved: clean, review record .forge/review/roster-as-code-03.md, merge 9330b38
