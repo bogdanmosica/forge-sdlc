@@ -1,7 +1,7 @@
 # 06: roster-as-code-01: Shared roster reader, loaded by the mod
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -23,3 +23,7 @@ node --test tests/roster-reader.test.mjs && claude plugin test plugins/forge-sdl
 passes: the reader's cases green and the mod's tests green with the validators imported from the shared `.mjs`
 
 ## Comments
+
+## Comments
+
+resolved: clean. Review record .forge/review/roster-as-code-01.md; merged into feat/roster-as-code at 9edae71.
