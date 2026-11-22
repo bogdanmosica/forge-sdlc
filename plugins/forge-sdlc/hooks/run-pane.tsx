@@ -24,6 +24,10 @@
 // `agent.spawn` and its effort on each of its `turn.step`s. Frontmatter is the
 // default, routing the override, the engine's forcing variables and effort cap
 // above both. An invalid bullet is toasted once, kept in the band and ignored.
+// The roster (docs/agents/forge.yaml, read through roster.mjs at each spawn)
+// swaps a plain spawn of `forge-sdlc:<role>` to the agent it names, only when
+// `agent.offer` offered that type, adds the role's `role contract:` line to the
+// brief, and its model and effort beat `## Routing` key by key.
 //
 // Command center (run-pane/activity.ts): one row per agent with its crew name,
 // the tool call it is in, the files it edited, its tokens and its elapsed time,
@@ -289,7 +293,10 @@ async function routedSpawn(
   // every swap target not offered, read fresh, so the band holds it while it lasts
   const unoffered = Object.entries(roster.roles)
     .filter(([, r]) => r.swapped && !offered.has(r.agent))
-    .map(([role, r]) => `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`);
+    .map(
+      ([role, r]) =>
+        `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`,
+    );
   await sayOnce($, 'routing', [...table.problems, ...unoffered]);
   const role = pluginRoleOf(e.subagentType);
   const cast = role ? roster.roles[role] : undefined;
@@ -454,10 +461,6 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  // Crew, then routing, at spawn: the crew name in front of the description,
-  // read fresh at each spawn so an edit counts without a restart; then the model
-  // (a fork inherits and is left alone), and the effort on each step of a routed
-  // agent whose model takes an effort. The command center's record begins here.
   // The agent listing, passed through: each type the engine offers the model is
   // noted, so the roster swaps only to an agent this session can dispatch.
   on('agent.offer', async ($, e, next) => {
@@ -466,6 +469,11 @@ export const register: Register = (on) => {
     return result;
   });
 
+  // Crew, then routing, at spawn: the crew name in front of the description,
+  // read fresh at each spawn so an edit counts without a restart; then the model
+  // (a fork inherits and is left alone), the roster's swap of a role's agent, and
+  // the effort on each step of a routed agent whose model takes an effort. The
+  // command center's record begins here.
   on('agent.spawn', async ($, input, next) => {
     const e = await crewNamedSpawn($, input);
     const result = await routedSpawn($, e, next);
