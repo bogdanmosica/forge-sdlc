@@ -1,0 +1,3 @@
+{ "script": "roster-guard.mjs", "expect": "deny",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_input": { "skill": "word-stats" },
+    "agent_id": "a1b2c3", "agent_type": "forge-sdlc:implementer" } }

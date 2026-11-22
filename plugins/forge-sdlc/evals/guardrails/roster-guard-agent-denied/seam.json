@@ -1,0 +1,3 @@
+{ "script": "roster-guard.mjs", "expect": "deny",
+  "payload": { "hook_event_name": "PreToolUse", "tool_name": "Agent",
+    "tool_input": { "subagent_type": "Explore", "description": "List src", "prompt": "List the files under src/." } } }

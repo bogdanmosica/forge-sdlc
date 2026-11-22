@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: roster-guard-skill-denied
+description: A host whose docs/agents/forge.yaml sets enforce true; its project-local word-stats skill fills no slot and is not under allow.skills, so the roster guard denies the Skill call and names forge.yaml
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The word-stats Skill call is denied with the roster reason naming docs/agents/forge.yaml; the skill does not run
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: 'Use the Skill tool to run the word-stats skill on README.md. Then tell me in one line what it reported, or why it could not run.'
