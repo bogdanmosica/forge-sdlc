@@ -184,3 +184,25 @@ test("the roster's model and effort beat ## Routing key by key, and a key it lea
   await step($, merger.agentId, 'sonnet', 'medium');
   expect(s.steps.map((e) => e.effort)).toEqual(['high', 'low']);
 });
+
+test('an unswapped role, a fork, a resume and a workflow agent keep their type and their brief', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    config: forgeConfig(),
+    roster: 'version: 1\nroles:\n  reviewer:\n    agent: my-plugin:reviewer\n',
+  });
+  await start($, clock);
+  await offer($, 'forge-sdlc:reviewer', 'my-plugin:reviewer', 'forge-sdlc:merger');
+  await spawn($, 'forge-sdlc:merger');
+  await spawn($, 'fork', { fork: true });
+  await spawn($, 'forge-sdlc:reviewer', { resume: { agentId: 'agent-0' } });
+  await spawn($, 'forge-sdlc:reviewer', { workflow: { runId: 'wf_1', agentIndex: 1 } });
+  expect(s.spawns.map((e) => e.subagentType)).toEqual([
+    'forge-sdlc:merger',
+    'fork',
+    'forge-sdlc:reviewer',
+    'forge-sdlc:reviewer',
+  ]);
+  expect(s.spawns.map((e) => e.prompt)).toEqual([PROMPT, PROMPT, PROMPT, PROMPT]);
+  expect(s.spawns[0]?.model).toBeUndefined();
+});

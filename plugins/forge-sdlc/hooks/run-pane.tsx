@@ -289,7 +289,7 @@ async function routedSpawn(
   await sayOnce($, 'routing', table.problems);
   const role = pluginRoleOf(e.subagentType);
   const cast = role ? roster.roles[role] : undefined;
-  const swap = cast?.swapped ? cast.agent : undefined;
+  const swap = cast?.swapped && !e.resume && !e.workflow ? cast.agent : undefined;
   const routed = entryFor(table.table, e.subagentType);
   const entry = {
     ...routed,
