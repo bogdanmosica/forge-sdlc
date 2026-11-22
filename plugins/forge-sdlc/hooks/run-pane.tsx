@@ -27,7 +27,10 @@
 // The roster (docs/agents/forge.yaml, read through roster.mjs at each spawn)
 // swaps a plain spawn of `forge-sdlc:<role>` to the agent it names, only when
 // `agent.offer` offered that type, adds the role's `role contract:` line to the
-// brief, and its model and effort beat `## Routing` key by key.
+// brief, and its model and effort beat `## Routing` key by key. Its problems
+// (bad entries, an unreadable `enforce`, the deprecated `## Routing` and
+// `## Policy skills`, and from the first spawn each swap target not offered)
+// are the band's roster note, read at each refresh and toasted once each.
 //
 // Command center (run-pane/activity.ts): one row per agent with its crew name,
 // the tool call it is in, the files it edited, its tokens and its elapsed time,

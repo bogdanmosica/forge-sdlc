@@ -1,7 +1,7 @@
 // The run's band above the prompt (AbovePrompt): the mark, then the figures,
 // coloured as the run pane's gauges, the H handoff button at the right; a
 // second row with the agents and the notes the run pane keeps (a pane that
-// waits, a host config problem); a tip every third turn. The band holds one
+// waits, a host config or roster problem); a tip every third turn. The band holds one
 // plugin's tree, so the figures and the button live in this one hook; the
 // figures were a $.ui.status line, which the engine draws behind a ⚠. Before
 // the first tick the band holds the H button alone; while a survey asks, the
