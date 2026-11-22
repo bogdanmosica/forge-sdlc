@@ -444,7 +444,13 @@ export function parseYamlSubset(text) {
         continue;
       }
       const raw = /** @type {string} */ (m[1]);
-      const key = /^["']/.test(raw) ? String(/** @type {{ value: unknown }} */ (scalar(raw, row.line)).value) : raw;
+      const quoted = /^["']/.test(raw) ? scalar(raw, row.line) : undefined;
+      if (quoted && !quoted.ok) {
+        // scalar() reported it; the row and what is nested under it go
+        skipFrom(row.indent);
+        continue;
+      }
+      const key = quoted ? String(quoted.value) : raw;
       if (Object.hasOwn(out, key)) {
         skip(`duplicate key ${key}: the first is kept`);
         continue;
