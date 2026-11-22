@@ -481,6 +481,10 @@ export function parseYamlSubset(text) {
 
   try {
     const value = rows.length ? block(0) : null;
+    // Only a top-level list stops short of the last row: the file is a list
+    // or a map, never both.
+    const left = rows[at];
+    if (left) fail(left.line, 'a row that is no list item after a top-level list: the file is a list or a map, not both; the rest is not read');
     return { value, errors };
   } catch {
     // Not reached by any known input; a reader that never throws holds anyway.
