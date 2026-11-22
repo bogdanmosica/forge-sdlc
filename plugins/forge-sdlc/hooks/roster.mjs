@@ -191,17 +191,17 @@ function fromForgeMd(roster, config) {
     const role = m?.[2] ?? '';
     if (!m || !ROLES.includes(role)) {
       roster.problems.push(
-        `## Routing: ${key} is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Routing is removed`,
+        `## Routing: ${keyOf(key)} is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Routing is removed`,
       );
       continue;
     }
-    roster.problems.push(`## Routing: ${key} is deprecated; move it to roles.${role}.${m[1]} in docs/agents/forge.yaml`);
+    roster.problems.push(`## Routing: ${keyOf(key)} is deprecated; move it to roles.${role}.${m[1]} in docs/agents/forge.yaml`);
     const r = /** @type {RosterRole} */ (roster.roles[role]);
     if (m[1] === 'model') {
       if (isModel(value)) roster.roles[role] = roleOf(role, r.agent, value, r.effort);
-      else roster.problems.push(`## Routing: ${key} ${quote(value)} is no model alias or claude-* id; ignored`);
+      else roster.problems.push(`## Routing: ${keyOf(key)} ${quote(value)} is no model alias or claude-* id; ignored`);
     } else if (isEffort(value)) roster.roles[role] = roleOf(role, r.agent, r.model, value);
-    else roster.problems.push(`## Routing: ${key} ${quote(value)} is not ${EFFORTS.join('|')}; ignored`);
+    else roster.problems.push(`## Routing: ${keyOf(key)} ${quote(value)} is not ${EFFORTS.join('|')}; ignored`);
   }
   for (const [key, value] of Object.entries(sectionOf(config, 'policy-skills'))) {
     const names = String(value ?? '')
@@ -211,9 +211,9 @@ function fromForgeMd(roster, config) {
     if (!names.length) continue;
     const good = names.filter(isName);
     roster.policy.push(...good);
-    roster.problems.push(`## Policy skills: ${key} is deprecated; move it to slots.policy in docs/agents/forge.yaml`);
+    roster.problems.push(`## Policy skills: ${keyOf(key)} is deprecated; move it to slots.policy in docs/agents/forge.yaml`);
     if (good.length < names.length)
-      roster.problems.push(`## Policy skills: ${key} holds an item that is not a skill name; it is skipped`);
+      roster.problems.push(`## Policy skills: ${keyOf(key)} holds an item that is not a skill name; it is skipped`);
   }
 }
 
