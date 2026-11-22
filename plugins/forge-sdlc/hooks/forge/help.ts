@@ -138,13 +138,22 @@ export function parseAgent(text: string): Agent | null {
   };
 }
 
+// The host roster as the panel reads it (docs/agents/forge.yaml through the
+// shared reader, hooks/roster.mjs): each role's resolved agent, model and effort.
+export type PanelRole = { agent: string; model?: string; effort?: string; swapped: boolean };
+export type PanelRoster = { roles: Record<string, PanelRole>; slots: Record<string, string>; policy: string[] };
+
 // The plugin's agents as the panel lists them, by name: the subagent type an
 // Agent call names (forge-sdlc:<name>), and its model and effort as the hint.
-export const agentRows = (agents: Agent[]): Row[] =>
+// With a roster, a role filled by another agent shows it first (`⇄ <agent>`),
+// and the roster's model and effort replace the frontmatter's where it sets them.
+export const agentRows = (agents: Agent[], roster?: PanelRoster): Row[] =>
   [...agents]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((a) => {
-      const hint = [a.model, a.effort].filter(Boolean).join(' · ');
+      const role = roster && Object.hasOwn(roster.roles, a.name) ? roster.roles[a.name] : undefined;
+      const swap = role?.swapped ? `⇄ ${role.agent}` : undefined;
+      const hint = [swap, role?.model ?? a.model, role?.effort ?? a.effort].filter(Boolean).join(' · ');
       return { command: `${PLUGIN}:${a.name}`, ...(hint ? { hint } : {}), description: a.description };
     });
 
