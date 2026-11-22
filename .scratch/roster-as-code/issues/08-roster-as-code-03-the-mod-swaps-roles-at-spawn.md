@@ -24,3 +24,8 @@ test -f plugins/forge-sdlc/hooks/run-pane.roster.test.tsx && claude plugin test 
 passes: the new roster spawn tests and every existing mod test green, the mod typechecks
 
 ## Comments
+
+- recommended: a teammate spawn (`isTeammate`) of `forge-sdlc:<role>` is a plain spawn and is swapped; only forks, resumes and workflow agents keep their type (source: spec, Run pane mod, spawn routing: "Forks, `resume` spawns and workflow agents keep their type")
+- recommended: until slice 04 adds the `roster` band section, an unoffered swap target is reported through the existing `routing` note (toasted once, kept in the band while any swapped role names a type not offered), computed for every swapped role at each spawn (source: spec, "Otherwise the default agent spawns and the entry is reported as naming no offered agent"; state contract adds only `AgentRouting.agent` in this slice)
+- recommended: the offered types live in a module-level set, refilled by the next agent listing after a hot reload, since the state contract gains no new atom (source: spec, State contract: "Only these run-pane types change")
+- recommended: `AgentRouting.agent` is held by the type contract and the `⇄ routed` mark; the test kit reads no `$.state`, so no test reads the record directly (source: spec, Testing Decisions, Mod spawn routing)

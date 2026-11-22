@@ -24,6 +24,10 @@
 // `agent.spawn` and its effort on each of its `turn.step`s. Frontmatter is the
 // default, routing the override, the engine's forcing variables and effort cap
 // above both. An invalid bullet is toasted once, kept in the band and ignored.
+// The roster (docs/agents/forge.yaml, read through roster.mjs at each spawn)
+// swaps a plain spawn of `forge-sdlc:<role>` to the agent it names, only when
+// `agent.offer` offered that type, adds the role's `role contract:` line to the
+// brief, and its model and effort beat `## Routing` key by key.
 //
 // Command center (run-pane/activity.ts): one row per agent with its crew name,
 // the tool call it is in, the files it edited, its tokens and its elapsed time,
@@ -63,6 +67,7 @@ import { addStep, compactTokens, MAIN } from './run-pane/usage';
 import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
 import type { ForgeConfig } from './run-pane/config';
 import { entryFor, frontmatterOf, overrides, parseRouting, pluginRoleOf } from './run-pane/routing';
+import { resolveRoster } from './roster.mjs';
 import { GENERAL, crewNameOf, displayNameOf, hasCrewName, nameAt, parseCrew, withCrewName } from './run-pane/crew';
 import { begun, diffDirOf, doingOf, elapsedText, ended } from './run-pane/activity';
 import { openDiff } from './commands';
@@ -80,6 +85,7 @@ import type { RunRecord } from './run-pane/history';
 
 const PANE = 'run-pane';
 const STATE_FILE = '.forge/state.json';
+const ROSTER_FILE = 'docs/agents/forge.yaml';
 const EXPORT_PATH = '.forge/run-pane/history.csv';
 const USAGE =
   'Usage: /forge-pane [history | export | close]. No argument opens the pane; history lists the stored runs; export writes them as CSV under .forge; close closes the pane.';
@@ -110,6 +116,7 @@ function usageOf(u: SessionUsage): RunPaneUsage {
 // Module variables: reset on a hot reload, which also restarts the timer.
 let ticks = 0;
 const reported = new Set<string>(); // each host config problem is toasted once
+const offered = new Set<string>(); // the agent types agent.offer offered the model: a roster swap's only targets
 const ticketCache = new Map<string, { mtimeMs: number; ticket: import('./types').RunPaneTicket | null }>();
 
 // The run this session is: set once, kept in $.state across hot reloads; after a
@@ -202,12 +209,6 @@ async function sayOnce($: EngineInterface, section: 'routing' | 'crew' | 'mark' 
   if (unsaid.length) $.ui.toast(`forge-sdlc: ${unsaid.join(' · ')}`);
 }
 
-async function readRouting($: EngineInterface, config: ForgeConfig | undefined) {
-  const routing = parseRouting(config);
-  await sayOnce($, 'routing', routing.problems);
-  return routing.table;
-}
-
 // A spawn's input with the crew name in front of its description: a member
 // call (skills/build/MEMBERS.md) already carries its name as the call's `name`,
 // the handle bin/crew-name.mjs printed, which stays the address and is shown in
@@ -275,20 +276,49 @@ async function readFrontmatter($: EngineInterface, subagentType: string) {
 
 // The routing at spawn: a fork inherits and is left alone; a routed type takes
 // the host config's model, and its row is marked when that changed the default.
+// The roster (docs/agents/forge.yaml) swaps a plain spawn of `forge-sdlc:<role>`
+// to the agent it names for the role, when the session offered that type, and
+// closes its brief with the role's contract line; forks, resumes and workflow
+// agents keep their type. The roster's model and effort beat `## Routing` key by
+// key. A swap target never offered is reported and the default spawns.
 async function routedSpawn(
   $: EngineInterface,
   e: AgentSpawnInput,
   next: (e: AgentSpawnInput) => Promise<AgentSpawnResult>,
 ): Promise<AgentSpawnResult> {
   if (e.fork) return next(e);
-  const entry = entryFor(await readRouting($, await readConfig($)), e.subagentType);
-  if (!entry) return next(e);
-  const overridden = overrides(entry, await readFrontmatter($, e.subagentType), e.model);
-  const result = await next(entry.model ? { ...e, model: entry.model } : e);
+  const config = await readConfig($);
+  const table = parseRouting(config);
+  const roster = resolveRoster(await readOrUndefined($, ROSTER_FILE), config);
+  // every swap target not offered, read fresh, so the band holds it while it lasts
+  const unoffered = Object.entries(roster.roles)
+    .filter(([, r]) => r.swapped && !offered.has(r.agent))
+    .map(
+      ([role, r]) =>
+        `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`,
+    );
+  await sayOnce($, 'routing', [...table.problems, ...unoffered]);
+  const role = pluginRoleOf(e.subagentType);
+  const cast = role ? roster.roles[role] : undefined;
+  const swap = cast?.swapped && offered.has(cast.agent) && !e.resume && !e.workflow ? cast.agent : undefined;
+  const routed = entryFor(table.table, e.subagentType);
+  const entry = {
+    ...routed,
+    ...(cast?.model ? { model: cast.model } : {}),
+    ...(cast?.effort ? { effort: cast.effort } : {}),
+  };
+  if (!swap && !entry.model && !entry.effort) return next(e);
+  const overridden = swap !== undefined || overrides(entry, await readFrontmatter($, e.subagentType), e.model);
+  const contract = `role contract: ${$.plugin.root}/skills/build/ROLES.md#${role}`;
+  const result = await next({
+    ...e,
+    ...(entry.model ? { model: entry.model } : {}),
+    ...(swap ? { subagentType: swap, prompt: `${e.prompt}${e.prompt.endsWith('\n') ? '' : '\n'}${contract}` } : {}),
+  });
   if (result.agentId)
     await update($, agentRouting, (all) => ({
       ...all,
-      [result.agentId!]: { type: e.subagentType, ...entry, overridden },
+      [result.agentId!]: { type: e.subagentType, ...(swap ? { agent: swap } : {}), ...entry, overridden },
     }));
   return result;
 }
@@ -431,10 +461,21 @@ export const register: Register = (on) => {
     return next(e);
   });
 
+  // The agent listing, passed through: each type the engine offers the model is
+  // noted, so the roster swaps only to an agent this session can dispatch; a
+  // type later answered not offered is dropped again.
+  on('agent.offer', async ($, e, next) => {
+    const result = await next(e);
+    if (result.isOffered) offered.add(e.agent);
+    else offered.delete(e.agent);
+    return result;
+  });
+
   // Crew, then routing, at spawn: the crew name in front of the description,
   // read fresh at each spawn so an edit counts without a restart; then the model
-  // (a fork inherits and is left alone), and the effort on each step of a routed
-  // agent whose model takes an effort. The command center's record begins here.
+  // (a fork inherits and is left alone), the roster's swap of a role's agent, and
+  // the effort on each step of a routed agent whose model takes an effort. The
+  // command center's record begins here.
   on('agent.spawn', async ($, input, next) => {
     const e = await crewNamedSpawn($, input);
     const result = await routedSpawn($, e, next);
