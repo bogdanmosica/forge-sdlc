@@ -147,13 +147,16 @@ export type PanelRoster = { roles: Record<string, PanelRole>; slots: Record<stri
 // Agent call names (forge-sdlc:<name>), and its model and effort as the hint.
 // With a roster, a role filled by another agent shows it first (`⇄ <agent>`),
 // and the roster's model and effort replace the frontmatter's where it sets them.
+// A swapped role shows only the roster's own model and effort: the default
+// agent's frontmatter is not the agent that runs, and the swapped-in one's is unknown.
 export const agentRows = (agents: Agent[], roster?: PanelRoster): Row[] =>
   [...agents]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((a) => {
       const role = roster && Object.hasOwn(roster.roles, a.name) ? roster.roles[a.name] : undefined;
+      const fallback: Partial<Agent> = role?.swapped ? {} : a;
       const swap = role?.swapped ? `⇄ ${role.agent}` : undefined;
-      const hint = [swap, role?.model ?? a.model, role?.effort ?? a.effort].filter(Boolean).join(' · ');
+      const hint = [swap, role?.model ?? fallback.model, role?.effort ?? fallback.effort].filter(Boolean).join(' · ');
       return { command: `${PLUGIN}:${a.name}`, ...(hint ? { hint } : {}), description: a.description };
     });
 
