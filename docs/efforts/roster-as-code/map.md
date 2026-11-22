@@ -2,7 +2,7 @@
 effort: roster-as-code
 stage: map
 status: draft
-risk: normal
+risk: high
 updated: 2026-11-22
 ---
 
@@ -63,13 +63,11 @@ Engineering, in this plugin. Sessions read `docs/design.md`, `plugins/forge-sdlc
 - [YAML without a dependency](../../../.scratch/roster-as-code/issues/01-yaml-without-a-dependency.md): a strict-subset parser in one pure no-import `.mjs` under `hooks/`, shared by `lib.mjs` and the mod, errors located and per entry; no vendored parser.
 - [Rewriting a call's target](../../../.scratch/roster-as-code/issues/02-rewriting-a-calls-target.md): roles can be swapped transparently by the mod at `agent.spawn` (not PreToolUse, which auto mode refuses); skills have no documented transparent swap; a PreToolUse hook can deny Agent/Skill calls and tell lead from member.
 - [The forge.yaml schema](../../../.scratch/roster-as-code/issues/04-the-forge-yaml-schema.md): roles swapped by the mod at `agent.spawn`, slots through `bin/roster.mjs`; `version: 1`, `enforce`, `roles.<role>.{agent,model,effort}`, `slots.<slot>: <skill>|disabled`, `policy` a list; six slots, three required; unknown keys reported; a role-contract doc; roster and slot in the glossary.
+- [Enforcement scope](../../../.scratch/roster-as-code/issues/05-enforcement-scope.md): deny by default under `enforce: true`, everything in the host, lead and members; passes role defaults, roster entries, `forge-sdlc:*` skills and a new `allow.{agents,skills}`; fail closed when `enforce` parses, open when it cannot; no bypass; PreToolUse `roster-guard.mjs`.
 
 ## Not yet specified
 
-- How problems with the roster surface: the band, `forge-config.mjs` printing the resolved roster, the `/forge` help panel showing overrides instead of the bare `agents/*.md`.
-- How each `SKILL.md` and agent body names its slot so the text stays readable (hangs on the rewrite research and the schema).
-- The eval cases for the enforcement hook and for routing read from YAML; the deprecation path's tests.
-- What the prior-sdlc port needs handed over (schema doc, parser, the differences of its own config file).
+none: the way is clear. Left to the spec: the wording of each slot's call site, the eval cases and deprecation tests, and the prior-sdlc port's hand-over.
 
 ## Out of scope
 
@@ -78,3 +76,5 @@ Engineering, in this plugin. Sessions read `docs/design.md`, `plugins/forge-sdlc
 - Inline agent or skill definitions in the YAML.
 - Building the prior-sdlc side in this effort.
 - Adding new roles or stages.
+- Hiding non-roster agents from the model's listing through the mod's `agent.offer` (a later nicety).
+- A managed-settings lock on the roster, or any environment bypass of enforcement.
