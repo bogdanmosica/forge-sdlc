@@ -400,6 +400,29 @@ test('a Routing bullet with a bad value applies nothing to the roster', () => {
   assert.deepEqual(r.roles.reviewer, { agent: 'forge-sdlc:reviewer', swapped: false });
 });
 
+test('a Routing bullet with a bad value says the value is ignored, besides its deprecation line', () => {
+  const r = resolveRoster(undefined, forgeMd('## Routing', '- model.reviewer: gpt-9', '- effort.merger: huge'));
+  assert.ok(r.problems.includes('## Routing: model.reviewer "gpt-9" is no model alias or claude-* id; ignored'), JSON.stringify(r.problems));
+  assert.ok(r.problems.includes('## Routing: effort.merger "huge" is not low|medium|high|xhigh|max; ignored'), JSON.stringify(r.problems));
+  assert.equal(r.problems.filter((p) => /deprecated; move it/.test(p)).length, 2, JSON.stringify(r.problems));
+});
+
+test('a forge.md key or value with control bytes reaches a problem line escaped', () => {
+  const config = forgeMd(
+    '## Routing',
+    '- model.re\u0007viewer: opus',
+    '- model.reviewer: gp\u0007t',
+    '',
+    '## Policy skills',
+    '- ski\u001bls: writing-for-agents, two words',
+  );
+  const r = resolveRoster(undefined, config);
+  assert.equal(r.problems.length, 5, JSON.stringify(r.problems));
+  for (const p of r.problems) assert.doesNotMatch(p, /[\u0000-\u001f\u007f]/, JSON.stringify(p));
+  assert.ok(r.problems.some((p) => p.startsWith('## Routing: "model.re\\u0007viewer" is deprecated')), JSON.stringify(r.problems));
+  assert.ok(r.problems.some((p) => p.startsWith('## Policy skills: "ski\\u001bls" is deprecated')), JSON.stringify(r.problems));
+});
+
 test('a Routing bullet for a non-role type is deprecated with no forge.yaml equivalent', () => {
   const r = resolveRoster(undefined, forgeMd('## Routing', '- model.Explore: haiku'));
   assert.deepEqual(r.roles, DEFAULT_ROLES);
