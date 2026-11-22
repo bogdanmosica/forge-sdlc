@@ -22,3 +22,8 @@ node --test tests/roster-members.test.mjs tests/spec.test.mjs tests/slice-review
 passes: the member-resolution checks and the existing spec and slice-review tests green
 
 ## Comments
+
+- recommended: the spec skill runs the roster command with `--project .`, as wayfinder and intent do from the host checkout on `feat/<slug>`; slice-review runs it with `--project <project dir>`, as its worktree line already does (source: spec "The slot rule"; slice 06 ticket comment)
+- recommended: ROLES.md's spec-writer **Inputs** line gains the codebase-design slot in slice 10's docs, as slice 06 recorded; this slice leaves ROLES.md as it is (source: spec "Role-contract reference"; slice 06 ticket comment)
+- recommended: SPEC-EXTRAS.md's `## Flagged concerns` names the roster's `policy` slot instead of `## Policy skills`, so no spec-stage text points at the section slice 09 drops (source: spec "Init", "the `## Policy skills` reading in spec and slice-review is replaced")
+- recommended: `tests/spec.test.mjs`'s relative-link check takes the file part of an anchored link (`../build/ROLES.md#slots`), as `tests/slice-review.test.mjs`'s already does (source: spec "Skill text tests")
