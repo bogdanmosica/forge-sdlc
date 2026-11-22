@@ -15,7 +15,7 @@ Done when the Destination is in hand and intent.md is known to be `draft`, `acce
 
 ## 2. Grill the Destination
 
-`mattpocock-skills:grilling` on the five Destination headings alone, the current text as each recommended answer; domain terms through `mattpocock-skills:domain-modeling`. The human answers every question themselves. A question about how to build is a ticket for the map: name it in the report and keep grilling the Destination.
+The `grilling` slot's skill (default `mattpocock-skills:grilling`, printed by `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" grilling --project .`) on the five Destination headings alone, the current text as each recommended answer; domain terms through the `domain-modeling` slot's (default `mattpocock-skills:domain-modeling`, printed by `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" domain-modeling --project .`), per the [slot rule](../build/ROLES.md#slots). The human answers every question themselves. A question about how to build is a ticket for the map: name it in the report and keep grilling the Destination.
 
 Done when the human confirms the new Destination, heading by heading.
 
