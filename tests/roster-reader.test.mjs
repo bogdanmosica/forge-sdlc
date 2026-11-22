@@ -381,3 +381,13 @@ test('slots.policy, when present, replaces Policy skills whole', () => {
   assert.deepEqual(resolveRoster('version: 1\nslots:\n  policy: []', config).policy, []);
   assert.deepEqual(resolveRoster('version: 1', config).policy, ['writing-for-agents']);
 });
+
+test('resolveRoster never throws, whatever it is handed', () => {
+  for (const [text, config] of [
+    [42, undefined],
+    [null, null],
+    ['version: 1', { routing: 5, 'policy-skills': { skills: 3 } }],
+    ['version: 1', { routing: { 'model.reviewer': null }, 'policy-skills': null }],
+  ])
+    assert.doesNotThrow(() => resolveRoster(/** @type {any} */ (text), /** @type {any} */ (config)));
+});

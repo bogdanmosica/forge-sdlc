@@ -185,7 +185,7 @@ const roleOf = (role, agent, model, effort) => ({
  * @param {ForgeConfig | undefined} config
  */
 function fromForgeMd(roster, config) {
-  for (const [key, value] of Object.entries(config?.routing ?? {})) {
+  for (const [key, value] of Object.entries(sectionOf(config, 'routing'))) {
     const m = /^(model|effort)\.(.+)$/.exec(key);
     const role = m?.[2] ?? '';
     if (!m || !ROLES.includes(role)) {
@@ -199,8 +199,8 @@ function fromForgeMd(roster, config) {
     if (m[1] === 'model' && isModel(value)) roster.roles[role] = roleOf(role, r.agent, value, r.effort);
     if (m[1] === 'effort' && isEffort(value)) roster.roles[role] = roleOf(role, r.agent, r.model, value);
   }
-  for (const [key, value] of Object.entries(config?.['policy-skills'] ?? {})) {
-    const names = value
+  for (const [key, value] of Object.entries(sectionOf(config, 'policy-skills'))) {
+    const names = String(value ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s && s !== 'none');
@@ -209,6 +209,12 @@ function fromForgeMd(roster, config) {
     roster.problems.push(`## Policy skills: ${key} is deprecated; move it to slots.policy in docs/agents/forge.yaml`);
   }
 }
+
+/** A forge.md section as a map, anything else as none. */
+const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {string} */ name) => {
+  const section = isMap(config) ? config[name] : undefined;
+  return isMap(section) ? section : {};
+};
 
 const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];
 const ROLE_FIELDS = ['agent', 'model', 'effort'];
