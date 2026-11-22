@@ -47,3 +47,14 @@ test('docs/design.md section 6: the agent table notes frontmatter is the default
   const agents = /^## 6\. The agents\n([\s\S]*?)^### Who does what/m.exec(design)[1];
   assert.match(agents, /frontmatter is the default[^\n]*roster|roster[^\n]*frontmatter is the default/);
 });
+
+test('CLAUDE.md: the host-config convention names forge.md plus the optional forge.yaml, the detail in ROUTING.md', () => {
+  const claude = read(repo, 'CLAUDE.md');
+  const clause = claude.split('\n').find((l) => l.startsWith('- Hosts configure the plugin in'));
+  assert.ok(clause, 'the host-config convention');
+  assert.match(clause, /`docs\/agents\/forge\.md`[^\n]*optional[^\n]*`docs\/agents\/forge\.yaml`/);
+  assert.match(clause, /hooks\/ROUTING\.md/);
+  assert.match(clause, /never writes a permission rule/, 'keeps the rest of the clause');
+  assert.match(claude, /`node plugins\/forge-sdlc\/bin\/roster\.mjs [^`]*--project <host>`/, 'lists the roster command');
+  assert.match(claude, /`\/forge` help panel[^)]*roster/, 'the /forge description names what the panel shows of the roster');
+});
