@@ -79,22 +79,22 @@ export function resolveRoster(yamlText, forgeConfig) {
   const file = isMap(value) ? value : {};
   if (value !== null && !isMap(value)) say('the file is not a map of keys; nothing in it is read');
 
-  for (const key of Object.keys(file)) if (!TOP_KEYS.includes(key)) say(`${key} is not a roster key (${TOP_KEYS.join(', ')}); ignored`);
+  for (const key of Object.keys(file)) if (!TOP_KEYS.includes(key)) say(`${keyOf(key)} is not a roster key (${TOP_KEYS.join(', ')}); ignored`);
 
   if (typeof file.version === 'number') roster.version = file.version;
   if (file.version === undefined || file.version === null) say('version is missing; read as version 1');
-  else if (file.version !== 1) say(`version ${JSON.stringify(file.version)} is not supported; read as version 1`);
+  else if (file.version !== 1) say(`version ${quote(file.version)} is not supported; read as version 1`);
 
   if (file.enforce === true) roster.enforce = 'on';
   else if (enforceHidden(yamlText, value, errors)) {
     roster.enforce = 'unreadable';
     say('enforce is unreadable; the roster is not enforced until the file is fixed');
   } else if (file.enforce !== false && file.enforce !== undefined && file.enforce !== null)
-    say(`enforce ${JSON.stringify(file.enforce)} is not true or false; the roster is not enforced`);
+    say(`enforce ${quote(file.enforce)} is not true or false; the roster is not enforced`);
 
   for (const [role, entry] of entriesOf(file, 'roles', say)) {
     if (!ROLES.includes(role)) {
-      say(`roles.${role} is not a role (${ROLES.join(', ')}); ignored`);
+      say(`roles.${keyOf(role)} is not a role (${ROLES.join(', ')}); ignored`);
       continue;
     }
     if (entry === null) continue;
@@ -103,15 +103,15 @@ export function resolveRoster(yamlText, forgeConfig) {
       continue;
     }
     for (const field of Object.keys(entry))
-      if (!ROLE_FIELDS.includes(field)) say(`roles.${role}.${field} is not agent, model or effort; ignored`);
+      if (!ROLE_FIELDS.includes(field)) say(`roles.${role}.${keyOf(field)} is not agent, model or effort; ignored`);
     const base = /** @type {RosterRole} */ (roles[role]);
     let agent = base.agent;
     if (isName(entry.agent)) agent = entry.agent;
-    else if (entry.agent != null) say(`roles.${role}.agent ${JSON.stringify(entry.agent)} is not an agent type; the default kept`);
+    else if (entry.agent != null) say(`roles.${role}.agent ${quote(entry.agent)} is not an agent type; the default kept`);
     if (entry.model != null && !isModel(entry.model))
-      say(`roles.${role}.model ${JSON.stringify(entry.model)} is no model alias or claude-* id; ignored`);
+      say(`roles.${role}.model ${quote(entry.model)} is no model alias or claude-* id; ignored`);
     if (entry.effort != null && !isEffort(entry.effort))
-      say(`roles.${role}.effort ${JSON.stringify(entry.effort)} is not ${EFFORTS.join('|')}; ignored`);
+      say(`roles.${role}.effort ${quote(entry.effort)} is not ${EFFORTS.join('|')}; ignored`);
     roles[role] = roleOf(role, agent, isModel(entry.model) ? entry.model : base.model, isEffort(entry.effort) ? entry.effort : base.effort);
   }
 
@@ -123,15 +123,15 @@ export function resolveRoster(yamlText, forgeConfig) {
       continue;
     }
     const spec = Object.hasOwn(SLOTS, slot) ? SLOTS[/** @type {keyof typeof SLOTS} */ (slot)] : undefined;
-    if (!spec) say(`slots.${slot} is not a slot (${SLOT_NAMES.join(', ')}); ignored`);
+    if (!spec) say(`slots.${keyOf(slot)} is not a slot (${SLOT_NAMES.join(', ')}); ignored`);
     else if (skill === 'disabled' && spec.required) say(`slots.${slot} is required and cannot be disabled; ${spec.skill} kept`);
-    else if (!isName(skill)) say(`slots.${slot} ${JSON.stringify(skill)} is not a skill name${spec.required ? '' : ' or disabled'}; ${spec.skill} kept`);
+    else if (!isName(skill)) say(`slots.${slot} ${quote(skill)} is not a skill name${spec.required ? '' : ' or disabled'}; ${spec.skill} kept`);
     else slots[slot] = skill;
   }
 
   for (const [kind, list] of entriesOf(file, 'allow', say)) {
     if (kind !== 'agents' && kind !== 'skills') {
-      say(`allow.${kind} is not agents or skills; ignored`);
+      say(`allow.${keyOf(kind)} is not agents or skills; ignored`);
       continue;
     }
     const names = list === null ? [] : namesOf(list, `allow.${kind}`, kind === 'agents' ? 'agent type' : 'skill', say);
@@ -258,6 +258,17 @@ function namesOf(list, key, what, say) {
   if (names.length < list.length) say(`${key} holds an item that is not a ${what} name; it is skipped`);
   return names;
 }
+
+/**
+ * A value as a problem line shows it: JSON, with DEL, C1 controls and the line
+ * separators escaped too, so a file's bytes never reach the band raw.
+ * @param {unknown} v
+ */
+const quote = (v) =>
+  String(JSON.stringify(v)).replace(/[\u007f-\u009f\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+
+/** A key from the file as a problem line shows it: bare when it is a plain name, else quoted. */
+const keyOf = (/** @type {string} */ k) => (/^[A-Za-z0-9_.:-]+$/.test(k) ? k : quote(k));
 
 /** @param {unknown} v @returns {v is Record<string, unknown>} */
 const isMap = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -456,7 +467,7 @@ export function parseYamlSubset(text) {
       }
       const key = quoted ? String(quoted.value) : raw;
       if (Object.hasOwn(out, key)) {
-        skip(`duplicate key ${key}: the first is kept`);
+        skip(`duplicate key ${keyOf(key)}: the first is kept`);
         continue;
       }
       const rest = (m[2] ?? '').trim();
