@@ -122,14 +122,24 @@ export function parseYamlSubset(text) {
 
   /** @type {Row[]} */
   const rows = [];
+  let dropped = -1; // the indent of the last dropped row: rows nested under it go too
   String(text ?? '')
     .split(/\r?\n/)
     .forEach((raw, i) => {
       const line = i + 1;
       const body = stripComment(raw).trimEnd();
       if (!body.trim()) return;
-      const indent = body.length - body.trimStart().length;
-      rows.push({ line, indent, text: body.trimStart() });
+      const indent = body.length - body.replace(/^ +/, '').length;
+      if (dropped >= 0 && indent > dropped) return;
+      dropped = -1;
+      const drop = (/** @type {string} */ message) => {
+        fail(line, message);
+        dropped = indent;
+      };
+      if (body.includes('\t')) return drop('a tab: indent and separate with spaces');
+      if (/^(---|\.\.\.)(\s|$)/.test(body)) return drop('document markers (--- or ...) are not supported: one document per file');
+      if (indent % 2) return drop(`an indent of ${indent} spaces: indent by 2`);
+      rows.push({ line, indent, text: body.slice(indent) });
     });
 
   let at = 0;
@@ -145,15 +155,25 @@ export function parseYamlSubset(text) {
    * @param {number} line
    * @returns {{ ok: true, value: unknown } | { ok: false }}
    */
-  function scalar(text, line) {
+  function scalar(text, line, inFlow = false) {
+    const bad = (/** @type {string} */ message) => (fail(line, message), /** @type {{ ok: false }} */ ({ ok: false }));
+    const lead = text[0] ?? '';
+    if (lead === '&') return bad('anchors (&) are not supported: repeat the value');
+    if (lead === '*') return bad('aliases (*) are not supported: repeat the value');
+    if (lead === '!') return bad('tags (!) are not supported');
+    if (lead === '|' || lead === '>') return bad('block scalars (| or >) are not supported: keep the value on one line');
+    if (lead === '{') return bad('flow maps ({...}) are not supported: nest the keys by 2 spaces');
+    if (lead === '@' || lead === '`' || lead === '%') return bad(`a value starting with ${lead} must be quoted`);
+    if (lead === '-' && (text === '-' || text.startsWith('- '))) return bad('nested lists are not supported');
+    if (lead === '[' && inFlow) return bad('nested flow lists are not supported');
     if (text.startsWith('[')) {
-      if (!text.endsWith(']')) return fail(line, 'a flow list must close on its own line'), { ok: false };
+      if (!text.endsWith(']')) return bad('multi-line flow lists are not supported: close the [...] on its line');
       const inner = text.slice(1, -1).trim();
       if (!inner) return { ok: true, value: [] };
       /** @type {unknown[]} */
       const items = [];
       for (const part of splitFlow(inner)) {
-        const item = scalar(part.trim(), line);
+        const item = scalar(part.trim(), line, true);
         if (!item.ok) return { ok: false };
         items.push(item.value);
       }
@@ -161,18 +181,20 @@ export function parseYamlSubset(text) {
     }
     if (text.startsWith('"')) {
       const m = /^"((?:[^"\\]|\\.)*)"$/.exec(text);
-      if (!m) return fail(line, 'a double-quoted value must close at the end of its line'), { ok: false };
+      if (!m) return bad('a double-quoted value must close at the end of its line');
+      if ((m[1] ?? '').replace(/\\["\\]/g, '').includes('\\')) return bad('only \\" and \\\\ escapes are supported in a double-quoted value');
       return { ok: true, value: (m[1] ?? '').replace(/\\(.)/g, '$1') };
     }
     if (text.startsWith("'")) {
       const m = /^'((?:[^']|'')*)'$/.exec(text);
-      if (!m) return fail(line, 'a single-quoted value must close at the end of its line'), { ok: false };
+      if (!m) return bad('a single-quoted value must close at the end of its line');
       return { ok: true, value: (m[1] ?? '').replace(/''/g, "'") };
     }
     if (text === '' || text === '~' || text === 'null') return { ok: true, value: null };
     if (text === 'true') return { ok: true, value: true };
     if (text === 'false') return { ok: true, value: false };
     if (/^-?\d+$/.test(text)) return { ok: true, value: Number(text) };
+    if (/:(\s|$)/.test(text)) return bad('a plain value holding ": " or ending in ":" must be quoted');
     return { ok: true, value: text };
   }
 
@@ -193,7 +215,13 @@ export function parseYamlSubset(text) {
     while (at < rows.length) {
       const row = /** @type {Row} */ (rows[at]);
       if (row.indent !== indent || !isItem(row.text)) break;
-      const item = scalar(row.text.slice(1).trim(), row.line);
+      const text = row.text.slice(1).trim();
+      if (KEY.test(text)) {
+        fail(row.line, 'lists of maps are not supported: list plain values');
+        skipFrom(indent);
+        continue;
+      }
+      const item = scalar(text, row.line);
       skipFrom(indent);
       if (item.ok) items.push(item.value);
     }
@@ -207,34 +235,63 @@ export function parseYamlSubset(text) {
     while (at < rows.length) {
       const row = /** @type {Row} */ (rows[at]);
       if (row.indent < indent) break;
+      const skip = (/** @type {string} */ message) => {
+        fail(row.line, message);
+        skipFrom(row.indent);
+      };
+      if (row.indent > indent) {
+        skip(`an indent of ${row.indent} spaces where ${indent} was expected`);
+        continue;
+      }
+      if (row.text.startsWith('<<')) {
+        skip('merge keys (<<) are not supported: repeat the keys');
+        continue;
+      }
+      if (isItem(row.text)) {
+        skip('a list item where a `key: value` was expected');
+        continue;
+      }
       const m = KEY.exec(row.text);
       if (!m) {
-        fail(row.line, 'expected `key: value`');
-        skipFrom(row.indent);
+        skip('expected `key: value`');
         continue;
       }
       const raw = /** @type {string} */ (m[1]);
-      const key = raw.startsWith('"') || raw.startsWith("'") ? /** @type {{ value: string }} */ (scalar(raw, row.line)).value : raw;
+      const key = /^["']/.test(raw) ? String(/** @type {{ value: unknown }} */ (scalar(raw, row.line)).value) : raw;
+      if (Object.hasOwn(out, key)) {
+        skip(`duplicate key ${key}: the first is kept`);
+        continue;
+      }
       const rest = (m[2] ?? '').trim();
       at++;
-      /** @type {unknown} */
-      let value = null;
       const next = rows[at];
       if (rest) {
         const v = scalar(rest, row.line);
-        if (v.ok) value = v.value;
+        if (v.ok) put(out, key, v.value);
       } else if (next && next.indent === indent && isItem(next.text)) {
-        value = list(indent);
+        put(out, key, list(indent));
       } else if (next && next.indent > indent) {
-        value = block(next.indent);
+        if (next.indent !== indent + 2) {
+          fail(next.line, `an indent of ${next.indent} spaces under a key at ${indent}: nest by 2`);
+          at--;
+          skipFrom(indent);
+          continue;
+        }
+        put(out, key, block(next.indent));
+      } else {
+        put(out, key, null);
       }
-      put(out, key, value);
     }
     return out;
   }
 
-  const value = rows.length ? block(0) : null;
-  return { value, errors };
+  try {
+    const value = rows.length ? block(0) : null;
+    return { value, errors };
+  } catch {
+    // Not reached by any known input; a reader that never throws holds anyway.
+    return { value: null, errors: [...errors, { line: 0, message: 'the text could not be read' }] };
+  }
 }
 
 /**
