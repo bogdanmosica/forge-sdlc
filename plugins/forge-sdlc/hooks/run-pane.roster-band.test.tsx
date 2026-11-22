@@ -114,3 +114,15 @@ test('a swap target not offered joins the roster note at the first spawn and lea
   await clock.advance(5000);
   expect(await band($)).not.toContain('roster');
 });
+
+test('a forge.yaml too broken to read enforce warns in the band that the roster is not enforced', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    files: { [HOST_CONFIG]: forgeConfig(), [ROSTER]: 'version: 1\nenforce: [true\n' },
+  });
+  await start($, clock);
+  const warning = 'roster: enforce is unreadable; the roster is not enforced until the file is fixed';
+  expect(await band($)).toContain(warning);
+  expect(s.toasts.filter((t) => t.includes('enforce is unreadable'))).toHaveLength(1);
+  expect(s.toasts.join('\n')).toContain(warning);
+});
