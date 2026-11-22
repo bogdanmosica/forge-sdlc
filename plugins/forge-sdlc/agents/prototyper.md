@@ -17,7 +17,7 @@ Read the ticket whole and the Destination in `docs/efforts/<slug>/map.md`. Done 
 
 ## 2. Build the prototype
 
-Call `mattpocock-skills:prototype` and follow it: it picks the logic or the UI branch from the question. Build only what the question needs, runnable with one command.
+Call the `prototyper.prototype` slot's skill (default `mattpocock-skills:prototype`), the one `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" prototyper.prototype --project "$(node "${CLAUDE_PLUGIN_ROOT}/bin/host-dir.mjs")"` prints per the `## Slots` rule of `${CLAUDE_PLUGIN_ROOT}/skills/build/ROLES.md`, and follow it: it picks the logic or the UI branch from the question. Build only what the question needs, runnable with one command.
 
 Done when the prototype runs and shows the state the question turns on.
 
