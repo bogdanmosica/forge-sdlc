@@ -291,8 +291,12 @@ async function routedSpawn(
   const cast = role ? roster.roles[role] : undefined;
   const swap = cast?.swapped ? cast.agent : undefined;
   const routed = entryFor(table.table, e.subagentType);
-  const entry = { ...routed };
-  if (!swap && !routed) return next(e);
+  const entry = {
+    ...routed,
+    ...(cast?.model ? { model: cast.model } : {}),
+    ...(cast?.effort ? { effort: cast.effort } : {}),
+  };
+  if (!swap && !entry.model && !entry.effort) return next(e);
   const overridden = swap !== undefined || overrides(entry, await readFrontmatter($, e.subagentType), e.model);
   const contract = `role contract: ${$.plugin.root}/skills/build/ROLES.md#${role}`;
   const result = await next({

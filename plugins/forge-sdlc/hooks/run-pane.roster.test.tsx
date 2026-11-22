@@ -154,3 +154,33 @@ test("a swapped agent's row is marked routed though its model and effort are the
   const rows = await agentRows($, clock);
   expect(rows[0]).toMatch(/^● review slice 03.*⇄ routed/);
 });
+
+// One model request in an agent's loop at the model and effort the engine resolved.
+async function step($: Engine, agentId: string | undefined, model: string, effort: 'low' | 'medium' | 'high') {
+  const stream = $.turn.step({ turnId: 't1', index: 0, model, effort, messageCount: 1, ...(agentId ? { agentId } : {}) });
+  while (!(await stream.next()).done) {
+    /* nothing streams from the test's bottom */
+  }
+  return stream.result;
+}
+
+test("the roster's model and effort beat ## Routing key by key, and a key it leaves unset still routes", async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    config: forgeConfig(
+      '\n## Routing\n- model.researcher: claude-opus-5-5\n- effort.researcher: high\n- effort.merger: medium\n',
+    ),
+    roster: 'version: 1\nroles:\n  researcher:\n    model: haiku\n  merger:\n    model: sonnet\n    effort: low\n',
+  });
+  await start($, clock);
+  const researcher = await spawn($, 'forge-sdlc:researcher');
+  const merger = await spawn($, 'forge-sdlc:merger');
+  // no agent named: the role keeps its type, only model and effort change
+  expect(s.spawns.map((e) => [e.subagentType, e.model])).toEqual([
+    ['forge-sdlc:researcher', 'haiku'],
+    ['forge-sdlc:merger', 'sonnet'],
+  ]);
+  await step($, researcher.agentId, 'haiku', 'medium');
+  await step($, merger.agentId, 'sonnet', 'medium');
+  expect(s.steps.map((e) => e.effort)).toEqual(['high', 'low']);
+});
