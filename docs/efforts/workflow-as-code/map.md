@@ -51,6 +51,7 @@ Engineering, in this plugin. Sessions read `docs/efforts/roster-as-code/intent.m
   - Descriptive workflow plus the existing knobs (policy, spec gate, max parallel slices) and a per-gate override; not prescriptive.
   - Diagram as Mermaid from `bin/workflow.mjs` for GitHub, and the live terminal view in `/forge`; an artifact page later.
   - "Autonomous" means declaring and tuning the gate policy and its stops; charting, grilling and Gate 4 stay human.
+- [Drawing the loop in the terminal](../../../.scratch/workflow-as-code/issues/01-drawing-the-loop-in-the-terminal.md): no graph renderer in the engine; `/forge` draws the loop vertically from `Box`/`Text` and box-drawing characters with a narrow fallback; GitHub renders Mermaid in PR bodies and README.
 
 ## Not yet specified
 
