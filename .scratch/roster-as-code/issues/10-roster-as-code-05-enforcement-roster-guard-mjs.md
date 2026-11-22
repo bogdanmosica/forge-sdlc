@@ -1,7 +1,7 @@
 # 10: roster-as-code-05: Enforcement: roster-guard.mjs
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -31,3 +31,5 @@ passes: unit cases and the two new guardrails eval cases green
 - recommended: a slot set to `disabled` accounts for no skill, so its default skill is denied under enforcement, as is a swapped-out default (source: spec "a slot's resolved skill")
 - recommended: the Skill eval case calls a project-local skill (`.claude/skills/word-stats`) so the call is real without mattpocock-skills installed; its seam payload is a member's (source: spec "lead and member payloads alike")
 - recommended: the README Hooks table row for roster-guard is left to row 10, Docs (source: plan row 10 "README roster section")
+
+clean. Review record: .forge/review/roster-as-code-05.md. Merged 736667e into feat/roster-as-code.
