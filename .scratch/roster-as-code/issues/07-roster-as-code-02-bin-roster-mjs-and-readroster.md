@@ -1,7 +1,7 @@
 # 07: roster-as-code-02: bin/roster.mjs and readRoster
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -23,3 +23,8 @@ node --test tests/roster-bin.test.mjs
 passes against fixture hosts in a temp dir
 
 ## Comments
+
+- recommended: --project is used as given through path.resolve, not hostDirOf (source: bin/crew-name.mjs does the same; spec "a new bin script on lib.mjs")
+- recommended: extra positional words or --project with no value exit 2 (source: spec "exit 2 for bad usage")
+
+resolved: clean. Review record .forge/review/roster-as-code-02.md; merged into feat/roster-as-code at bb37f9f.
