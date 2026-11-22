@@ -39,6 +39,11 @@
 // reviewed it, so every dispatch was refused once; spawn pins `name`, so there
 // is no `@` handle.
 //
+// Hidden commands (run-pane/hidden-commands.ts): the upstream commands the
+// loop wraps describe as hidden on `command.describe`, so the typeahead and
+// /help leave them out; typed in full, by the Skill tool or read by file they
+// still run.
+//
 // The workbench views (workbench.tsx: sessions.ts, focus.tsx, boards.tsx,
 // band.tsx, commands.tsx) register their matched hooks through
 // registerWorkbench, and the four unmatched events they need, session.start,
@@ -68,6 +73,7 @@ import { begun, diffDirOf, doingOf, elapsedText, ended } from './run-pane/activi
 import { openDiff } from './commands';
 import { run as runProcess } from './sessions';
 import { parseMark } from './run-pane/mark';
+import { HIDDEN_COMMANDS, hiddenMatcher } from './run-pane/hidden-commands';
 import { parseWorktrees } from './run-pane/worktrees';
 import { frontierOf, readMap } from './run-pane/tracker';
 import { FORGE_COMMAND, registerForge } from './forge';
@@ -397,6 +403,12 @@ export const register: Register = (on) => {
     await startWorkbench($); // this session's record, the workbench panes' commands and timers
     return started;
   });
+
+  // The upstream commands the loop wraps leave the typeahead and /help, their
+  // description and hint unchanged; typed in full they still run. One matched
+  // hook per command (run-pane/hidden-commands.ts), never an unmatched one.
+  for (const name of HIDDEN_COMMANDS)
+    on('command.describe', hiddenMatcher(name), ($, e, next) => next({ ...e, isHidden: true }));
 
   on('turn.complete', async ($, e, next) => {
     const done = await next(e);
