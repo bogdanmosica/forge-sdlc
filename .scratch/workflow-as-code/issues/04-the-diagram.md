@@ -1,7 +1,7 @@
 # The diagram
 
 Type: prototype
-Status: open
+Status: claimed
 Labels: wayfinder:prototype
 Blocked by: 01, 02, 03
 Map: ../map.md

@@ -53,6 +53,7 @@ Engineering, in this plugin. Sessions read `docs/efforts/roster-as-code/intent.m
   - "Autonomous" means declaring and tuning the gate policy and its stops; charting, grilling and Gate 4 stay human.
 - [Drawing the loop in the terminal](../../../.scratch/workflow-as-code/issues/01-drawing-the-loop-in-the-terminal.md): no graph renderer in the engine; `/forge` draws the loop vertically from `Box`/`Text` and box-drawing characters with a narrow fallback; GitHub renders Mermaid in PR bodies and README.
 - [The workflow schema](../../../.scratch/workflow-as-code/issues/02-the-workflow-schema.md): the plugin ships `workflow.yaml` describing the loop; the host's `workflow:` holds only `policy`, `max_parallel_slices`, `gates.{intent,spec,plan}`; `## Gates` deprecated; init writes `forge.yaml`; diagram nodes show the roster's resolved agent and model.
+- [Per-gate autonomy](../../../.scratch/workflow-as-code/issues/03-per-gate-autonomy.md): each of Gates 1-3 is `attended` or `policy`, overriding the global policy; `only-on-open` becomes `gates.spec: policy`; stop rules fixed, `risk: high` forces attended; new stop reason `attended`; a policy-passed gate continues in the same run.
 
 ## Not yet specified
 
