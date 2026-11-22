@@ -38,3 +38,26 @@ test('without forge.yaml each slot prints its default skill and policy prints no
   assert.equal(line(dir, 'domain-modeling'), 'mattpocock-skills:domain-modeling');
   assert.equal(line(dir, 'policy'), 'none');
 });
+
+test('a forge.yaml slot prints its skill, an optional slot disabled prints disabled, and policy prints its names comma-separated', () => {
+  const { dir } = rosterHost({
+    yaml: [
+      'version: 1',
+      'slots:',
+      '  implementer.tdd: other-plugin:tdd',
+      '  domain-modeling: disabled',
+      '  policy: [writing-for-agents, my-plugin:security]',
+      '',
+    ].join('\n'),
+  });
+  assert.equal(line(dir, 'implementer.tdd'), 'other-plugin:tdd');
+  assert.equal(line(dir, 'domain-modeling'), 'disabled');
+  assert.equal(line(dir, 'grilling'), 'mattpocock-skills:grilling');
+  assert.equal(line(dir, 'policy'), 'writing-for-agents,my-plugin:security');
+});
+
+test('an empty policy list prints none, even over a ## Policy skills value', () => {
+  const config = `${forgeMd()}\n## Policy skills\n- skills: writing-for-agents\n`;
+  assert.equal(line(rosterHost({ config }).dir, 'policy'), 'writing-for-agents', 'without forge.yaml the deprecated section still applies');
+  assert.equal(line(rosterHost({ config, yaml: 'version: 1\nslots:\n  policy: []\n' }).dir, 'policy'), 'none');
+});
