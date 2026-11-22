@@ -27,6 +27,7 @@ export type RunPaneUsage = {
 export type RunPaneNotes = {
   pane?: string;
   routing?: string;
+  roster?: string; // docs/agents/forge.yaml's problems and the deprecated forge.md sections
   crew?: string;
   mark?: string;
   worktrees?: string;

@@ -68,6 +68,7 @@ import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
 import type { ForgeConfig } from './run-pane/config';
 import { entryFor, frontmatterOf, overrides, parseRouting, pluginRoleOf } from './run-pane/routing';
 import { resolveRoster } from './roster.mjs';
+import type { Roster } from './roster.mjs';
 import { GENERAL, crewNameOf, displayNameOf, hasCrewName, nameAt, parseCrew, withCrewName } from './run-pane/crew';
 import { begun, diffDirOf, doingOf, elapsedText, ended } from './run-pane/activity';
 import { openDiff } from './commands';
@@ -201,12 +202,24 @@ async function readConfig($: EngineInterface): Promise<ForgeConfig | undefined> 
 
 // A section's problems become its note in the band above the prompt, kept while they last;
 // each problem is toasted the first time it is seen.
-async function sayOnce($: EngineInterface, section: 'routing' | 'crew' | 'mark' | 'worktrees', problems: string[]) {
+async function sayOnce(
+  $: EngineInterface,
+  section: 'routing' | 'roster' | 'crew' | 'mark' | 'worktrees',
+  problems: string[],
+) {
   const note = problems.length ? problems.join(' · ') : undefined;
   await update($, bandNotes, (n) => ({ ...n, [section]: note }));
   const unsaid = problems.filter((p) => !reported.has(p));
   unsaid.forEach((p) => reported.add(p));
   if (unsaid.length) $.ui.toast(`forge-sdlc: ${unsaid.join(' · ')}`);
+}
+
+// The roster (docs/agents/forge.yaml over forge.md's deprecated sections), read
+// fresh; its problems become the band's roster note.
+async function readRoster($: EngineInterface, config: ForgeConfig | undefined): Promise<Roster> {
+  const roster = resolveRoster(await readOrUndefined($, ROSTER_FILE), config);
+  await sayOnce($, 'roster', roster.problems);
+  return roster;
 }
 
 // A spawn's input with the crew name in front of its description: a member
@@ -360,6 +373,7 @@ async function tick($: EngineInterface): Promise<void> {
   const mark = parseMark(config);
   await sayOnce($, 'mark', mark.problems);
   await sayOnce($, 'worktrees', parseWorktrees(config).problems);
+  await readRoster($, config);
   const next: RunPaneSnapshot = {
     usage,
     agents,
