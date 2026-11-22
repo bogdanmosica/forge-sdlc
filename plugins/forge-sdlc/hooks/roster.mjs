@@ -197,8 +197,11 @@ function fromForgeMd(roster, config) {
     }
     roster.problems.push(`## Routing: ${key} is deprecated; move it to roles.${role}.${m[1]} in docs/agents/forge.yaml`);
     const r = /** @type {RosterRole} */ (roster.roles[role]);
-    if (m[1] === 'model' && isModel(value)) roster.roles[role] = roleOf(role, r.agent, value, r.effort);
-    if (m[1] === 'effort' && isEffort(value)) roster.roles[role] = roleOf(role, r.agent, r.model, value);
+    if (m[1] === 'model') {
+      if (isModel(value)) roster.roles[role] = roleOf(role, r.agent, value, r.effort);
+      else roster.problems.push(`## Routing: ${key} ${quote(value)} is no model alias or claude-* id; ignored`);
+    } else if (isEffort(value)) roster.roles[role] = roleOf(role, r.agent, r.model, value);
+    else roster.problems.push(`## Routing: ${key} ${quote(value)} is not ${EFFORTS.join('|')}; ignored`);
   }
   for (const [key, value] of Object.entries(sectionOf(config, 'policy-skills'))) {
     const names = String(value ?? '')
