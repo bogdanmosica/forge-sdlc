@@ -12,22 +12,13 @@
 // invalid on its own: reported once, ignored, the agent file's frontmatter
 // default used for that key.
 import type { ForgeConfig } from './config';
+// The model and effort validators are the shared roster reader's: forge.yaml's
+// roles accept the same values.
+import { EFFORTS, isEffort, isModel, PLUGIN, type Effort } from '../roster.mjs';
 
-export const PLUGIN = 'forge-sdlc';
-export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
-
-export type Effort = (typeof EFFORTS)[number];
 export type RoutingEntry = { model?: string; effort?: Effort };
 export type RoutingTable = Record<string, RoutingEntry>;
 export type Routing = { table: RoutingTable; problems: string[] };
-
-// A model alias Claude Code accepts, or a full id (`claude-opus-5-5`, with or
-// without the `[1m]` context suffix). Values a host can mean, nothing else.
-const ALIASES = new Set(['opus', 'sonnet', 'haiku', 'fable', 'best', 'default', 'opusplan', 'inherit']);
-const FULL_ID = /^claude-[a-z0-9][a-z0-9-]*(\[1m\])?$/;
-export const isModel = (v: unknown): v is string => typeof v === 'string' && (ALIASES.has(v) || FULL_ID.test(v));
-export const isEffort = (v: unknown): v is Effort =>
-  typeof v === 'string' && (EFFORTS as readonly string[]).includes(v);
 
 // The config to the table and the problems, each a line for the band. No
 // config and no section are no problem.
