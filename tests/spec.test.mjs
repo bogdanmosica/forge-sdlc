@@ -58,7 +58,8 @@ test('spec/SKILL.md: the frame the design requires, by pointer', () => {
 });
 
 test('spec/SKILL.md: every relative link resolves beside the skill', () => {
-  const links = [...skill.matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1]).filter((l) => !/^[a-z]+:/.test(l));
+  // The file part of each link: an anchor (`ROLES.md#slots`) names a heading inside an existing file.
+  const links = [...skill.matchAll(/\]\(([^)#]+)(?:#[^)]*)?\)/g)].map((m) => m[1]).filter((l) => !/^[a-z]+:/.test(l));
   assert.ok(links.includes('SPEC-EXTRAS.md'), 'links the extras file');
   for (const link of links) assert.ok(existsSync(path.join(skillDir, link)), link);
 });
