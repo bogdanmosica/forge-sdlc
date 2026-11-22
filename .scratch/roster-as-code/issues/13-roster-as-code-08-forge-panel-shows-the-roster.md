@@ -1,7 +1,7 @@
 # 13: roster-as-code-08: /forge panel shows the roster
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -23,3 +23,10 @@ test -f plugins/forge-sdlc/hooks/forge.roster.test.tsx && claude plugin test plu
 passes: the panel's roster tests and the help-table test green
 
 ## Comments
+
+Closed: merged 7236332 into feat/roster-as-code. Review record: `.forge/review/roster-as-code-08.md` (clean after 1 fix round).
+
+- recommended: the panel uses the roster only when docs/agents/forge.yaml exists; ## Routing bullets alone do not change the agent rows (source: spec Modules, /forge help panel)
+- recommended: a swapped role's hint reads `⇄ <agent> · <model> · <effort>`; the slots table sits under the agents, one line per slot then policy (source: spec Modules, /forge help panel)
+- recommended: ForgeSkills in types/index.d.ts gains an optional roster (roles, slots, policy) (source: spec Modules, State contract)
+- recommended: forge.tsx keeps a local ROSTER_FILE constant while lib.mjs now exports one (merged slice 02); fold them if the review asks

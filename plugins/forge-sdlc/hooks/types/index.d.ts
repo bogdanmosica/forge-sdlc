@@ -140,7 +140,10 @@ export type ForgeView = { tab: 'commands' | 'agents' | 'loop'; upstream: boolean
 export type ForgeSkill = { name: string; description: string; hint?: string };
 // An agent as the panel lists it: a skill's fields plus the model and effort its frontmatter names.
 export type ForgeAgent = ForgeSkill & { model?: string; effort?: string };
-export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[] };
+// The host roster as the panel shows it, from docs/agents/forge.yaml through hooks/roster.mjs; absent without the file.
+export type ForgeRosterRole = { agent: string; model?: string; effort?: string; swapped: boolean };
+export type ForgeRoster = { roles: Record<string, ForgeRosterRole>; slots: Record<string, string>; policy: string[] };
+export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[]; roster?: ForgeRoster };
 
 export type SessionStatus = 'working' | 'idle' | 'needs-you';
 
