@@ -56,3 +56,17 @@ test('init/SKILL.md: the forge.yaml example reads back as a version 1 roster wit
   assert.deepEqual(roster.problems, []);
   assert.ok(roster.policy.length > 0, 'the example lists at least one policy skill');
 });
+
+test('init/SKILL.md: an existing forge.yaml has only slots.policy rewritten, every other key kept', () => {
+  const bullet = rosterBullet();
+  assert.match(bullet, /rewrite only `slots\.policy`/);
+  assert.match(bullet, /keep every other key/);
+  for (const key of ['version', 'enforce', 'roles', 'allow']) assert.match(bullet, new RegExp(`\`${key}\``), `names ${key} as kept`);
+});
+
+const template = readFileSync(path.join(skillDir, 'FORGE-TEMPLATE.md'), 'utf8');
+
+test('init: the forge.md template has no Policy skills section', () => {
+  assert.doesNotMatch(template, /^## Policy skills/m);
+  assert.doesNotMatch(template, /^- skills:/m, 'no stray Policy skills bullet');
+});
