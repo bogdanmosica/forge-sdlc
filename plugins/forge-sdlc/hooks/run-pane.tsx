@@ -27,7 +27,10 @@
 // The roster (docs/agents/forge.yaml, read through roster.mjs at each spawn)
 // swaps a plain spawn of `forge-sdlc:<role>` to the agent it names, only when
 // `agent.offer` offered that type, adds the role's `role contract:` line to the
-// brief, and its model and effort beat `## Routing` key by key.
+// brief, and its model and effort beat `## Routing` key by key. Its problems
+// (bad entries, an unreadable `enforce`, the deprecated `## Routing` and
+// `## Policy skills`, and from the first spawn each swap target not offered)
+// are the band's roster note, read at each refresh and toasted once each.
 //
 // Command center (run-pane/activity.ts): one row per agent with its crew name,
 // the tool call it is in, the files it edited, its tokens and its elapsed time,
@@ -86,6 +89,8 @@ import type { RunRecord } from './run-pane/history';
 const PANE = 'run-pane';
 const STATE_FILE = '.forge/state.json';
 const ROSTER_FILE = 'docs/agents/forge.yaml';
+// roster.mjs's line for an invalid `## Routing` value, which parseRouting reports too
+const INVALID_ROUTING = /^## Routing: .*; ignored$/;
 const EXPORT_PATH = '.forge/run-pane/history.csv';
 const USAGE =
   'Usage: /forge-pane [history | export | close]. No argument opens the pane; history lists the stored runs; export writes them as CSV under .forge; close closes the pane.';
@@ -117,6 +122,7 @@ function usageOf(u: SessionUsage): RunPaneUsage {
 let ticks = 0;
 const reported = new Set<string>(); // each host config problem is toasted once
 const offered = new Set<string>(); // the agent types agent.offer offered the model: a roster swap's only targets
+let swapsChecked = false; // a spawn has read the roster: swap targets not offered are reported from then on
 const ticketCache = new Map<string, { mtimeMs: number; ticket: import('./types').RunPaneTicket | null }>();
 
 // The run this session is: set once, kept in $.state across hot reloads; after a
@@ -201,12 +207,40 @@ async function readConfig($: EngineInterface): Promise<ForgeConfig | undefined> 
 
 // A section's problems become its note in the band above the prompt, kept while they last;
 // each problem is toasted the first time it is seen.
-async function sayOnce($: EngineInterface, section: 'routing' | 'crew' | 'mark' | 'worktrees', problems: string[]) {
+async function sayOnce(
+  $: EngineInterface,
+  section: 'routing' | 'roster' | 'crew' | 'mark' | 'worktrees',
+  problems: string[],
+) {
   const note = problems.length ? problems.join(' · ') : undefined;
   await update($, bandNotes, (n) => ({ ...n, [section]: note }));
   const unsaid = problems.filter((p) => !reported.has(p));
   unsaid.forEach((p) => reported.add(p));
   if (unsaid.length) $.ui.toast(`forge-sdlc: ${unsaid.join(' · ')}`);
+}
+
+// The host config's routing and roster, read fresh at each refresh and spawn:
+// `## Routing`'s problems are the band's routing note; the roster's
+// (docs/agents/forge.yaml over forge.md's deprecated sections) its roster note,
+// less the invalid `## Routing` values the routing note already carries. Once a
+// spawn has looked (`atSpawn`), each swap target the session has not offered is
+// on the roster note too, while it lasts; before any spawn no listing has
+// offered anything, so none is reported yet.
+async function readRouting($: EngineInterface, config: ForgeConfig | undefined, atSpawn: boolean) {
+  const table = parseRouting(config);
+  const roster = resolveRoster(await readOrUndefined($, ROSTER_FILE), config);
+  if (atSpawn) swapsChecked = true;
+  const unoffered = swapsChecked
+    ? Object.entries(roster.roles)
+        .filter(([, r]) => r.swapped && !offered.has(r.agent))
+        .map(
+          ([role, r]) =>
+            `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`,
+        )
+    : [];
+  await sayOnce($, 'routing', table.problems);
+  await sayOnce($, 'roster', [...roster.problems.filter((p) => !INVALID_ROUTING.test(p)), ...unoffered]);
+  return { table: table.table, roster };
 }
 
 // A spawn's input with the crew name in front of its description: a member
@@ -287,21 +321,11 @@ async function routedSpawn(
   next: (e: AgentSpawnInput) => Promise<AgentSpawnResult>,
 ): Promise<AgentSpawnResult> {
   if (e.fork) return next(e);
-  const config = await readConfig($);
-  const table = parseRouting(config);
-  const roster = resolveRoster(await readOrUndefined($, ROSTER_FILE), config);
-  // every swap target not offered, read fresh, so the band holds it while it lasts
-  const unoffered = Object.entries(roster.roles)
-    .filter(([, r]) => r.swapped && !offered.has(r.agent))
-    .map(
-      ([role, r]) =>
-        `roster: roles.${role}.agent ${JSON.stringify(r.agent)} names no offered agent; forge-sdlc:${role} spawns`,
-    );
-  await sayOnce($, 'routing', [...table.problems, ...unoffered]);
+  const { table, roster } = await readRouting($, await readConfig($), true);
   const role = pluginRoleOf(e.subagentType);
   const cast = role ? roster.roles[role] : undefined;
   const swap = cast?.swapped && offered.has(cast.agent) && !e.resume && !e.workflow ? cast.agent : undefined;
-  const routed = entryFor(table.table, e.subagentType);
+  const routed = entryFor(table, e.subagentType);
   const entry = {
     ...routed,
     ...(cast?.model ? { model: cast.model } : {}),
@@ -360,6 +384,7 @@ async function tick($: EngineInterface): Promise<void> {
   const mark = parseMark(config);
   await sayOnce($, 'mark', mark.problems);
   await sayOnce($, 'worktrees', parseWorktrees(config).problems);
+  await readRouting($, config, false);
   const next: RunPaneSnapshot = {
     usage,
     agents,
