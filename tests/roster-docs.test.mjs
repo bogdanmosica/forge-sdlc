@@ -74,3 +74,16 @@ test('hooks/ROUTING.md is the roster and routing reference: shape, precedence, d
   assert.match(doc, /## Routing: model\.implementer is deprecated; move it to roles\.implementer\.model in docs\/agents\/forge\.yaml/);
   assert.match(doc, /names no offered agent/);
 });
+
+test('README: a roster section linking ROLES.md, the roster-guard row, init and the run pane pointed at forge.yaml', () => {
+  const readme = read(repo, 'README.md');
+  assert.match(readme, /^## Roster$/m, 'a roster section');
+  const section = readme.split(/^## Roster$/m)[1].split(/^## /m)[0];
+  assert.match(section, /docs\/agents\/forge\.yaml/);
+  assert.match(section, /before filling a role with another agent[^\n]*ROLES\.md|ROLES\.md[^\n]*before filling a role with another agent/);
+  assert.match(section, /hooks\/ROUTING\.md/);
+  assert.match(readme, /^\| roster-guard \|[^\n]*bare[^\n]*any plugin/m, 'the Hooks table row warns that a bare allow entry matches any plugin');
+  assert.match(readme, /`init`[^\n]*docs\/agents\/forge\.yaml/, 'init writes slots.policy to forge.yaml');
+  assert.match(readme, /`\/forge agents`[^\n]*roster/, 'the panel shows the roster');
+  assert.doesNotMatch(readme, /Two optional sections of `docs\/agents\/forge\.md` feed it\. `## Routing` routes/, 'routing is pointed at forge.yaml');
+});
