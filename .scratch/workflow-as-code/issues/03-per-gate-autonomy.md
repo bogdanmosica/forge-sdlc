@@ -1,7 +1,7 @@
 # Per-gate autonomy
 
 Type: grilling
-Status: open
+Status: claimed
 Labels: wayfinder:grilling
 Blocked by: 02
 Map: ../map.md
