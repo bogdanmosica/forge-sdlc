@@ -1,7 +1,7 @@
 # 09: roster-as-code-04: Roster problems in the band
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/roster-as-code/spec.md` on `feat/roster-as-code`
 
@@ -27,3 +27,5 @@ passes: the band tests green over the stand-in host
 - recommended: the unoffered swap target that slice 03 reported on the `routing` note moves to the `roster` note, reported from the first spawn on (before any spawn no agent listing has offered anything, so a refresh would report every swapped role falsely) and kept while the role still names a type not offered (source: spec, "Otherwise the default agent spawns and the entry is reported as naming no offered agent"; slice 03's assumption "until slice 04 adds the `roster` band section")
 - recommended: an invalid `## Routing` value stays on the `routing` note alone (`routing ignored: ...`); the roster note drops roster.mjs's matching `## Routing: ... ; ignored` line so the band shows it once, beside the key's deprecation line (source: spec, Run pane mod, band and toasts, "a new `roster` note section beside `routing`"; "Each problem is one band-ready line")
 - recommended: the band draws the roster note right after the routing note (source: spec, "beside `routing`, `crew`, `mark` and `worktrees`")
+
+clean. Review record: .forge/review/roster-as-code-04.md. Merged at f8f0396.
