@@ -101,3 +101,9 @@ test('GLOSSARY.md: forge.md\'s sections no longer list the deprecated policy ski
   assert.ok(host);
   assert.doesNotMatch(host, /policy skills/);
 });
+
+test('docs/contracts.md: Names rows for the roster file and bin/roster.mjs', () => {
+  const contracts = read(repo, 'docs', 'contracts.md');
+  assert.match(contracts, /^\| Roster \| `docs\/agents\/forge\.yaml`/m);
+  assert.match(contracts, /^\| Slot skill \| `node "\$\{CLAUDE_PLUGIN_ROOT\}\/bin\/roster\.mjs" <slot> --project <host>`/m);
+});
