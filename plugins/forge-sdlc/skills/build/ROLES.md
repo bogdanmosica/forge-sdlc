@@ -2,7 +2,7 @@
 
 Each of the seven **roles** of the loop is filled by `forge-sdlc:<role>` unless the host's **roster**, `docs/agents/forge.yaml`, names another agent under `roles.<role>.agent`. This file is what a replacement has to honour, written for the owner choosing one: the pointers its brief carries, the report its lead waits for, the evidence it leaves, and the hooks that hold it whoever fills the role. A swapped-in agent gets the same brief as the default plus one line, `role contract: <plugin root>/skills/build/ROLES.md#<role>`, pointing at its section here. The [member call](MEMBERS.md) is the same for every role. Read by path, this file keeps its plugin-root variable unresolved: read each `${CLAUDE_PLUGIN_ROOT}` below as the plugin root.
 
-Every member is held by `context-budget` (a subagent's context past the host's `## Budgets` `agent_context` denies its next call; it reports what is left and its lead starts a continuation) and by `protected-branch` (no edit or commit on the default or a protected branch). ADR 0011's write scopes become the replacement's to honour.
+Every member is held by `context-budget` (a subagent's context past the host's `## Budgets` `agent_context` denies its next call; it reports what is left and its lead starts a continuation) by `protected-branch` (no edit or commit on the default or a protected branch), and, when the roster sets `enforce: true`, by `roster-guard` (an Agent or Skill call outside the roster is denied, the member's as well as the lead's). ADR 0011's write scopes become the replacement's to honour.
 
 ## researcher
 
@@ -26,7 +26,7 @@ Default `forge-sdlc:prototyper`, started by wayfinder for a `wayfinder:prototype
 
 Default `forge-sdlc:spec-writer`, started by the spec skill once `intent.md` is committed with no open assumption. It has no Bash, so its slots, `spec-writer.codebase-design` and `policy`, reach it resolved in its prompt.
 
-- **Inputs.** The slug, the to-spec file, SPEC-EXTRAS.md, `intent.md`, `map.md` and its closed tickets (when present), the glossary, the ADR folder, and the policy skills (or none).
+- **Inputs.** The slug, the to-spec file, SPEC-EXTRAS.md, `intent.md`, `map.md` and its closed tickets (when present), the glossary, the ADR folder, the `spec-writer.codebase-design` slot's skill (or `disabled`), and the policy skills (or none).
 - **Report.** Four lines: the spec path, the user-story count, the flagged concerns count, and the assumption lines as `<n> recommended, <n> open`.
 - **Evidence.** `docs/efforts/<slug>/spec.md`, its only write, with the SPEC-EXTRAS frontmatter, every to-spec section and the three extras; the lead commits it for Gate 2.
 - **Hooks.** `context-budget`; `spec-frozen` denies an edit to the spec once the effort is in build.
@@ -69,7 +69,7 @@ Default `forge-sdlc:merger`, started by build, one call per slice whose implemen
 
 ## Slots
 
-A **slot** is a named point where a role or stage calls a skill. The rule, the same at every call site: from the host, run `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" <slot> --project <host>`, call the skill it prints, and skip the call when it prints `disabled`. For `policy` it prints the skill names comma-separated, each called in turn, or `none`, which calls none. A skipped call changes nothing else: the step still ends on its own "Done when". A member without Bash (the spec-writer, the reviewer) gets the printed skill as a pointer line from its lead, which runs the command for it. A required slot is never `disabled`: the roster reports the attempt and keeps the default.
+A **slot** is a named point where a role or stage calls a skill. The rule, the same at every call site: from the host, run `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" <slot> --project <host>`, call the skill it prints, and skip the call when it prints `disabled`. For `policy` it prints the skill names comma-separated, each called in turn, or `none`, which calls none. A skipped call changes nothing else: the step still ends on its own "Done when". Where the lead resolves a slot for its member, the member gets the printed skill as a pointer line: the spec skill for the spec-writer, which has no Bash, and slice-review for the reviewer's Bugs and security axis (the reviewer keeps Bash, but its lead resolves `policy` once for the axis). A required slot is never `disabled`: the roster reports the attempt and keeps the default.
 
 | Slot | Default skill | Kind | Call site |
 | --- | --- | --- | --- |

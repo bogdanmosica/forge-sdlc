@@ -87,3 +87,17 @@ test('README: a roster section linking ROLES.md, the roster-guard row, init and 
   assert.match(readme, /`\/forge agents`[^\n]*roster/, 'the panel shows the roster');
   assert.doesNotMatch(readme, /Two optional sections of `docs\/agents\/forge\.md` feed it\. `## Routing` routes/, 'routing is pointed at forge.yaml');
 });
+
+test('ROLES.md: roster-guard holds every member under enforce, the spec-writer is given its codebase-design slot, the reviewer keeps Bash', () => {
+  const roles = read(plugin, 'skills', 'build', 'ROLES.md');
+  assert.match(roles, /roster-guard[^\n]*enforce: true|enforce: true[^\n]*roster-guard/, 'roster-guard among the hooks on every member');
+  const specWriter = roles.split(/^## spec-writer$/m)[1].split(/^## /m)[0];
+  assert.match(specWriter, /\*\*Inputs\.\*\*[^\n]*spec-writer\.codebase-design/, 'the slot is on the Inputs line');
+  assert.doesNotMatch(roles, /without Bash \(the spec-writer, the reviewer\)/, 'agents/reviewer.md keeps Bash');
+});
+
+test('GLOSSARY.md: forge.md\'s sections no longer list the deprecated policy skills', () => {
+  const host = read(repo, 'GLOSSARY.md').split('\n').find((l) => l.startsWith('- **host config**'));
+  assert.ok(host);
+  assert.doesNotMatch(host, /policy skills/);
+});
