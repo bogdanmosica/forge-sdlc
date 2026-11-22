@@ -22,6 +22,17 @@
  */
 
 export const PLUGIN = 'forge-sdlc';
+export const EFFORTS = /** @type {const} */ (['low', 'medium', 'high', 'xhigh', 'max']);
+
+// A model alias Claude Code accepts, or a full id (`claude-opus-5-5`, with or
+// without the `[1m]` context suffix). Values a host can mean, nothing else.
+const ALIASES = new Set(['opus', 'sonnet', 'haiku', 'fable', 'best', 'default', 'opusplan', 'inherit']);
+const FULL_ID = /^claude-[a-z0-9][a-z0-9-]*(\[1m\])?$/;
+/** @param {unknown} v @returns {v is string} */
+export const isModel = (v) => typeof v === 'string' && (ALIASES.has(v) || FULL_ID.test(v));
+/** @param {unknown} v @returns {v is Effort} */
+export const isEffort = (v) => typeof v === 'string' && /** @type {readonly string[]} */ (EFFORTS).includes(v);
+
 export const ROLES = ['researcher', 'prototyper', 'spec-writer', 'implementer', 'verifier', 'reviewer', 'merger'];
 
 // Each slot's default skill, and whether `disabled` may replace it.
