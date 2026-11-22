@@ -56,12 +56,13 @@ Engineering, in this plugin. Sessions read `docs/design.md`, `plugins/forge-sdlc
   - forge-sdlc first; prior-sdlc ports the same schema as a follow-on effort in its own repository.
   - Configuration by default, governance opt-in with `enforce: true`.
   - Roles: replace and model/effort. Slots: replace, or disable when optional.
-  - Swap mechanism: `bin/roster.mjs` resolver run by the lead per call, the mod for model/effort (revisited if Rewriting a call's target finds a transparent path).
+  - Swap mechanism: `bin/roster.mjs` resolver run by the lead per call, the mod for model/effort (revised by The forge.yaml schema: roles swap in the mod).
   - Bad entries ignored one by one and reported in the band; no file, no change.
   - Enforcement accepted at `risk: high`, so the effort runs attended from Gate 1.
 - [Inventory of roles and skill slots](../../../.scratch/roster-as-code/issues/03-inventory-of-roles-and-skill-slots.md): seven roles, all dispatched through MEMBERS.md; six proposed skill slots (required: `implementer.tdd`, `prototyper.prototype`, `grilling`; optional: `spec-writer.codebase-design`, `domain-modeling`, `policy`); the upstream procedures read by file are not slots in v1.
 - [YAML without a dependency](../../../.scratch/roster-as-code/issues/01-yaml-without-a-dependency.md): a strict-subset parser in one pure no-import `.mjs` under `hooks/`, shared by `lib.mjs` and the mod, errors located and per entry; no vendored parser.
 - [Rewriting a call's target](../../../.scratch/roster-as-code/issues/02-rewriting-a-calls-target.md): roles can be swapped transparently by the mod at `agent.spawn` (not PreToolUse, which auto mode refuses); skills have no documented transparent swap; a PreToolUse hook can deny Agent/Skill calls and tell lead from member.
+- [The forge.yaml schema](../../../.scratch/roster-as-code/issues/04-the-forge-yaml-schema.md): roles swapped by the mod at `agent.spawn`, slots through `bin/roster.mjs`; `version: 1`, `enforce`, `roles.<role>.{agent,model,effort}`, `slots.<slot>: <skill>|disabled`, `policy` a list; six slots, three required; unknown keys reported; a role-contract doc; roster and slot in the glossary.
 
 ## Not yet specified
 

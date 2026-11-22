@@ -19,6 +19,8 @@ The leading words of forge-sdlc, one line each. The design ([docs/design.md](doc
 - **clean**: the verdict of a slice whose last review round has no Important finding and whose verify record is fresh and green; only a clean slice merges.
 - **effort branch**: `feat/<slug>`, the only branch an effort pushes; every artifact, research note and slice merge lands on it, and a human merges it.
 - **assumption line**: one bullet under `## Assumptions to confirm`, either `recommended: <reading taken> (source: ...)`, which lets the stage continue, or `open: <question>`, which only the owner settles.
-- **policy skill**: a host skill named in `forge.md` (`## Policy skills`) that the spec-writer and the reviewer apply by name; what it cannot resolve becomes a flagged concern.
+- **policy skill**: a host skill the spec-writer and the reviewer apply by name, listed in the roster's `policy` slot (formerly `## Policy skills` in `forge.md`, still read while deprecated); what it cannot resolve becomes a flagged concern.
 - **tripwire**: the upstream drift check, `UPSTREAM.lock` read by the `skills-version` hook and `skill-path.mjs --check`: a missing, changed or broken mattpocock-skills warns instead of silently misreading.
-- **host config**: `docs/agents/forge.md`, written by `/forge-sdlc:init`, one `- key: value` bullet per line under a `## Section`: proof commands, formatter, branches, worktrees, gates, risk globs, policy skills, test globs.
+- **host config**: `docs/agents/forge.md`, plus the roster `docs/agents/forge.yaml` when present; forge.md is written by `/forge-sdlc:init`, one `- key: value` bullet per line under a `## Section`: proof commands, formatter, branches, worktrees, gates, risk globs, policy skills, test globs.
+- **roster**: the host's choice of which agent fills each role and which skill fills each slot, with each role's model and effort, in `docs/agents/forge.yaml`; without it, the plugin's own agents and skills fill every role and slot.
+- **slot**: a named point where a role or stage calls a skill; a required slot can be swapped for another skill, an optional one also disabled.
