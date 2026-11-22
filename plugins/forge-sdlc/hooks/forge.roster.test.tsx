@@ -142,3 +142,40 @@ test('a roster with no policy shows the policy slot as none', async ($, on) => {
   expect(slots).toContainEqual(expect.stringMatching(/^implementer\.tdd +mattpocock-skills:tdd$/));
   await ui.unmount();
 });
+
+test('without forge.yaml the agents show their frontmatter and no slots table, ## Routing or not', async ($, on) => {
+  const forgeMd = '# forge\n\n## Routing\n\n- model.reviewer: sonnet\n- effort.merger: high\n';
+  seat(on, { ...AGENTS, 'docs/agents/forge.md': forgeMd });
+  await start($);
+  await forge($, 'agents');
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const tree = await ui.drawn();
+    expect(textsUnder(tree, 'agents').join('\n'), surface).toBe(
+      [
+        'forge-sdlc:implementer',
+        '  claude-opus-5-5 · high',
+        '  Builds one slice.',
+        'forge-sdlc:merger',
+        '  claude-sonnet-5-5 · low',
+        '  Takes one finished slice to merge.',
+        'forge-sdlc:reviewer',
+        '  claude-opus-5-5 · high',
+        '  Reviews one axis of one slice.',
+      ].join('\n'),
+    );
+    expect(textsUnder(tree, 'slots'), surface).toEqual([]);
+    await ui.unmount();
+  }
+});
+
+test('a roster file that does not parse still shows the defaults it falls back to', async ($, on) => {
+  seat(on, { ...AGENTS, 'docs/agents/forge.yaml': 'version: 1\nroles: [\n' });
+  await start($);
+  await forge($, 'agents');
+  const ui = await mount($, 'terminal');
+  const tree = await ui.drawn();
+  expect(textsUnder(tree, 'agents').join('\n')).toMatch(/forge-sdlc:reviewer\n {2}claude-opus-5-5 · high\n/);
+  expect(textsUnder(tree, 'slots')).toContainEqual(expect.stringMatching(/^grilling +mattpocock-skills:grilling$/));
+  await ui.unmount();
+});
