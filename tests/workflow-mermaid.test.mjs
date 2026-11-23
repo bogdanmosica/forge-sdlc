@@ -104,3 +104,57 @@ test('--effort with no state record draws the loop unpositioned, as without --ef
   assert.equal(out, mermaid(dir));
   assert.doesNotMatch(out, /:::(passed|current|ahead|stopped)$/m);
 });
+
+/** Every line of Mermaid A is one of these: the init line, the header, a comment, a box, a hexagon, a plain or thick edge, a classDef. */
+const LINE_FORMS = [
+  /^%%\{init: \{"flowchart": \{"wrappingWidth": 320\}\}\}%%$/,
+  /^flowchart TD$/,
+  /^%% [^\n]*$/,
+  /^ {2}\w+\["[^"]*"\](:::\w+)?$/,
+  /^ {2}G\d\{\{"[^"]*"\}\}:::\w+$/,
+  /^ {2}\w+ --> \w+$/,
+  /^ {2}G\d (-->|==>)\|"[^"]*"\| \w+$/,
+  /^ {2}classDef \w+ [\w:#,.\- ]+$/,
+];
+/** The only markup inside a label: <br/>; the rest is escaped. */
+const LABEL_MARKUP = /<(?!br\/>)|(?<!<br\/)>/;
+
+test('only {{ }}, ==>, :::, <br/> and plain edges, and no edge label over the prototype\'s wrap length, on every kind of host', () => {
+  const hosts = [
+    { dir: mermaidHost() },
+    { dir: mermaidHost({ yaml: ['version: 1', 'workflow:', '  policy: autonomous', ''].join('\n') }) },
+    { dir: mermaidHost({ yaml: ['version: 1', 'workflow:', '  policy: attended', '  gates:', '    intent: policy', '    spec: policy', ''].join('\n') }) },
+    { dir: mermaidHost({ config: [BRANCHES_ONLY, '## Gates', '- policy: attended', '- spec: only-on-open', ''].join('\n') }) },
+    { dir: mermaidHost({ yaml: PLAN_ATTENDED }), state: { stage: 'plan', gate: 'plan', stop: 'attended', risk: 'normal' } },
+    { dir: mermaidHost({ yaml: PLAN_ATTENDED }), state: { stage: 'spec', gate: 'spec', stop: 'flagged', risk: 'normal' } },
+    { dir: mermaidHost(), state: { stage: 'build', gate: 'none', stop: 'none', risk: 'high' } },
+  ];
+  for (const { dir, state } of hosts) {
+    if (state) writeState(dir, { efforts: { demo: { ...state, branch: 'feat/demo' } } });
+    const out = mermaid(dir, state ? ['--effort', 'demo'] : []);
+    for (const line of out.trimEnd().split('\n')) {
+      assert.ok(LINE_FORMS.some((form) => form.test(line)), `not a known form: ${line}`);
+      for (const [, label] of line.matchAll(/"([^"]*)"/g)) assert.doesNotMatch(label, LABEL_MARKUP, line);
+    }
+    const labels = [...out.matchAll(/^ {2}G\d (?:-->|==>)\|"([^"]*)"\|/gm)].map((m) => m[1]);
+    assert.equal(labels.length, 4);
+    for (const label of labels) assert.ok(label.length <= 40, `edge label over 40 characters: ${label}`);
+  }
+});
+
+test('--mermaid with --gate, --effort without --mermaid and an empty --effort are bad usage: exit 2, usage on stderr', () => {
+  const dir = mermaidHost();
+  for (const args of [['--mermaid', '--gate', 'plan'], ['--effort', 'demo'], ['--mermaid', '--effort', '']]) {
+    const r = run([...args, '--project', dir], dir);
+    assert.equal(r.status, 2, args.join(' '));
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /^usage: workflow\.mjs .*--mermaid \[--effort <slug>\]/);
+  }
+});
+
+test('the README\'s Mermaid block equals --mermaid on a host with no forge.yaml and no ## Gates', () => {
+  const readme = readFileSync(path.join(root, 'README.md'), 'utf8');
+  const blocks = [...readme.matchAll(/^\`\`\`mermaid\n([\s\S]*?)^\`\`\`$/gm)].map((m) => m[1]);
+  assert.equal(blocks.length, 1, 'one Mermaid block in the README');
+  assert.equal(blocks[0], mermaid(mermaidHost()), 'regenerate it with: node plugins/forge-sdlc/bin/workflow.mjs --mermaid on a host with no settings');
+});
