@@ -12,7 +12,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-import { DEFAULT_BRANCHES, git, globOfShape, localBranches, readHostConfig, readState } from '../hooks/scripts/lib.mjs';
+import { DEFAULT_BRANCHES, git, globOfShape, localBranches, readHostConfig, readState, readWorkflow } from '../hooks/scripts/lib.mjs';
 
 /** The command after each stage: the human running it is the approval of the gate the effort waits at. */
 const NEXT = { map: 'map', intent: 'spec', spec: 'plan', plan: 'build', build: 'build', built: 'none' };
@@ -47,6 +47,12 @@ const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
 /** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
 const policy = config?.gates?.policy === 'autonomous' ? 'autonomous' : 'attended';
+
+/** Each gate's `{ mode, source }` from the resolved workflow, positioned on the effort (risk: high makes every gate attended). */
+function gatesOf(slug) {
+  const stages = readWorkflow(dir, slug).stages;
+  return Object.fromEntries(stages.filter((s) => s.gate).map(({ gate }) => [gate.key, { mode: gate.mode, source: gate.source }]));
+}
 
 /** The first ref of the effort branch that exists: local, then origin's. */
 function refOf(slug) {
@@ -92,12 +98,12 @@ function where(slug) {
   if (record?.stage in NEXT) {
     const stop = Object.hasOwn(STOP_WHY, record.stop ?? '') ? record.stop : 'none';
     const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop];
-    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop };
+    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop, gates: gatesOf(slug) };
   }
   const derived = fromArtifacts(slug);
   if (!derived) return null;
   const [stage, gate] = derived;
-  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none' };
+  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none', gates: gatesOf(slug) };
 }
 
 if (list) {
