@@ -33,6 +33,7 @@ import {
 import type { Agent, Group, LoopTone, Skill } from './forge/help';
 import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
 import { readMap } from './run-pane/tracker';
+import { projectDir } from './run-pane/project-dir';
 import { resolveRoster, resolveWorkflow } from './roster.mjs';
 
 const PANE = 'forge';
@@ -41,7 +42,7 @@ const USAGE =
 const OFFICIAL = 'claude-plugins-official';
 // The host's roster, beside its config, read against the session folder as HOST_CONFIG is.
 const ROSTER_FILE = 'docs/agents/forge.yaml';
-// The run state the loop is positioned from, read as the roster is.
+// The run state the loop is positioned from, read in the host dir as the run pane reads it.
 const STATE_FILE = '.forge/state.json';
 // How the loop tab paints each row of the diagram (forge/help.ts loopRows).
 const TONE: Record<LoopTone, { color?: string; bold?: boolean; dimColor?: boolean }> = {
@@ -143,15 +144,16 @@ async function readOrUndefined($: EngineInterface, path: string): Promise<string
   }
 }
 
-// The newest effort's record in .forge/state.json with its slug: the effort the
+// The newest effort's record in the host's .forge/state.json (projectDir) with its slug: the effort the
 // run pane follows, the newest map under docs/efforts. Undefined when there is
 // no map, no state or no record for it: the loop is then drawn unpositioned.
 async function newestEffort($: EngineInterface): Promise<Record<string, unknown> | undefined> {
   try {
     const map = await readMap({ list: (path) => $.fs.list(path), read: (path) => $.fs.read(path) }, new Map());
-    const text = map ? await readOrUndefined($, STATE_FILE) : undefined;
+    const text = map ? await readOrUndefined($, `${await projectDir($)}/${STATE_FILE}`) : undefined;
     if (!map || text === undefined) return undefined;
-    const record: unknown = (JSON.parse(text) as { efforts?: Record<string, unknown> } | null)?.efforts?.[map.slug];
+    const efforts = (JSON.parse(text) as { efforts?: Record<string, unknown> } | null)?.efforts;
+    const record: unknown = efforts && Object.hasOwn(efforts, map.slug) ? efforts[map.slug] : undefined;
     return record && typeof record === 'object' ? { ...record, slug: map.slug } : undefined;
   } catch {
     return undefined;
