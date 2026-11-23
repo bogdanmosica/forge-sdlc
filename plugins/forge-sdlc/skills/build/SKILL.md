@@ -14,9 +14,9 @@ Prompts to agents are **pointers**: paths, ticket ids, branch names, one per lin
 - `docs/efforts/<slug>/plan.md` is committed on `feat/<slug>` (`git log -1 -- docs/efforts/<slug>/plan.md` prints a commit).
 - `.forge/state.json` reads `stage: plan`, `gate: plan` for the effort; a re-run reads `stage: build` and resumes from the slice statuses.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" implement-spec` prints the procedure's file; read it whole. Exit 1 stops with the install line it printed.
-- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs" .` prints the host config: `max_parallel_slices` under Gates (default 3).
+- `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --project .` prints the workflow: keep its `maxParallelSlices`, the host's `max_parallel_slices` (default 3).
 
-Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:plan <slug>`). Done when plan.md is committed, the state reads `gate: plan` (or `stage: build`), and the implement-spec file is read.
+Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:plan <slug>`). Done when plan.md is committed, the state reads `gate: plan` (or `stage: build`), the implement-spec file is read, and you hold `maxParallelSlices`.
 
 ## 2. Follow implement-spec under the frame
 
