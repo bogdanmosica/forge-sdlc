@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -68,4 +68,54 @@ test('stop: attended reads was-attended when the current settings no longer make
     const r = run(dir, 'x');
     assert.deepEqual({ stop: r.stop, why: r.why }, { stop: 'attended', why: 'gate plan was attended in forge.yaml' }, name);
   }
+});
+
+test('policy: workflow.policy in forge.yaml wins over ## Gates policy', () => {
+  const config = forgeMd().replace('- spec: always', '- policy: attended');
+  const dir = stateHost({ config, yaml: 'workflow:\n  policy: autonomous\n', efforts: { x: effort('spec', 'spec') } });
+  assert.equal(run(dir, 'x').policy, 'autonomous');
+});
+
+test('a host with ## Gates and no forge.yaml prints what it printed before, apart from gates', () => {
+  const config = forgeMd().replace('- spec: always', '- policy: autonomous\n- spec: only-on-open');
+  const dir = stateHost({ config, efforts: { x: effort('spec', 'spec', { stop: 'flagged' }) } });
+  const r = run(dir, 'x');
+  assert.deepEqual(Object.keys(r), ['slug', 'stage', 'gate', 'next', 'why', 'source', 'policy', 'stop', 'gates']);
+  const { gates, ...before } = r;
+  assert.deepEqual(before, { slug: 'x', stage: 'spec', gate: 'spec', next: 'plan', why: 'a flagged concern waits for the owner', source: 'state', policy: 'autonomous', stop: 'flagged' });
+  assert.deepEqual(gates, {
+    intent: { mode: 'policy', source: 'policy in forge.md ## Gates' },
+    spec: { mode: 'policy', source: 'spec in forge.md ## Gates' },
+    plan: { mode: 'policy', source: 'policy in forge.md ## Gates' },
+    pr: { mode: 'owner', source: 'always' },
+  });
+});
+
+test('gates: a risk-high effort reads every gate attended by risk: high', () => {
+  const dir = stateHost({ yaml: 'workflow:\n  policy: autonomous\n', efforts: { x: effort('intent', 'intent', { risk: 'high', stop: 'risk-high' }) } });
+  const { gates } = run(dir, 'x');
+  assert.deepEqual([gates.intent, gates.spec, gates.plan], Array(3).fill({ mode: 'attended', source: 'risk: high' }));
+  assert.deepEqual(gates.pr, { mode: 'owner', source: 'always' });
+});
+
+test('--list entries carry gates and the attended why', () => {
+  const dir = stateHost({ yaml: 'workflow:\n  gates:\n    plan: attended\n', efforts: { a: effort('plan', 'plan', { stop: 'attended' }), b: effort('spec', 'spec') } });
+  const list = run('--list', dir);
+  assert.deepEqual(list.map((e) => [e.slug, e.stop, e.why, e.gates.plan.source]), [
+    ['a', 'attended', 'gate plan is attended in forge.yaml (gates.plan)', 'gates.plan in forge.yaml'],
+    ['b', 'none', 'Gate 2: running this approves spec.md', 'gates.plan in forge.yaml'],
+  ]);
+});
+
+/** The stop union a declaration or contract lists, as an array of its quoted names in order. */
+const quoted = (text) => [...text.matchAll(/'([a-z-]+)'/g)].map((m) => m[1]);
+
+test('the state contract lists the four stops, attended last: hooks/types/index.d.ts and docs/contracts.md', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const types = readFileSync(path.join(root, 'plugins', 'forge-sdlc', 'hooks', 'types', 'index.d.ts'), 'utf8');
+  const union = /export type ForgeStop = ([^;]+);/.exec(types)?.[1] ?? '';
+  assert.deepEqual(quoted(union), ['open', 'flagged', 'risk-high', 'attended']);
+  const contracts = readFileSync(path.join(root, 'docs', 'contracts.md'), 'utf8');
+  assert.match(contracts, /"stop": "open \| flagged \| risk-high \| attended"/);
+  assert.match(contracts, /`stop` is the state's `stop` \(`open`, `flagged`, `risk-high`, `attended`\)/);
 });
