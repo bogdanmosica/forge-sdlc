@@ -54,6 +54,67 @@ test('every workflow: key is optional: one gate set, the rest from the global po
   assert.equal(p.sources.plan, 'workflow.policy in forge.yaml');
 });
 
+// The precedence of a gate's mode, first match wins, one case per row of the spec's table.
+const GATES_MD = (...bullets) => forgeMd('## Gates', ...bullets.map((b) => `- ${b}`));
+
+test('precedence 1: gates.<key> in forge.yaml wins over workflow.policy and every ## Gates bullet', () => {
+  const r = resolveRoster(
+    yaml('workflow:', '  policy: autonomous', '  gates:', '    spec: attended'),
+    GATES_MD('policy: autonomous', 'spec: only-on-open'),
+  ).workflow;
+  assert.equal(r.gates.spec, 'attended');
+  assert.equal(r.sources.spec, 'gates.spec in forge.yaml');
+});
+
+test('precedence 2: ## Gates spec: only-on-open makes Gate 2 policy when forge.yaml sets neither workflow.policy nor gates.spec', () => {
+  for (const text of [undefined, yaml('workflow:', '  gates:', '    plan: attended')]) {
+    const r = resolveRoster(text, GATES_MD('policy: attended', 'spec: only-on-open')).workflow;
+    assert.equal(r.gates.spec, 'policy');
+    assert.equal(r.sources.spec, 'spec in forge.md ## Gates');
+    assert.equal(r.gates.intent, 'attended');
+    assert.equal(r.sources.intent, 'policy in forge.md ## Gates');
+  }
+  const set = resolveRoster(yaml('workflow:', '  policy: attended'), GATES_MD('spec: only-on-open')).workflow;
+  assert.equal(set.gates.spec, 'attended');
+  assert.equal(set.sources.spec, 'workflow.policy in forge.yaml');
+});
+
+test('precedence 3a: workflow.policy in forge.yaml wins over ## Gates policy', () => {
+  const r = resolveRoster(yaml('workflow:', '  policy: attended'), GATES_MD('policy: autonomous')).workflow;
+  assert.equal(r.policy, 'attended');
+  assert.deepEqual(r.gates, { intent: 'attended', spec: 'attended', plan: 'attended' });
+  assert.equal(r.sources.policy, 'workflow.policy in forge.yaml');
+  assert.equal(r.sources.plan, 'workflow.policy in forge.yaml');
+});
+
+test('precedence 3b: ## Gates policy decides when forge.yaml sets no policy; autonomous gives mode policy, anything else attended', () => {
+  const auto = resolveRoster(undefined, GATES_MD('policy: autonomous')).workflow;
+  assert.equal(auto.policy, 'autonomous');
+  assert.deepEqual(auto.gates, { intent: 'policy', spec: 'policy', plan: 'policy' });
+  assert.equal(auto.sources.policy, 'policy in forge.md ## Gates');
+  assert.equal(auto.sources.intent, 'policy in forge.md ## Gates');
+  const other = resolveRoster(yaml('workflow:', '  max_parallel_slices: 2'), GATES_MD('policy: sometimes')).workflow;
+  assert.equal(other.policy, 'attended');
+  assert.deepEqual(other.gates, { intent: 'attended', spec: 'attended', plan: 'attended' });
+  assert.equal(other.sources.spec, 'policy in forge.md ## Gates');
+});
+
+test('precedence 3c: with neither file setting a policy every gate is attended by default', () => {
+  const r = resolveRoster(yaml('workflow:', '  max_parallel_slices: 2'), GATES_MD('max_parallel_slices: 4')).workflow;
+  assert.deepEqual(r.gates, { intent: 'attended', spec: 'attended', plan: 'attended' });
+  assert.equal(r.sources.policy, 'default');
+  assert.equal(r.sources.spec, 'default');
+});
+
+test('max_parallel_slices: forge.yaml, else ## Gates, else 3', () => {
+  const both = resolveRoster(yaml('workflow:', '  max_parallel_slices: 2'), GATES_MD('max_parallel_slices: 4')).workflow;
+  assert.equal(both.maxParallelSlices, 2);
+  assert.equal(both.sources.maxParallelSlices, 'workflow.max_parallel_slices in forge.yaml');
+  const md = resolveRoster(undefined, GATES_MD('max_parallel_slices: 4')).workflow;
+  assert.equal(md.maxParallelSlices, 4);
+  assert.equal(md.sources.maxParallelSlices, 'max_parallel_slices in forge.md ## Gates');
+});
+
 test('workflow is a roster key: an empty workflow: section is no problem and changes nothing', () => {
   const r = resolveRoster(yaml('workflow:'), undefined);
   assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);

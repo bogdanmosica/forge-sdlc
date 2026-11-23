@@ -81,7 +81,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     slots,
     policy: [],
     allow: { agents: [], skills: [] },
-    workflow: workflowOf(NO_SETTINGS),
+    workflow: workflowOf(NO_SETTINGS, forgeConfig),
     problems: [],
   };
   fromForgeMd(roster, forgeConfig);
@@ -151,7 +151,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     const names = list === null ? [] : namesOf(list, `allow.${kind}`, kind === 'agents' ? 'agent type' : 'skill', say);
     if (names) roster.allow[kind] = names;
   }
-  roster.workflow = workflowOf(settingsOf(file, say));
+  roster.workflow = workflowOf(settingsOf(file, say), forgeConfig);
   return roster;
 }
 
@@ -243,6 +243,7 @@ export const MAX_PARALLEL_SLICES = 3;
 /** @type {Settings} */
 const NO_SETTINGS = { gates: {} };
 const YAML = 'in forge.yaml';
+const MD = 'in forge.md ## Gates';
 
 /**
  * forge.yaml's workflow: section, read key by key.
@@ -269,32 +270,42 @@ function settingsOf(file, say) {
 }
 
 /**
- * The workflow knobs: forge.yaml's settings over the defaults, each with its source.
+ * The workflow knobs: forge.yaml's settings over forge.md's `## Gates` over the
+ * defaults, each with its source. A gate's mode is, first match wins: its
+ * `gates.<key>`; for Gate 2, `## Gates` `spec: only-on-open` when forge.yaml
+ * sets neither `workflow.policy` nor `gates.spec`; the global policy
+ * (`workflow.policy`, else `## Gates` `policy`, else `attended`), where
+ * `autonomous` is mode `policy` and anything else `attended`.
  * @param {Settings} settings
+ * @param {ForgeConfig | undefined} config
  * @returns {Workflow}
  */
-function workflowOf(settings) {
-  const policy = settings.policy ?? 'attended';
-  const policySource = settings.policy ? `workflow.policy ${YAML}` : 'default';
+function workflowOf(settings, config) {
+  const md = sectionOf(config, 'gates');
+  const mdPolicy = typeof md.policy === 'string' ? md.policy.trim() : undefined;
+  const mdMax = typeof md.max_parallel_slices === 'string' && /^\d+$/.test(md.max_parallel_slices.trim()) ? Number(md.max_parallel_slices.trim()) : 0;
+  /** @type {Policy} */
+  let policy = 'attended';
+  let policySource = 'default';
+  if (settings.policy) [policy, policySource] = [settings.policy, `workflow.policy ${YAML}`];
+  else if (mdPolicy !== undefined) [policy, policySource] = [mdPolicy === 'autonomous' ? 'autonomous' : 'attended', `policy ${MD}`];
+  let max = MAX_PARALLEL_SLICES;
+  let maxSource = 'default';
+  if (settings.maxParallelSlices) [max, maxSource] = [settings.maxParallelSlices, `workflow.max_parallel_slices ${YAML}`];
+  else if (mdMax > 0) [max, maxSource] = [mdMax, `max_parallel_slices ${MD}`];
   /** @type {Workflow} */
   const out = {
     policy,
-    maxParallelSlices: settings.maxParallelSlices ?? MAX_PARALLEL_SLICES,
+    maxParallelSlices: max,
     gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
-    sources: {
-      policy: policySource,
-      maxParallelSlices: settings.maxParallelSlices ? `workflow.max_parallel_slices ${YAML}` : 'default',
-      intent: policySource,
-      spec: policySource,
-      plan: policySource,
-    },
+    sources: { policy: policySource, maxParallelSlices: maxSource, intent: policySource, spec: policySource, plan: policySource },
   };
+  const onlyOnOpen = !settings.policy && !settings.gates.spec && String(md.spec ?? '').trim() === 'only-on-open';
   for (const gate of GATE_KEYS) {
     const set = settings.gates[gate];
-    if (set) {
-      out.gates[gate] = set;
-      out.sources[gate] = `gates.${gate} ${YAML}`;
-    } else out.gates[gate] = policy === 'autonomous' ? 'policy' : 'attended';
+    if (set) [out.gates[gate], out.sources[gate]] = [set, `gates.${gate} ${YAML}`];
+    else if (gate === 'spec' && onlyOnOpen) [out.gates[gate], out.sources[gate]] = ['policy', `spec ${MD}`];
+    else out.gates[gate] = policy === 'autonomous' ? 'policy' : 'attended';
   }
   return out;
 }
