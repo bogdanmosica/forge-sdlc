@@ -49,9 +49,11 @@ A gate passed in mode `policy` ends its stage's report with this line, `<n>` bei
 | `gates.<key> in forge.yaml` | `gates.<key> policy` |
 | `spec in forge.md ## Gates` | `only-on-open` |
 
+`<key>` is the gate's own key, so a Gate 2 overridden in forge.yaml reads `Gate 2 passed: gates.spec policy, nothing open`.
+
 Wayfinder's Resume continues on any `Gate <n> passed` line into the next stage; changing its prefix means changing wayfinder's Resume and its test with it.
 
-A gate stopped by `open`, `flagged` or `risk-high` reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume; for `risk-high` the report says the effort runs attended from here. A gate stopped by mode `attended` reports its artifact for the owner to read, the stage's next command and the gate's `source`.
+A gate stopped by `open`, `flagged` or `risk-high` reports its reasons and `/forge-sdlc:wayfinder <slug>` to resume; for `risk-high` the report says the effort runs attended from here. The first reason that holds picks the line, so a gate in mode `attended` where `open`, `flagged` or `risk-high` also holds reports as stopped by that reason. A gate stopped by mode `attended` alone reports its artifact for the owner to read, the stage's next command and the gate's `source`.
 
 ## State write
 
