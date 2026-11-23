@@ -336,6 +336,87 @@ function workflowOf(settings, config) {
   return out;
 }
 
+// --- The workflow ------------------------------------------------------------
+// The plugin's workflow.yaml (descriptive: the stages and gates are fixed, the
+// file says what each does) joined with the resolved roster: each role's agent,
+// model and effort, each slot's skill, each gate's mode with its source, and,
+// for an effort, where it stands.
+
+export const STAGES = /** @type {const} */ (['map', 'intent', 'spec', 'plan', 'build', 'built']);
+/** The closed set of stop reasons, in write order. */
+export const STOPS = /** @type {const} */ (['open', 'flagged', 'risk-high', 'attended']);
+
+/**
+ * @typedef {{ role: string, agent: string, model?: string, effort?: Effort, swapped: boolean }} WorkflowRole
+ * @typedef {{ slot: string, skill: string }} WorkflowSlot
+ * @typedef {'passed' | 'current' | 'ahead'} StageStatus
+ * @typedef {'passed' | 'waiting' | 'stopped' | 'ahead'} GateStatus
+ * @typedef {{ key: string, n: number, artifact: string, stops: string[], mode: GateMode | 'owner', source: string, status?: GateStatus }} WorkflowGate
+ * @typedef {{ name: string, does: string, command?: string, roles: WorkflowRole[], slots: WorkflowSlot[], status?: StageStatus, gate?: WorkflowGate }} WorkflowStage
+ * @typedef {{ stages: WorkflowStage[], policy: Policy, maxParallelSlices: number, problems: string[] }} ResolvedWorkflow
+ * @typedef {{ name: string, does: string, command?: string, roles: string[], slots: string[], gate?: { key: string, n: number, artifact: string, stops: string[] } }} Described
+ */
+
+/**
+ * The loop: the plugin's workflow.yaml text joined with a resolved roster.
+ * `agentModels` maps an agent type (`forge-sdlc:implementer`) to its frontmatter
+ * model, read when the roster sets none.
+ * @param {string | undefined} workflowText
+ * @param {Roster | undefined} roster
+ * @param {{ agentModels?: Record<string, string> }} [options]
+ * @returns {ResolvedWorkflow}
+ */
+export function resolveWorkflow(workflowText, roster, options) {
+  const r = roster ?? resolveRoster(undefined, undefined);
+  const agentModels = isMap(options?.agentModels) ? options.agentModels : {};
+  const { value } = parseYamlSubset(String(workflowText ?? ''));
+  const file = isMap(value) ? value : {};
+  const described = Object.entries(isMap(file.stages) ? file.stages : {}).map(([name, s]) => describedOf(name, s));
+  /** @param {string} role @returns {WorkflowRole} */
+  const roleIn = (role) => {
+    const rr = r.roles[role] ?? { agent: `${PLUGIN}:${role}`, swapped: false };
+    const model = rr.model ?? (Object.hasOwn(agentModels, rr.agent) && isModel(agentModels[rr.agent]) ? agentModels[rr.agent] : undefined);
+    return { role, agent: rr.agent, ...(model ? { model } : {}), ...(rr.effort ? { effort: rr.effort } : {}), swapped: rr.swapped };
+  };
+  /** @param {string} slot @returns {WorkflowSlot} */
+  const slotIn = (slot) => ({ slot, skill: slot === 'policy' ? r.policy.join(', ') || 'none' : String(r.slots[slot] ?? '') });
+  /** @param {NonNullable<Described['gate']>} g @returns {WorkflowGate} */
+  const gateIn = (g) => {
+    if (g.key === 'pr') return { ...g, mode: 'owner', source: 'always' };
+    const key = /** @type {GateKey} */ (g.key);
+    return { ...g, mode: r.workflow.gates[key], source: r.workflow.sources[key] };
+  };
+  const stages = described.map((d) => ({
+    name: d.name,
+    does: d.does,
+    ...(d.command ? { command: d.command } : {}),
+    roles: d.roles.map(roleIn),
+    slots: d.slots.map(slotIn),
+    ...(d.gate ? { gate: gateIn(d.gate) } : {}),
+  }));
+  return { stages, policy: r.workflow.policy, maxParallelSlices: r.workflow.maxParallelSlices, problems: [...r.problems] };
+}
+
+/**
+ * One stage of the file as the join reads it.
+ * @param {string} name
+ * @param {unknown} s
+ * @returns {Described}
+ */
+function describedOf(name, s) {
+  const stage = isMap(s) ? s : {};
+  const list = (/** @type {unknown} */ v) => (Array.isArray(v) ? v.map(String) : []);
+  const g = isMap(stage.gate) ? stage.gate : undefined;
+  return {
+    name,
+    does: String(stage.does ?? ''),
+    ...(typeof stage.command === 'string' ? { command: stage.command } : {}),
+    roles: list(stage.roles),
+    slots: list(stage.slots),
+    ...(g ? { gate: { key: String(g.key), n: Number(g.n), artifact: String(g.artifact ?? ''), stops: list(g.stops) } } : {}),
+  };
+}
+
 /** A forge.md section as a map, anything else as none. */
 const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {string} */ name) => {
   const section = isMap(config) ? config[name] : undefined;
