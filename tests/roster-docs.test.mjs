@@ -11,9 +11,9 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const plugin = path.join(repo, 'plugins', 'forge-sdlc');
 const read = (...parts) => readFileSync(path.join(...parts), 'utf8');
 
-test('plugin.json: 0.8.0, a minor for a new host file and hook, with the roster in its description', () => {
+test('plugin.json: 0.8.x, the minor that shipped a new host file and hook, with the roster in its description', () => {
   const manifest = JSON.parse(read(plugin, '.claude-plugin', 'plugin.json'));
-  assert.equal(manifest.version, '0.8.0');
+  assert.match(manifest.version, /^0\.8\.\d+$/);
   assert.match(manifest.description, /roster[^.]*docs\/agents\/forge\.yaml/);
 });
 
