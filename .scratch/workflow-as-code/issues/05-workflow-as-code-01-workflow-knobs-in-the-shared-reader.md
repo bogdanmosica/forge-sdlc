@@ -23,3 +23,10 @@ node --test tests/workflow-reader.test.mjs tests/roster-reader.test.mjs
 ```
 
 passes: the workflow knob, precedence, problem and deprecation cases green, and the roster reader cases still green
+
+## Assumptions
+
+- recommended: `roster.workflow.gates` holds every gate's resolved mode (`attended` | `policy`), and `sources` is flat, `{ policy, maxParallelSlices, intent, spec, plan }`, each a source string or `default` (source: spec "roster.workflow holds the knobs already merged with ## Gates and their sources")
+- recommended: `## Gates` `max_parallel_slices` still applies when forge.yaml sets none (source `max_parallel_slices in forge.md ## Gates`) and gets its own deprecation line to `workflow.max_parallel_slices` (source: spec "A host with no workflow: section reads and runs exactly as today"; "one deprecation line per bullet")
+- recommended: a bad `workflow.max_parallel_slices` gives 3 with source `default`, even over a `## Gates` value; a bad `workflow.policy` or gate value is ignored and falls through the precedence (source: spec user story 13 "replaced by the default 3"; Implementation Decisions "a bad value is a reported problem and is ignored")
+- recommended: an unknown `## Gates` bullet reads "has no docs/agents/forge.yaml equivalent; it stops working when ## Gates is removed", as `## Routing` does; a `spec` value other than `only-on-open` gets the `spec always` line, the value quoted (source: roster reader's `## Routing` lines)
