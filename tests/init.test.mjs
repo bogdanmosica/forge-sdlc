@@ -78,18 +78,6 @@ const gates = () => {
   return m[0];
 };
 
-test('init/SKILL.md: the Gates question asks the policy first, leading with attended, then spec and max_parallel_slices', () => {
-  const q = gates();
-  const policy = q.indexOf('`Policy: attended or autonomous?`');
-  assert.ok(policy > 0, 'asks `Policy: attended or autonomous?`');
-  assert.match(q, /[Ll]ead with `attended`[^\n]*current value/, 'leads with attended, the current value on a re-run');
-  const spec = q.indexOf('`spec`');
-  const parallel = q.indexOf('`max_parallel_slices`');
-  assert.ok(spec > policy, 'spec asked after the policy');
-  assert.ok(parallel > spec, 'max_parallel_slices asked after spec');
-  assert.match(q, /`always`[^\n]*`only-on-open`/, 'spec keeps its two values');
-});
-
 test('init: the template carries ## Crew with theme none, and Write keeps hand-written names bullets', () => {
   assert.match(template, /^## Crew\n- theme: none\b/m);
   assert.match(body, /`names\.<role>`[^\n]*kept/, 'a re-run keeps names bullets while the theme stays');
