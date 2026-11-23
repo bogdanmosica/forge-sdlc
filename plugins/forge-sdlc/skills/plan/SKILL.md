@@ -57,9 +57,10 @@ Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open s
 
 ## 7. Report
 
-Three lines: the plan commit, the tickets (pointers, frontier first), and the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`), with the gate's `source` when its mode is `attended`; a Gate 3 stopped in mode `policy` names its own on the fourth line instead. In mode `policy` a fourth line ends it:
+Three lines: the plan commit, the tickets (pointers, frontier first), and the gate line, picked by the first of the gate's `stops` that holds, as the [gate policy](../wayfinder/GATE-POLICY.md)'s Report line says:
 
-- passed: the [gate policy](../wayfinder/GATE-POLICY.md)'s report line, `Gate 3 passed: <tail>, nothing open`, on which wayfinder's Resume continues into build.
-- stopped: the reason (`risk-high`) and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
+- mode `policy`, passed: the reference's report line, `Gate 3 passed: <tail>, nothing open`, on which wayfinder's Resume continues into build.
+- stopped by `risk-high`, whatever the mode: the reason and `/forge-sdlc:wayfinder <slug>` to resume, as the reference's Report line says.
+- stopped by mode `attended`, none of those holding: the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`), with the gate's `source`.
 
 Done when the state reads back and the report is printed.
