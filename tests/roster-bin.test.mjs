@@ -12,8 +12,11 @@ import { forgeMd, host } from './support/host.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'plugins', 'forge-sdlc', 'bin', 'roster.mjs');
 
-/** A host with this forge.md (default: Branches and Gates only) and, when given, this forge.yaml text. */
-function rosterHost({ config = forgeMd(), yaml } = {}) {
+/** forge.md with Branches only: no deprecated section, so no deprecation line. */
+const BRANCHES_ONLY = ['# forge-sdlc host config', '', '## Branches', '- default: main', ''].join('\n');
+
+/** A host with this forge.md (default: Branches only) and, when given, this forge.yaml text. */
+function rosterHost({ config = BRANCHES_ONLY, yaml } = {}) {
   const { dir } = host({ config });
   if (yaml !== undefined) writeFileSync(path.join(dir, 'docs', 'agents', 'forge.yaml'), yaml);
   return { dir };

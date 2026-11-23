@@ -17,8 +17,21 @@
  *   slots: Record<string, string>,
  *   policy: string[],
  *   allow: { agents: string[], skills: string[] },
+ *   workflow: Workflow,
  *   problems: string[],
  * }} Roster
+ */
+/** @typedef {'attended' | 'autonomous'} Policy */
+/** @typedef {'attended' | 'policy'} GateMode */
+/**
+ * The host's workflow: knobs, merged with forge.md's deprecated `## Gates`;
+ * each knob's source names where it came from (`default` when nowhere).
+ * @typedef {{
+ *   policy: Policy,
+ *   maxParallelSlices: number,
+ *   gates: { intent: GateMode, spec: GateMode, plan: GateMode },
+ *   sources: { policy: string, maxParallelSlices: string, intent: string, spec: string, plan: string },
+ * }} Workflow
  */
 
 export const PLUGIN = 'forge-sdlc';
@@ -68,6 +81,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     slots,
     policy: [],
     allow: { agents: [], skills: [] },
+    workflow: workflowOf(NO_SETTINGS, forgeConfig),
     problems: [],
   };
   fromForgeMd(roster, forgeConfig);
@@ -137,6 +151,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     const names = list === null ? [] : namesOf(list, `allow.${kind}`, kind === 'agents' ? 'agent type' : 'skill', say);
     if (names) roster.allow[kind] = names;
   }
+  roster.workflow = workflowOf(settingsOf(file, say), forgeConfig);
   return roster;
 }
 
@@ -181,7 +196,8 @@ const roleOf = (role, agent, model, effort) => ({
  * forge.md's deprecated sections, read while they last: each valid `## Routing`
  * bullet for a role sets that role's model or effort (forge.yaml, read after,
  * wins key by key), and `## Policy skills` is the policy list until
- * `slots.policy` replaces it. Every bullet still there is one deprecation line.
+ * `slots.policy` replaces it; `## Gates` is merged by workflowOf. Every bullet
+ * still there is one deprecation line.
  * @param {Roster} roster
  * @param {ForgeConfig | undefined} config
  */
@@ -215,6 +231,109 @@ function fromForgeMd(roster, config) {
     if (good.length < names.length)
       roster.problems.push(`## Policy skills: ${keyOf(key)} holds an item that is not a skill name; it is skipped`);
   }
+  for (const [key, value] of Object.entries(sectionOf(config, 'gates'))) {
+    const v = String(value ?? '').trim();
+    const move = Object.hasOwn(GATES_MOVED, key) ? GATES_MOVED[key] : undefined;
+    if (key === 'spec' && v === 'only-on-open') roster.problems.push(`## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in ${ROSTER_FILE}`);
+    else if (key === 'spec')
+      roster.problems.push(`## Gates: spec ${v === 'always' ? v : quote(value)} is deprecated and has no ${ROSTER_FILE} equivalent; Gate 2 follows workflow.policy`);
+    else if (move) roster.problems.push(`## Gates: ${keyOf(key)} is deprecated; move it to ${move} in ${ROSTER_FILE}`);
+    else roster.problems.push(`## Gates: ${keyOf(key)} is deprecated and has no ${ROSTER_FILE} equivalent; it stops working when ## Gates is removed`);
+  }
+}
+
+const ROSTER_FILE = 'docs/agents/forge.yaml';
+/** @type {Record<string, string>} */
+const GATES_MOVED = { policy: 'workflow.policy', max_parallel_slices: 'workflow.max_parallel_slices' };
+
+export const GATE_KEYS = /** @type {const} */ (['intent', 'spec', 'plan']);
+export const MAX_PARALLEL_SLICES = 3;
+
+/**
+ * What forge.yaml's workflow: sets, each value already checked.
+ * (`maxParallelSlices` is `bad` for a value that is reported and replaced by the default.)
+ * @typedef {{ policy?: Policy, maxParallelSlices?: number | 'bad', gates: Partial<Record<GateKey, GateMode>> }} Settings
+ * @typedef {typeof GATE_KEYS[number]} GateKey
+ */
+/** @type {Settings} */
+const NO_SETTINGS = { gates: {} };
+const YAML = 'in forge.yaml';
+const MD = 'in forge.md ## Gates';
+const WORKFLOW_KEYS = ['policy', 'max_parallel_slices', 'gates'];
+
+/**
+ * forge.yaml's workflow: section, read key by key.
+ * @param {Record<string, unknown>} file
+ * @param {(line: string) => void} say
+ * @returns {Settings}
+ */
+function settingsOf(file, say) {
+  /** @type {Settings} */
+  const out = { gates: {} };
+  for (const [key, value] of entriesOf(file, 'workflow', say)) {
+    if (value === null) continue;
+    if (key === 'policy') {
+      if (value === 'attended' || value === 'autonomous') out.policy = value;
+      else say(`workflow.policy ${quote(value)} is not attended or autonomous; ignored`);
+    } else if (key === 'max_parallel_slices') {
+      if (Number.isInteger(value) && Number(value) > 0) out.maxParallelSlices = Number(value);
+      else {
+        say(`workflow.max_parallel_slices ${quote(value)} is not a positive integer; ${MAX_PARALLEL_SLICES} used`);
+        out.maxParallelSlices = 'bad';
+      }
+    } else if (key === 'gates') {
+      if (!isMap(value)) say('workflow.gates is not a map; ignored');
+      for (const [gate, mode] of isMap(value) ? Object.entries(value) : []) {
+        if (gate === 'pr') say('workflow.gates.pr is not a setting: Gate 4 is always the code owner’s; ignored');
+        else if (!GATE_KEYS.includes(/** @type {GateKey} */ (gate))) say(`workflow.gates.${keyOf(gate)} is not a gate (${GATE_KEYS.join(', ')}); ignored`);
+        else if (mode === 'attended' || mode === 'policy') out.gates[/** @type {GateKey} */ (gate)] = mode;
+        else if (mode !== null) say(`workflow.gates.${gate} ${quote(mode)} is not attended or policy; ignored`);
+      }
+    } else if (key === 'stages') say('workflow.stages is not a host setting: the plugin’s workflow.yaml fixes the stages; ignored');
+    else say(`workflow.${keyOf(key)} is not a workflow key (${WORKFLOW_KEYS.join(', ')}); ignored`);
+  }
+  return out;
+}
+
+/**
+ * The workflow knobs: forge.yaml's settings over forge.md's `## Gates` over the
+ * defaults, each with its source. A gate's mode is, first match wins: its
+ * `gates.<key>`; for Gate 2, `## Gates` `spec: only-on-open` when forge.yaml
+ * sets neither `workflow.policy` nor `gates.spec`; the global policy
+ * (`workflow.policy`, else `## Gates` `policy`, else `attended`), where
+ * `autonomous` is mode `policy` and anything else `attended`.
+ * @param {Settings} settings
+ * @param {ForgeConfig | undefined} config
+ * @returns {Workflow}
+ */
+function workflowOf(settings, config) {
+  const md = sectionOf(config, 'gates');
+  const mdPolicy = typeof md.policy === 'string' ? md.policy.trim() : undefined;
+  const mdMax = typeof md.max_parallel_slices === 'string' && /^\d+$/.test(md.max_parallel_slices.trim()) ? Number(md.max_parallel_slices.trim()) : 0;
+  /** @type {Policy} */
+  let policy = 'attended';
+  let policySource = 'default';
+  if (settings.policy) [policy, policySource] = [settings.policy, `workflow.policy ${YAML}`];
+  else if (mdPolicy !== undefined) [policy, policySource] = [mdPolicy === 'autonomous' ? 'autonomous' : 'attended', `policy ${MD}`];
+  let max = MAX_PARALLEL_SLICES;
+  let maxSource = 'default';
+  if (typeof settings.maxParallelSlices === 'number') [max, maxSource] = [settings.maxParallelSlices, `workflow.max_parallel_slices ${YAML}`];
+  else if (!settings.maxParallelSlices && mdMax > 0) [max, maxSource] = [mdMax, `max_parallel_slices ${MD}`];
+  /** @type {Workflow} */
+  const out = {
+    policy,
+    maxParallelSlices: max,
+    gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
+    sources: { policy: policySource, maxParallelSlices: maxSource, intent: policySource, spec: policySource, plan: policySource },
+  };
+  const onlyOnOpen = !settings.policy && !settings.gates.spec && String(md.spec ?? '').trim() === 'only-on-open';
+  for (const gate of GATE_KEYS) {
+    const set = settings.gates[gate];
+    if (set) [out.gates[gate], out.sources[gate]] = [set, `gates.${gate} ${YAML}`];
+    else if (gate === 'spec' && onlyOnOpen) [out.gates[gate], out.sources[gate]] = ['policy', `spec ${MD}`];
+    else out.gates[gate] = policy === 'autonomous' ? 'policy' : 'attended';
+  }
+  return out;
 }
 
 /** A forge.md section as a map, anything else as none. */
@@ -223,7 +342,7 @@ const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {str
   return isMap(section) ? section : {};
 };
 
-const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];
+const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow', 'workflow'];
 const ROLE_FIELDS = ['agent', 'model', 'effort'];
 
 /** An agent type or skill name as the Agent and Skill tools name them. */
