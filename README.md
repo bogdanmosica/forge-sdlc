@@ -47,6 +47,39 @@ slots:
 
 Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sdlc:wayfinder` is the front door: it starts an effort from an idea or `#issue`, and resumes one from its slug, running the next stage and stopping at that stage's gate. The other stage commands rerun one stage by hand.
 
+The loop as `node plugins/forge-sdlc/bin/workflow.mjs --mermaid` draws it for a host with no settings; with `--effort <slug>` it marks where that effort stands. `tests/workflow-mermaid.test.mjs` holds this block equal to the command.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 320}}}%%
+flowchart TD
+%% policy attended
+  map["1 · map<br/>the map and its tickets, worked with the owner<br/>researcher · sonnet<br/>prototyper · opus"]
+  intent["2 · intent<br/>intent.md and the draft PR"]
+  G1{{"Gate 1 · attended · default"}}:::gattended
+  intent --> G1
+  G1 ==>|"you pass it"| spec
+  spec["3 · spec<br/>spec.md under the policy skills<br/>spec-writer · opus"]
+  G2{{"Gate 2 · attended · default"}}:::gattended
+  spec --> G2
+  G2 ==>|"you pass it"| plan
+  plan["4 · plan<br/>plan.md, slices, the quiz"]
+  G3{{"Gate 3 · attended · default"}}:::gattended
+  plan --> G3
+  G3 ==>|"you pass it"| build
+  build["5 · build<br/>one worktree per slice, merged when clean<br/>implementer · opus<br/>verifier · sonnet<br/>reviewer · opus<br/>merger · sonnet"]
+  G4{{"Gate 4 · owner"}}:::gowner
+  build --> G4
+  G4 ==>|"code owner reviews, merges"| built
+  built["6 · built<br/>ready for review; the code owner merges"]
+  classDef passed fill:#dafbe1,stroke:#1a7f37,color:#1f2328
+  classDef current fill:#ddf4ff,stroke:#0969da,stroke-width:3px,color:#1f2328
+  classDef ahead fill:#f6f8fa,stroke:#8c959f,color:#1f2328
+  classDef gpolicy fill:#ffffff,stroke:#1a7f37,color:#1f2328
+  classDef gattended fill:#ffffff,stroke:#9a6700,stroke-dasharray:4 3,color:#1f2328
+  classDef gowner fill:#ffebe9,stroke:#cf222e,color:#1f2328
+  classDef stopped fill:#fff8c5,stroke:#bf8700,stroke-width:3px,color:#1f2328
+```
+
 | Stage | Command | Artifact committed on `feat/<slug>` | Agents | Gate (who decides) |
 | --- | --- | --- | --- | --- |
 | Plan | `/forge-sdlc:wayfinder <idea>` (`/forge-sdlc:intent <slug>` reshapes the Destination) | `map.md`, then `intent.md`; draft PR (or `PR.md`) | researcher, prototyper | 1: the owner accepts the intent, or the policy when nothing is open |
