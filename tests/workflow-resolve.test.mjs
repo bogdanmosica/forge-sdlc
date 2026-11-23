@@ -103,3 +103,43 @@ test('without agentModels a role the roster gives no model has none', () => {
   const w = resolveWorkflow(SHIPPED, resolveRoster(undefined, undefined));
   assert.deepEqual(byName(w).map.roles[0], { role: 'researcher', agent: 'forge-sdlc:researcher', swapped: false });
 });
+
+// Where an effort stands, for each stage and stop it can record (docs/contracts.md:
+// `gate` is the gate the effort waits at, `none` while a stage runs).
+const POSITIONS = [
+  // [stage, gate, stop, stage statuses map…built, gate statuses intent, spec, plan, pr]
+  ['map', 'none', undefined, ['current', 'ahead', 'ahead', 'ahead', 'ahead', 'ahead'], ['ahead', 'ahead', 'ahead', 'ahead']],
+  ['intent', 'intent', undefined, ['passed', 'current', 'ahead', 'ahead', 'ahead', 'ahead'], ['waiting', 'ahead', 'ahead', 'ahead']],
+  ['intent', 'intent', 'open', ['passed', 'current', 'ahead', 'ahead', 'ahead', 'ahead'], ['stopped', 'ahead', 'ahead', 'ahead']],
+  ['spec', 'spec', undefined, ['passed', 'passed', 'current', 'ahead', 'ahead', 'ahead'], ['passed', 'waiting', 'ahead', 'ahead']],
+  ['spec', 'spec', 'flagged', ['passed', 'passed', 'current', 'ahead', 'ahead', 'ahead'], ['passed', 'stopped', 'ahead', 'ahead']],
+  ['plan', 'plan', undefined, ['passed', 'passed', 'passed', 'current', 'ahead', 'ahead'], ['passed', 'passed', 'waiting', 'ahead']],
+  ['plan', 'plan', 'risk-high', ['passed', 'passed', 'passed', 'current', 'ahead', 'ahead'], ['passed', 'passed', 'stopped', 'ahead']],
+  ['plan', 'plan', 'attended', ['passed', 'passed', 'passed', 'current', 'ahead', 'ahead'], ['passed', 'passed', 'stopped', 'ahead']],
+  ['build', 'none', undefined, ['passed', 'passed', 'passed', 'passed', 'current', 'ahead'], ['passed', 'passed', 'passed', 'ahead']],
+  ['built', 'pr', undefined, ['passed', 'passed', 'passed', 'passed', 'passed', 'current'], ['passed', 'passed', 'passed', 'waiting']],
+];
+
+for (const [stage, gate, stop, stageStatus, gateStatus] of POSITIONS) {
+  test(`an effort at stage ${stage}, gate ${gate}${stop ? `, stop ${stop}` : ''}: stages ${stageStatus.join(' ')}; gates ${gateStatus.join(' ')}`, () => {
+    const effort = { slug: 'demo', stage, gate, risk: 'normal', ...(stop ? { stop } : {}) };
+    const w = resolveWorkflow(SHIPPED, resolveRoster(undefined, undefined), { effort });
+    assert.deepEqual(w.stages.map((s) => s.status), stageStatus);
+    assert.deepEqual(w.stages.filter((s) => s.gate).map((s) => s.gate.status), gateStatus);
+    assert.deepEqual(w.effort, { slug: 'demo', stage, gate, stop: stop ?? 'none', risk: 'normal' });
+  });
+}
+
+test('without an effort, or with a stage the loop does not know, nothing is positioned', () => {
+  for (const effort of [undefined, { slug: 'demo', stage: 'shipping', gate: 'none' }, 'plan']) {
+    const w = resolveWorkflow(SHIPPED, resolveRoster(undefined, undefined), { effort });
+    assert.equal(w.effort, null);
+    assert.ok(w.stages.every((s) => !('status' in s) && !(s.gate && 'status' in s.gate)));
+  }
+});
+
+test('a stop outside the closed set reads as none: the gate waits', () => {
+  const w = resolveWorkflow(SHIPPED, resolveRoster(undefined, undefined), { effort: { slug: 'demo', stage: 'spec', gate: 'spec', stop: 'lunch' } });
+  assert.equal(byName(w).spec.gate.status, 'waiting');
+  assert.equal(w.effort.stop, 'none');
+});

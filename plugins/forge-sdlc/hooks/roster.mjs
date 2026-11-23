@@ -353,22 +353,27 @@ export const STOPS = /** @type {const} */ (['open', 'flagged', 'risk-high', 'att
  * @typedef {'passed' | 'waiting' | 'stopped' | 'ahead'} GateStatus
  * @typedef {{ key: string, n: number, artifact: string, stops: string[], mode: GateMode | 'owner', source: string, status?: GateStatus }} WorkflowGate
  * @typedef {{ name: string, does: string, command?: string, roles: WorkflowRole[], slots: WorkflowSlot[], status?: StageStatus, gate?: WorkflowGate }} WorkflowStage
- * @typedef {{ stages: WorkflowStage[], policy: Policy, maxParallelSlices: number, problems: string[] }} ResolvedWorkflow
+ * @typedef {{ slug: string, stage: string, gate: string, stop: string, risk: 'normal' | 'high' }} EffortPosition
+ * @typedef {{ stages: WorkflowStage[], policy: Policy, maxParallelSlices: number, effort: EffortPosition | null, problems: string[] }} ResolvedWorkflow
  * @typedef {{ name: string, does: string, command?: string, roles: string[], slots: string[], gate?: { key: string, n: number, artifact: string, stops: string[] } }} Described
  */
 
 /**
  * The loop: the plugin's workflow.yaml text joined with a resolved roster.
  * `agentModels` maps an agent type (`forge-sdlc:implementer`) to its frontmatter
- * model, read when the roster sets none.
+ * model, read when the roster sets none. `effort`, an effort's record
+ * (`{ slug, stage, gate, stop, risk }`), positions the loop: each stage
+ * passed, current or ahead, and each gate passed, waiting (the record's gate),
+ * stopped (that gate with a stop reason) or ahead.
  * @param {string | undefined} workflowText
  * @param {Roster | undefined} roster
- * @param {{ agentModels?: Record<string, string> }} [options]
+ * @param {{ agentModels?: Record<string, string>, effort?: unknown }} [options]
  * @returns {ResolvedWorkflow}
  */
 export function resolveWorkflow(workflowText, roster, options) {
   const r = roster ?? resolveRoster(undefined, undefined);
   const agentModels = isMap(options?.agentModels) ? options.agentModels : {};
+  const at = positionOf(options?.effort);
   const { value } = parseYamlSubset(String(workflowText ?? ''));
   const file = isMap(value) ? value : {};
   const described = Object.entries(isMap(file.stages) ? file.stages : {}).map(([name, s]) => describedOf(name, s));
@@ -386,15 +391,44 @@ export function resolveWorkflow(workflowText, roster, options) {
     const key = /** @type {GateKey} */ (g.key);
     return { ...g, mode: r.workflow.gates[key], source: r.workflow.sources[key] };
   };
-  const stages = described.map((d) => ({
+  const current = at ? described.findIndex((d) => d.name === at.stage) : -1;
+  const waiting = at ? described.findIndex((d) => d.gate?.key === at.gate) : -1;
+  /** The gate of the stage at index i, against the record's gate, else the stage. @param {number} i @returns {GateStatus} */
+  const gateStatus = (i) => {
+    if (i === waiting) return at?.stop === 'none' ? 'waiting' : 'stopped';
+    return i < (waiting >= 0 ? waiting : current) ? 'passed' : 'ahead';
+  };
+  /** @type {(i: number) => StageStatus} */
+  const stageStatus = (i) => (i < current ? 'passed' : i === current ? 'current' : 'ahead');
+  const stages = described.map((d, i) => ({
     name: d.name,
     does: d.does,
     ...(d.command ? { command: d.command } : {}),
     roles: d.roles.map(roleIn),
     slots: d.slots.map(slotIn),
-    ...(d.gate ? { gate: gateIn(d.gate) } : {}),
+    ...(current >= 0 ? { status: stageStatus(i) } : {}),
+    ...(d.gate ? { gate: { ...gateIn(d.gate), ...(current >= 0 ? { status: gateStatus(i) } : {}) } } : {}),
   }));
-  return { stages, policy: r.workflow.policy, maxParallelSlices: r.workflow.maxParallelSlices, problems: [...r.problems] };
+  return {
+    stages,
+    policy: r.workflow.policy,
+    maxParallelSlices: r.workflow.maxParallelSlices,
+    effort: current >= 0 ? at : null,
+    problems: [...r.problems],
+  };
+}
+
+/**
+ * An effort's record as the loop reads it, or null when it names no stage of
+ * the loop; a gate or stop outside its closed set reads as `none`.
+ * @param {unknown} effort
+ * @returns {EffortPosition | null}
+ */
+function positionOf(effort) {
+  if (!isMap(effort) || !STAGES.includes(/** @type {any} */ (effort.stage))) return null;
+  const gate = ['intent', 'spec', 'plan', 'pr'].includes(/** @type {any} */ (effort.gate)) ? String(effort.gate) : 'none';
+  const stop = STOPS.includes(/** @type {any} */ (effort.stop)) ? String(effort.stop) : 'none';
+  return { slug: String(effort.slug ?? ''), stage: String(effort.stage), gate, stop, risk: effort.risk === 'high' ? 'high' : 'normal' };
 }
 
 /**
