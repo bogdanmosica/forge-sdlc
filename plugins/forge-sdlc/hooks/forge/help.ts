@@ -306,8 +306,21 @@ function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
     const g = s.gate;
     const gt = ` ${cut(gateText(g, effort?.stop ?? 'none'), W - 6)} `;
     out.push({ text: `╰─${gt}${'─'.repeat(W - 3 - gt.length)}╯`, tone: g.status === 'stopped' ? 'stopped' : tone });
+    if (g.status === 'stopped' && effort) for (const line of stopLines(g, effort)) push(`  ${line}`, 'note');
   });
   return out;
+}
+
+// What a stopped gate adds under it: why, from the stop reason (only
+// `attended` names where its setting came from), and the command that resumes.
+function stopLines(g: LoopGate, effort: NonNullable<LoopWorkflow['effort']>): string[] {
+  const why: Record<string, string> = {
+    open: `an open: line in ${g.artifact}`,
+    flagged: `a flagged concern in ${g.artifact}`,
+    'risk-high': 'risk: high, every gate attended',
+    attended: `attended by ${g.source}`,
+  };
+  return [`why: ${why[effort.stop] ?? effort.stop}`, `resume: /forge-sdlc:wayfinder ${effort.slug}`];
 }
 
 // The legend, its entries kept whole, as many to a line as the width holds.
