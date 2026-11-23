@@ -16,22 +16,24 @@
 // skills one folder down, by category (skills/<category>/<name>/SKILL.md).
 import { atom, read, update } from 'claude-code';
 import type { CommandSpec, EngineInterface, On } from 'claude-code';
-import type { ForgeRoster, ForgeSkills, ForgeView } from './types';
+import type { ForgeRoster, ForgeSkills, ForgeView, ForgeWorkflow } from './types';
 import {
   GATES,
   LOOP,
   UPSTREAM,
   agentRows,
   commandGroups,
+  loopRows,
   newestVersionFirst,
   parseAgent,
   parseSkill,
   slotLines,
   upstreamGroup,
 } from './forge/help';
-import type { Agent, Group, Skill } from './forge/help';
+import type { Agent, Group, LoopTone, Skill } from './forge/help';
 import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
-import { resolveRoster } from './roster.mjs';
+import { readMap } from './run-pane/tracker';
+import { resolveRoster, resolveWorkflow } from './roster.mjs';
 
 const PANE = 'forge';
 const USAGE =
@@ -39,6 +41,20 @@ const USAGE =
 const OFFICIAL = 'claude-plugins-official';
 // The host's roster, beside its config, read against the session folder as HOST_CONFIG is.
 const ROSTER_FILE = 'docs/agents/forge.yaml';
+// The run state the loop is positioned from, read as the roster is.
+const STATE_FILE = '.forge/state.json';
+// How the loop tab paints each row of the diagram (forge/help.ts loopRows).
+const TONE: Record<LoopTone, { color?: string; bold?: boolean; dimColor?: boolean }> = {
+  title: { bold: true },
+  legend: { dimColor: true },
+  plain: {},
+  passed: { color: 'green' },
+  current: { color: 'cyan', bold: true },
+  ahead: {},
+  stopped: { color: 'red', bold: true },
+  swapped: { color: 'magenta' },
+  note: { color: 'yellow' },
+};
 
 const view = atom({ plugin: 'forge-sdlc', key: 'forgeView' } as const, { tab: 'commands', upstream: false } as ForgeView);
 const skills = atom(
@@ -127,25 +143,54 @@ async function readOrUndefined($: EngineInterface, path: string): Promise<string
   }
 }
 
-// The host's roster through the shared reader, forge.md's deprecated sections
-// folded in; undefined without forge.yaml, so the panel is as before. Only
-// what the panel draws is kept.
-async function hostRoster($: EngineInterface): Promise<ForgeRoster | undefined> {
-  const yaml = await readOrUndefined($, ROSTER_FILE);
-  if (yaml === undefined) return undefined;
-  const md = await readOrUndefined($, HOST_CONFIG);
-  const { roles, slots, policy } = resolveRoster(yaml, md === undefined ? undefined : parseForgeConfig(md));
-  return { roles, slots, policy };
+// The newest effort's record in .forge/state.json with its slug: the effort the
+// run pane follows, the newest map under docs/efforts. Undefined when there is
+// no map, no state or no record for it: the loop is then drawn unpositioned.
+async function newestEffort($: EngineInterface): Promise<Record<string, unknown> | undefined> {
+  try {
+    const map = await readMap({ list: (path) => $.fs.list(path), read: (path) => $.fs.read(path) }, new Map());
+    const text = map ? await readOrUndefined($, STATE_FILE) : undefined;
+    if (!map || text === undefined) return undefined;
+    const record: unknown = (JSON.parse(text) as { efforts?: Record<string, unknown> } | null)?.efforts?.[map.slug];
+    return record && typeof record === 'object' ? { ...record, slug: map.slug } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// The host's roster and loop through the shared reader, forge.md's deprecated
+// sections folded in. The roster only with forge.yaml, so without it the agents
+// tab is as before; the loop always: the plugin's workflow.yaml joined with the
+// roster and the agents' frontmatter models, positioned from the newest effort.
+// Only what the panel draws is kept.
+async function hostLoop(
+  $: EngineInterface,
+  agents: Agent[],
+): Promise<{ roster?: ForgeRoster; workflow: ForgeWorkflow }> {
+  const [yaml, md, text, effort] = await Promise.all([
+    readOrUndefined($, ROSTER_FILE),
+    readOrUndefined($, HOST_CONFIG),
+    readOrUndefined($, `${$.plugin.root}/workflow.yaml`),
+    newestEffort($),
+  ]);
+  const resolved = resolveRoster(yaml, md === undefined ? undefined : parseForgeConfig(md));
+  const agentModels = Object.fromEntries(agents.flatMap((a) => (a.model ? [[`forge-sdlc:${a.name}`, a.model]] : [])));
+  const { stages, policy, maxParallelSlices, effort: at } = resolveWorkflow(text, resolved, { agentModels, effort });
+  const { roles, slots, policy: skills } = resolved;
+  return {
+    ...(yaml === undefined ? {} : { roster: { roles, slots, policy: skills } }),
+    workflow: { stages, policy, maxParallelSlices, effort: at },
+  };
 }
 
 async function loadSkills($: EngineInterface): Promise<void> {
-  const [plugin, upstream, agents, roster] = await Promise.all([
+  const [plugin, upstream, agents] = await Promise.all([
     skillsIn($, $.plugin.root),
     upstreamSkills($),
     agentsIn($, $.plugin.root),
-    hostRoster($),
   ]);
-  await update($, skills, () => ({ plugin, upstream, agents, ...(roster ? { roster } : {}) }));
+  const { roster, workflow } = await hostLoop($, agents);
+  await update($, skills, () => ({ plugin, upstream, agents, workflow, ...(roster ? { roster } : {}) }));
 }
 
 // Opens the panel on a tab, the skills and agents read afresh.
@@ -259,6 +304,15 @@ export function registerForge(on: On): void {
         )}
         {v.tab === 'loop' && (
           <Box key="loop" flexDirection="column">
+            {s.workflow && (
+              <Box key="diagram" flexDirection="column" marginBottom={1}>
+                {loopRows(s.workflow, cols).map((row, i) => (
+                  <Text key={`row-${i}`} wrap="truncate-end" {...TONE[row.tone]}>
+                    {row.text}
+                  </Text>
+                ))}
+              </Box>
+            )}
             {LOOP.map((stage) => (
               <Box key={stage.stage} flexDirection="column" marginBottom={1}>
                 <Text bold>{stage.stage}</Text>
