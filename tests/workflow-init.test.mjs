@@ -57,3 +57,49 @@ test('init/SKILL.md: the Gates answers go under workflow: in docs/agents/forge.y
 test('init/SKILL.md: a re-run leads with the current workflow: values, else the ## Gates bullets', () => {
   assert.match(gates(), /re-run leads with the current `workflow:` values[^\n]*else[^\n]*`## Gates` bullets?/);
 });
+
+/** A `## <name>` section of the skill, up to the next `## ` heading. */
+const section = (name) => {
+  const m = new RegExp(`^## \\d+\\. ${name}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(skill);
+  assert.ok(m, `a ## ${name} section`);
+  return m[1];
+};
+
+/** The Write step's forge.yaml bullet: from its `- ` line to the next top-level bullet. */
+const rosterBullet = () => {
+  const m = /^- [^\n]*`docs\/agents\/forge\.yaml`[\s\S]*?(?=^- |^Then )/m.exec(section('Write'));
+  assert.ok(m, 'a Write bullet for docs/agents/forge.yaml');
+  return m[0];
+};
+
+test('init/SKILL.md: Write puts workflow.policy and workflow.max_parallel_slices always, workflow.gates.spec: policy only when chosen', () => {
+  const bullet = rosterBullet();
+  assert.match(bullet, /`workflow\.policy` and `workflow\.max_parallel_slices` always/);
+  assert.match(bullet, /`workflow\.gates\.spec: policy` only when chosen/);
+});
+
+test('init/SKILL.md: the forge.yaml example reads back with its workflow knobs from forge.yaml and no problems', () => {
+  const m = /```yaml\n([\s\S]*?)\n\s*```/.exec(rosterBullet());
+  assert.ok(m, 'a yaml example in the forge.yaml bullet');
+  const roster = resolveRoster(m[1].replace(/^ {2}/gm, ''), undefined);
+  assert.deepEqual(roster.problems, []);
+  const { workflow } = roster;
+  assert.equal(workflow.policy, 'attended');
+  assert.equal(workflow.maxParallelSlices, 3);
+  assert.equal(workflow.gates.spec, 'policy');
+  assert.equal(workflow.sources.policy, 'workflow.policy in forge.yaml');
+  assert.equal(workflow.sources.maxParallelSlices, 'workflow.max_parallel_slices in forge.yaml');
+  assert.equal(workflow.sources.spec, 'gates.spec in forge.yaml');
+});
+
+test('init/SKILL.md: an existing forge.yaml keeps every other key, gates.intent and gates.plan included, and gains workflow: when missing', () => {
+  const bullet = rosterBullet();
+  assert.match(bullet, /rewrite only `slots\.policy` and the `workflow:` keys/);
+  assert.match(bullet, /keep every other key/);
+  for (const key of ['version', 'enforce', 'roles', 'allow', 'gates.intent', 'gates.plan']) assert.match(bullet, new RegExp(`\`${key.replace('.', '\\.')}\``), `names ${key} as kept`);
+  assert.match(bullet, /add[^\n]*`workflow:`[^\n]*missing/);
+});
+
+test('init/SKILL.md: a re-run drops forge.md ## Gates, since the template no longer has it', () => {
+  assert.match(section('Write'), /re-run[^\n]*`## Gates`[^\n]*drops it/);
+});

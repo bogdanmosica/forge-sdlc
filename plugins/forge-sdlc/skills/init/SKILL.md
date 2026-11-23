@@ -1,10 +1,10 @@
 ---
 name: init
-description: Set up a host for the forge-sdlc loop once, after Matt's setup-matt-pocock-skills, by deriving the proof commands and branches from the repo and asking only what it cannot know, then writing docs/agents/forge.md, the policy skills in docs/agents/forge.yaml and the Delivery loop block in CLAUDE.md.
+description: Set up a host for the forge-sdlc loop once, after Matt's setup-matt-pocock-skills, by deriving the proof commands and branches from the repo and asking only what it cannot know, then writing docs/agents/forge.md, the policy skills and the workflow knobs in docs/agents/forge.yaml and the Delivery loop block in CLAUDE.md.
 disable-model-invocation: true
 ---
 
-Setup writes `docs/agents/forge.md`, the **host config** every forge-sdlc skill and hook reads, the policy skills into `docs/agents/forge.yaml`, the **roster**, and one sub-block in CLAUDE.md that points at the config. Ask only what the host cannot know about itself; everything else is a **derived value** read from the repo and confirmed in passing.
+Setup writes `docs/agents/forge.md`, the **host config** every forge-sdlc skill and hook reads, the policy skills and the workflow knobs (`workflow:`) into `docs/agents/forge.yaml`, the **roster**, and one sub-block in CLAUDE.md that points at the config. Ask only what the host cannot know about itself; everything else is a **derived value** read from the repo and confirmed in passing.
 
 ## 1. Precondition
 
@@ -37,15 +37,20 @@ One section per AskUserQuestion call, derived value first, `(Recommended)` on it
 ## 4. Write
 
 - `docs/agents/forge.md` from the template, every section present, every bullet one `- key: value` line, a trailing `# comment` only where the template has one. Re-run: rewrite the file whole from the answers; the one thing a human adds by hand, a `names.<role>` bullet under `## Crew`, is kept while the theme stays and replaced when the theme changes.
-- `docs/agents/forge.yaml`, the roster, holding the Policy skills answer as `slots.policy`, a list of skill names, `[]` for none. Created when absent, with `version: 1` and that one key:
+- `docs/agents/forge.yaml`, the roster, holding the Policy skills answer as `slots.policy`, a list of skill names, `[]` for none, and the Gates answers under `workflow:`: `workflow.policy` and `workflow.max_parallel_slices` always, `workflow.gates.spec: policy` only when chosen. Created when absent, with `version: 1` and those keys:
 
   ```yaml
   version: 1
   slots:
     policy: [security-review]
+  workflow:
+    policy: attended
+    max_parallel_slices: 3
+    gates:
+      spec: policy
   ```
 
-  When it exists, rewrite only `slots.policy` and keep every other key, comment and line as the owner wrote them (`version`, `enforce`, `roles`, the other slots, `allow`); add `slots:` when it is missing. Every other roster key is the owner's, and init never writes it. A re-run that finds a `## Policy skills` section in forge.md drops it, since the template no longer has it.
+  When it exists, rewrite only `slots.policy` and the `workflow:` keys init asks (`policy`, `max_parallel_slices`, `gates.spec`), and keep every other key, comment and line as the owner wrote them (`version`, `enforce`, `roles`, the other slots, `allow`, `gates.intent` and `gates.plan`); add `slots:` or `workflow:` when it is missing. A no to Gate 2 removes a `gates.spec: policy`; under `autonomous` an existing `gates.spec` is kept. Every other roster key is the owner's, and init never writes it. A re-run that finds a `## Policy skills` or `## Gates` section in forge.md drops it, since the template no longer has either.
 - The `### Delivery loop` sub-block under `## Agent skills` in whichever of CLAUDE.md or AGENTS.md Matt's setup edited, replaced in place when present:
 
   ```markdown
