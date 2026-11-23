@@ -83,6 +83,7 @@ function seat(on: On, files: Record<string, string>, opts: { hostDir?: string } 
   const norm = (p: string) =>
     (p.match(/(?:^|\/)((?:docs|\.forge|\.scratch)\/.*)$/)?.[1] ?? p.match(/(forge-sdlc(?:\/.*)?)$/)?.[1] ?? p).replace(/\/$/, '');
   on('session.start', ($, e) => ({ cwd: e.cwd }));
+  on('session.cwd', () => ({ value: '/host' })); // the cwd start() opens the session in
   on('command.register', ($, e) => ({ value: { command: e.name } }));
   on('ui.open', () => ({ value: { isPlaced: true } }));
   on('ui.close', () => ({ value: undefined }));
