@@ -196,7 +196,8 @@ const roleOf = (role, agent, model, effort) => ({
  * forge.md's deprecated sections, read while they last: each valid `## Routing`
  * bullet for a role sets that role's model or effort (forge.yaml, read after,
  * wins key by key), and `## Policy skills` is the policy list until
- * `slots.policy` replaces it. Every bullet still there is one deprecation line.
+ * `slots.policy` replaces it; `## Gates` is merged by workflowOf. Every bullet
+ * still there is one deprecation line.
  * @param {Roster} roster
  * @param {ForgeConfig | undefined} config
  */
@@ -230,7 +231,20 @@ function fromForgeMd(roster, config) {
     if (good.length < names.length)
       roster.problems.push(`## Policy skills: ${keyOf(key)} holds an item that is not a skill name; it is skipped`);
   }
+  for (const [key, value] of Object.entries(sectionOf(config, 'gates'))) {
+    const v = String(value ?? '').trim();
+    const move = GATES_MOVED[key];
+    if (key === 'spec' && v === 'only-on-open') roster.problems.push(`## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in ${ROSTER_FILE}`);
+    else if (key === 'spec')
+      roster.problems.push(`## Gates: spec ${v === 'always' ? v : quote(value)} is deprecated and has no ${ROSTER_FILE} equivalent; Gate 2 follows workflow.policy`);
+    else if (move) roster.problems.push(`## Gates: ${key} is deprecated; move it to ${move} in ${ROSTER_FILE}`);
+    else roster.problems.push(`## Gates: ${keyOf(key)} is deprecated and has no ${ROSTER_FILE} equivalent; it stops working when ## Gates is removed`);
+  }
 }
+
+const ROSTER_FILE = 'docs/agents/forge.yaml';
+/** @type {Record<string, string>} */
+const GATES_MOVED = { policy: 'workflow.policy', max_parallel_slices: 'workflow.max_parallel_slices' };
 
 export const GATE_KEYS = /** @type {const} */ (['intent', 'spec', 'plan']);
 export const MAX_PARALLEL_SLICES = 3;

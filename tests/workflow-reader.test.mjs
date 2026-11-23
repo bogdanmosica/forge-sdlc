@@ -164,6 +164,40 @@ test('a bad max_parallel_slices is reported and replaced by 3', () => {
   }
 });
 
+test('each ## Gates bullet present gives one deprecation line naming the forge.yaml key to move it to', () => {
+  const r = resolveRoster(undefined, GATES_MD('policy: autonomous', 'spec: only-on-open', 'max_parallel_slices: 4'));
+  assert.deepEqual(r.problems, [
+    '## Gates: policy is deprecated; move it to workflow.policy in docs/agents/forge.yaml',
+    '## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in docs/agents/forge.yaml',
+    '## Gates: max_parallel_slices is deprecated; move it to workflow.max_parallel_slices in docs/agents/forge.yaml',
+  ]);
+});
+
+test('## Gates spec: always has no forge.yaml equivalent: Gate 2 follows workflow.policy', () => {
+  const r = resolveRoster(yaml('workflow:', '  policy: attended'), GATES_MD('spec: always'));
+  assert.deepEqual(r.problems, [
+    '## Gates: spec always is deprecated and has no docs/agents/forge.yaml equivalent; Gate 2 follows workflow.policy',
+  ]);
+});
+
+test('a deprecation line fires only for a bullet that is present', () => {
+  assert.deepEqual(resolveRoster(undefined, GATES_MD('policy: attended')).problems, [
+    '## Gates: policy is deprecated; move it to workflow.policy in docs/agents/forge.yaml',
+  ]);
+  assert.deepEqual(resolveRoster(undefined, forgeMd('## Gates', '', '## Proof commands', '- test: npm test')).problems, []);
+});
+
+test('an unknown ## Gates bullet is deprecated with no forge.yaml equivalent', () => {
+  assert.deepEqual(resolveRoster(undefined, GATES_MD('deploy: auto')).problems, [
+    '## Gates: deploy is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Gates is removed',
+  ]);
+});
+
+test('resolveRoster never throws on odd ## Gates values', () => {
+  for (const gates of [null, 5, { policy: null, spec: 7, max_parallel_slices: {} }, ['policy']])
+    assert.doesNotThrow(() => resolveRoster('version: 1\nworkflow:\n  gates:', /** @type {any} */ ({ gates })));
+});
+
 test('workflow is a roster key: an empty workflow: section is no problem and changes nothing', () => {
   const r = resolveRoster(yaml('workflow:'), undefined);
   assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);
