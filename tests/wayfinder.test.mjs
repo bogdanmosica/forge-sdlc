@@ -259,7 +259,7 @@ test('step 7 applies the gate policy by the gate\'s mode: attended stops, a poli
   assert.match(step7, /mode `attended`[^\n]*this run ends here/);
   assert.match(step7, /mode `policy`, passed: the reference's report line[^\n]*\[Resume\]\(#resume\) step 3[^\n]*`spec`/);
   assert.match(step7, /A stop writes `stop`[^\n]*State write/);
-  assert.match(step7, /`risk-high`[^\n]*runs attended from here/);
+  assert.doesNotMatch(step7, /runs attended from here/, 'the risk-high clause is the reference\'s Report line, not restated');
   assert.match(step7, /Done when [^\n]+\.\s*$/);
 });
 
@@ -278,7 +278,7 @@ test('Resume continues past every Gate <n> passed to the first stop or Gate 4, r
 
 test('the description names the autonomous run; the skill stays user-invoked', () => {
   const fm = frontmatter(skill);
-  assert.match(fm, /^description: [^\n]*autonomous[^\n]*Gate 4/m);
+  assert.match(fm, /^description: [^\n]*by policy[^\n]*same run[^\n]*Gate 4/m);
   assert.match(fm, /^disable-model-invocation: true$/m);
 });
 

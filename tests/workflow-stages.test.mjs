@@ -104,9 +104,9 @@ test('GATE-POLICY.md: every source a passing gate can print has its tail in the 
 /* The stages: one pointer line to GATE-POLICY.md, their own gate key, artifact and next command */
 
 const STAGES = [
-  { skill: 'wayfinder', gateStep: 7, key: 'intent', n: 1, artifact: 'intent.md', next: '/forge-sdlc:wayfinder <slug>', link: '](GATE-POLICY.md)', steps: [1, 7] },
-  { skill: 'spec', gateStep: 7, key: 'spec', n: 2, artifact: 'spec.md', next: '/forge-sdlc:plan <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 6, 7] },
-  { skill: 'plan', gateStep: 3, key: 'plan', n: 3, artifact: 'plan.md', next: '/forge-sdlc:build <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 3, 5, 6, 7] },
+  { skill: 'wayfinder', gateStep: 7, key: 'intent', n: 1, artifact: 'intent.md', next: '/forge-sdlc:wayfinder <slug>', link: '](GATE-POLICY.md)', steps: [1, 7], reasons: ['open', 'risk-high'] },
+  { skill: 'spec', gateStep: 7, key: 'spec', n: 2, artifact: 'spec.md', next: '/forge-sdlc:plan <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 6, 7], reasons: ['open', 'flagged', 'risk-high'] },
+  { skill: 'plan', gateStep: 3, key: 'plan', n: 3, artifact: 'plan.md', next: '/forge-sdlc:build <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 3, 5, 6, 7], reasons: ['risk-high'] },
 ];
 
 for (const s of STAGES) {
@@ -134,7 +134,32 @@ for (const s of STAGES) {
     assert.match(gate, /[Mm]ode `attended`/);
     for (const n of s.steps) assert.doesNotMatch(stepOf(text, n), /`autonomous`/, `step ${n} names the global policy`);
   });
+
+  test(`${s.skill}: the report's gate line is keyed to the first stop reason that holds, as GATE-POLICY's Report line says, not to the mode alone`, () => {
+    const report = stepOf(text, 7);
+    const bullets = report.split('\n').filter((l) => l.startsWith('- '));
+    assert.match(report, /by the first of the gate's `stops` that holds[^\n]*Report line/, 'the line is picked by the first reason that holds');
+    assert.ok(!bullets.some((l) => /mode `policy`, stopped/.test(l)), 'no stopped line picked by mode policy alone');
+    const passed = bullets.filter((l) => l.startsWith('- mode `policy`, passed: '));
+    assert.equal(passed.length, 1, 'one pass line');
+    const byReason = bullets.filter((l) => l.startsWith('- stopped by `'));
+    assert.equal(byReason.length, 1, 'one line for a stop by a reason of the stop rule');
+    for (const r of s.reasons) assert.ok(byReason[0].includes(`\`${r}\``), `names ${r}`);
+    assert.match(byReason[0], /whatever the mode/, 'a reason of the stop rule picks this line in mode attended too');
+    assert.ok(byReason[0].includes('`/forge-sdlc:wayfinder <slug>`'), 'resumes through wayfinder');
+    const attended = bullets.filter((l) => l.startsWith('- stopped by mode `attended`'));
+    assert.equal(attended.length, 1, 'one line for a stop by mode attended');
+    assert.match(attended[0], /none of those holding/, 'only when no reason of the stop rule holds');
+    assert.ok(attended[0].includes(`\`${s.next}\``), 'names the next command');
+    assert.ok(attended[0].includes("the gate's `source`"), 'names the source');
+  });
 }
+
+test('wayfinder: the description names per-gate passes, not the global autonomous policy', () => {
+  const fm = /^---\n([\s\S]*?)\n---/.exec(read('skills/wayfinder/SKILL.md'))?.[1] ?? '';
+  assert.doesNotMatch(fm, /autonomous gate policy/);
+  assert.match(fm, /^description: [^\n]*by policy[^\n]*same run[^\n]*Gate 4/m);
+});
 
 test('wayfinder Resume continues on any Gate <n> passed line, whatever its tail', () => {
   const skill = read('skills/wayfinder/SKILL.md');
@@ -159,6 +184,12 @@ test('build step 1 reads max_parallel_slices from bin/workflow.mjs, not forge-co
   assert.ok(step1.includes('node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --project .'), 'the workflow line');
   assert.match(step1, /`maxParallelSlices`/);
   assert.doesNotMatch(step1, /forge-config\.mjs/);
+});
+
+test('build step 6 caps the frontier at maxParallelSlices, the value step 1 holds', () => {
+  const step6 = read('skills/build/SKILL.md').split('\n').find((l) => l.startsWith('- **Step 6**'));
+  assert.ok(step6, 'a Step 6 line');
+  assert.match(step6, /at most `maxParallelSlices` building at once/);
 });
 
 test('status keeps printing the why: step 1 holds why, step 3 prints (<why>) after the stop', () => {

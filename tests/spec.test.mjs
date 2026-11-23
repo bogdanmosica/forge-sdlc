@@ -137,7 +137,7 @@ test('spec step 7: the report is a short list, one gate line per gate mode and o
   const lines = step(7).split('\n').filter((l) => l.startsWith('- '));
   assert.equal(lines.length, 3);
   assert.ok(lines.some((l) => l.includes('mode `attended`') && l.includes('/forge-sdlc:plan <slug>') && l.includes('`source`')), 'attended stops with its source');
-  assert.ok(lines.some((l) => l.includes('mode `policy`, stopped') && l.includes('/forge-sdlc:wayfinder <slug>')), 'a policy stop resumes through wayfinder');
+  assert.ok(lines.some((l) => l.startsWith('- stopped by `open`') && l.includes('/forge-sdlc:wayfinder <slug>')), 'a stop by a reason resumes through wayfinder, whatever the mode');
   assert.ok(lines.some((l) => l.includes('mode `policy`, passed') && l.includes('`Gate 2 passed: <tail>, nothing open`')), 'a policy pass keeps the report line');
 });
 
