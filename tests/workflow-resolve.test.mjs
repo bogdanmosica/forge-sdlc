@@ -51,3 +51,55 @@ test('the defaults: stages in order, roles with their frontmatter models, slots 
   assert.deepEqual(s.build.gate, { key: 'pr', n: 4, artifact: 'the PR', stops: [], mode: 'owner', source: 'always' });
   assert.deepEqual(s.built, { name: 'built', does: 'ready for review; the code owner merges', roles: [], slots: [] });
 });
+
+test('roles resolve through a swapped roster: the swapped agent, the roster’s model over the frontmatter, its effort; host knobs set each gate', () => {
+  const roster = resolveRoster(
+    yaml(
+      'roles:',
+      '  implementer:',
+      '    agent: my-team:builder',
+      '    model: sonnet',
+      '  spec-writer:',
+      '    effort: high',
+      '  reviewer:',
+      '    agent: my-team:critic',
+      'slots:',
+      '  implementer.tdd: my-team:tdd',
+      '  policy: [house-rules, security-review]',
+      'workflow:',
+      '  policy: autonomous',
+      '  max_parallel_slices: 5',
+      '  gates:',
+      '    plan: attended',
+    ),
+    undefined,
+  );
+  const w = resolveWorkflow(SHIPPED, roster, { agentModels: MODELS });
+  assert.deepEqual(w.problems, []);
+  assert.equal(w.policy, 'autonomous');
+  assert.equal(w.maxParallelSlices, 5);
+  const s = byName(w);
+  assert.deepEqual(s.build.roles, [
+    { role: 'implementer', agent: 'my-team:builder', model: 'sonnet', swapped: true },
+    { role: 'verifier', agent: 'forge-sdlc:verifier', model: 'haiku', swapped: false },
+    { role: 'reviewer', agent: 'my-team:critic', swapped: true },
+    { role: 'merger', agent: 'forge-sdlc:merger', model: 'sonnet', swapped: false },
+  ]);
+  assert.deepEqual(s.spec.roles, [{ role: 'spec-writer', agent: 'forge-sdlc:spec-writer', model: 'opus', effort: 'high', swapped: false }]);
+  assert.deepEqual(s.build.slots, [{ slot: 'implementer.tdd', skill: 'my-team:tdd' }]);
+  assert.deepEqual(s.spec.slots[1], { slot: 'policy', skill: 'house-rules, security-review' });
+  assert.deepEqual(
+    w.stages.filter((x) => x.gate).map((x) => [x.gate.key, x.gate.mode, x.gate.source]),
+    [
+      ['intent', 'policy', 'workflow.policy in forge.yaml'],
+      ['spec', 'policy', 'workflow.policy in forge.yaml'],
+      ['plan', 'attended', 'gates.plan in forge.yaml'],
+      ['pr', 'owner', 'always'],
+    ],
+  );
+});
+
+test('without agentModels a role the roster gives no model has none', () => {
+  const w = resolveWorkflow(SHIPPED, resolveRoster(undefined, undefined));
+  assert.deepEqual(byName(w).map.roles[0], { role: 'researcher', agent: 'forge-sdlc:researcher', swapped: false });
+});
