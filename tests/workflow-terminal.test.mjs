@@ -130,3 +130,18 @@ test('a passed stage folds only once its gate has passed: a gate still waiting k
   assert.ok(!t.some((x) => x.startsWith('✓ build')));
   assert.ok(t.some((x) => x.startsWith('  ▼ ▶ built ')), 'built is where the effort is');
 });
+
+test('a stage box shows every policy skill, each without its plugin prefix', () => {
+  const forgeYaml = 'version: 1\nslots:\n  policy: [team-a:security, team-b:privacy]\n';
+  const row = texts(loopRows(loop(at('intent', 'intent'), forgeYaml), 72)).find((x) => x.startsWith('│ skills '));
+  assert.ok(row, 'the spec box has a skills row');
+  assert.match(row, /^│ skills {2}codebase-design · security · privacy +│$/);
+});
+
+test('a disabled slot is no skill: the stage box leaves it out of its skills row', () => {
+  const forgeYaml = 'version: 1\nslots:\n  spec-writer.codebase-design: disabled\n  domain-modeling: disabled\n';
+  const t = texts(loopRows(loop(undefined, forgeYaml), 72));
+  assert.ok(!t.some((x) => x.includes('disabled')), 'no row draws disabled as a skill');
+  assert.ok(t.some((x) => /^│ skills {2}grilling · prototype +│$/.test(x)), 'map keeps its two enabled slots');
+  assert.ok(!t.some((x) => /^│ skills {2}none/.test(x)));
+});
