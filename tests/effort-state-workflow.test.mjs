@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -105,6 +105,25 @@ test('--list entries carry gates and the attended why', () => {
     ['a', 'attended', 'gate plan is attended in forge.yaml (gates.plan)', 'gates.plan in forge.yaml'],
     ['b', 'none', 'Gate 2: running this approves spec.md', 'gates.plan in forge.yaml'],
   ]);
+});
+
+test('gates without a state record: the artifacts on feat/<slug> decide the stage, gates the unpositioned resolution', () => {
+  const dir = stateHost({ yaml: 'workflow:\n  policy: autonomous\n  gates:\n    plan: attended\n' });
+  const git = (args) => assert.equal(spawnSync('git', args, { cwd: dir, encoding: 'utf8' }).status, 0, args.join(' '));
+  git(['switch', '-q', '-c', 'feat/x']);
+  mkdirSync(path.join(dir, 'docs', 'efforts', 'x'), { recursive: true });
+  writeFileSync(path.join(dir, 'docs', 'efforts', 'x', 'plan.md'), '# plan\n');
+  git(['add', 'docs/efforts']);
+  git(['commit', '-q', '-m', 'x artifacts']);
+  git(['switch', '-q', 'main']);
+  const r = run(dir, 'x');
+  assert.deepEqual({ source: r.source, stage: r.stage, stop: r.stop }, { source: 'artifacts', stage: 'plan', stop: 'none' });
+  assert.deepEqual(r.gates, {
+    intent: { mode: 'policy', source: 'workflow.policy in forge.yaml' },
+    spec: { mode: 'policy', source: 'workflow.policy in forge.yaml' },
+    plan: { mode: 'attended', source: 'gates.plan in forge.yaml' },
+    pr: { mode: 'owner', source: 'always' },
+  });
 });
 
 /** The stop union a declaration or contract lists, as an array of its quoted names in order. */
