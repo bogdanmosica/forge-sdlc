@@ -126,3 +126,25 @@ test('a forge.yaml too broken to read enforce warns in the band that the roster 
   expect(s.toasts.filter((t) => t.includes('enforce is unreadable'))).toHaveLength(1);
   expect(s.toasts.join('\n')).toContain(warning);
 });
+
+test('a bad workflow: key is toasted once and kept in the band, as a roster problem is', async ($, on) => {
+  const clock = mock.clock(on);
+  const s = seat(on, {
+    files: {
+      [HOST_CONFIG]: forgeConfig(),
+      [ROSTER]: 'version: 1\nworkflow:\n  gates:\n    pr: policy\n',
+    },
+  });
+  await start($, clock);
+  await clock.advance(5000);
+  await clock.advance(5000);
+  const said = s.toasts.filter((t) => t.includes('workflow.gates.pr'));
+  expect(said).toHaveLength(1);
+  expect(said[0]).toMatch(/^forge-sdlc: .*workflow\.gates\.pr is not a setting: Gate 4 is always the code owner’s; ignored/);
+  expect(await band($)).toContain('workflow.gates.pr is not a setting');
+
+  // fixed: the note leaves the band
+  s.files[ROSTER] = 'version: 1\nworkflow:\n  gates:\n    plan: attended\n';
+  await clock.advance(5000);
+  expect(await band($)).not.toContain('workflow.gates');
+});

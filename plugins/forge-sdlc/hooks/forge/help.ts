@@ -71,41 +71,49 @@ export const MOD_COMMANDS: Row[] = [
   },
 ];
 
-// The loop, stage by stage: what runs, and where the driver is needed (`you`).
-export const LOOP: { stage: string; text: string; you?: string }[] = [
+// Before the loop: how to watch a run, and the setup once per host.
+export const LOOP_START: LoopProse[] = [
   {
-    stage: 'Watch',
-    text: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab); a plain `claude` runs them as named subagents, listed in /forge-pane and the band',
-    you: 'run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns); hover a band figure for what it counts',
+    name: 'watch',
+    you: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab), a plain `claude` runs them as named subagents; run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns) and hover a band figure for what it counts',
   },
   {
-    stage: 'Setup',
-    text: 'once per host: /mattpocock-skills:setup-matt-pocock-skills, then /forge-sdlc:init derives the proof commands and branches from the repo and writes docs/agents/forge.md',
-    you: 'answer what the repo cannot tell: the tracker, the gate policy, the risk paths, the crew theme',
-  },
-  {
-    stage: 'Plan',
-    text: '/forge-sdlc:wayfinder <idea | #issue | slug> charts a map on feat/<slug>, works its tickets (researcher, prototyper), writes intent.md and opens the draft PR',
-    you: 'Gate 1: accept intent.md, or the policy does when no open: line remains; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
-  },
-  {
-    stage: 'Design',
-    text: '/forge-sdlc:spec <slug>: the spec-writer synthesises spec.md under the policy skills, committed on feat/<slug> and linked from the PR',
-    you: 'Gate 2: approve spec.md, or the policy does when nothing is open or flagged; the tech lead too when risk: high',
-  },
-  {
-    stage: 'Build',
-    text: '/forge-sdlc:plan <slug> breaks the spec into tracer-bullet slices and publishes the tickets; /forge-sdlc:build <slug> runs unattended: one worktree and implementer per slice, test-first, the verifier, the three-axis review, merged --no-ff into feat/<slug> when clean, red after two fix rounds',
-    you: "Gate 3: answer plan's quiz and approve the breakdown, or the policy answers it under autonomous",
-  },
-  {
-    stage: 'Deploy',
-    text: 'build marks the PR ready with the evidence and the red slices; only feat/<slug> is ever pushed',
-    you: 'Gate 4: the code owner reviews the PR and merges it; always yours, whatever the policy',
+    name: 'setup',
+    you: 'once per host, /mattpocock-skills:setup-matt-pocock-skills, then /forge-sdlc:init derives the proof commands and branches from the repo and writes docs/agents/forge.md; answer what the repo cannot tell: the tracker, the gate policy, the risk paths, the crew theme',
   },
 ];
+
+// What the driver does at each stage of the loop, keyed by the workflow's
+// stage names (workflow.yaml); the stage's command and gate come from the
+// workflow. `you` is the text when the stage's gate stops for the driver
+// (or it has none); `policy` replaces it when the gate passes by policy.
+export const LOOP: Record<string, { you: string; policy?: string }> = {
+  map: {
+    you: 'start it with /forge-sdlc:wayfinder <idea | #issue | slug>, which charts the map on feat/<slug> with you; answer its grilling tickets and judge its prototypes, charting stays yours',
+  },
+  intent: {
+    you: 'accept intent.md; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
+    policy:
+      'the policy accepts intent.md when no open: line remains, you when it stops; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
+  },
+  spec: {
+    you: 'approve spec.md; the tech lead too when risk: high',
+    policy:
+      'the policy approves spec.md when nothing is open or flagged, you when it stops; the tech lead too when risk: high',
+  },
+  plan: {
+    you: "answer plan's quiz and approve the breakdown into tracer-bullet slices",
+    policy: "the policy answers plan's quiz and approves the breakdown, you when it stops",
+  },
+  build: {
+    you: 'nothing while /forge-sdlc:build <slug> runs the slices unattended (red after two fix rounds); then the code owner reviews the PR it marks ready and merges it, always theirs whatever the policy',
+  },
+  built: {
+    you: 'the PR carries the evidence and the red slices; only feat/<slug> is ever pushed',
+  },
+};
 export const GATES =
-  'Gates 1 to 3 pass by the gate policy under ## Gates in forge.md: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. Gate 4 is always the code owner’s.';
+  'Gates 1 to 3 pass by the gate policy, workflow.policy in docs/agents/forge.yaml: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. gates.intent, gates.spec or gates.plan under workflow: sets that one gate to attended or policy, whatever the global policy. Gate 4 is always the code owner’s.';
 
 // A SKILL.md's frontmatter to its name, the first sentence of its description
 // and its argument hint; null when the file has no frontmatter or no name.
@@ -234,6 +242,28 @@ export type LoopWorkflow = {
   maxParallelSlices: number;
   effort: { slug: string; stage: string; gate: string; stop: string; risk: string } | null;
 };
+// The prose under the diagram: the start rows, then one per workflow stage
+// with an entry in LOOP, its command from the workflow, and a gate's line
+// headed by the gate and its mode.
+export type LoopProse = { name: string; command?: string; you: string };
+export function loopProse(stages: readonly LoopStage[]): LoopProse[] {
+  return [
+    ...LOOP_START,
+    ...stages.flatMap((s) => {
+      const text = Object.hasOwn(LOOP, s.name) ? LOOP[s.name] : undefined;
+      if (!text) return [];
+      const you = s.gate?.mode === 'policy' && text.policy ? text.policy : text.you;
+      return [
+        {
+          name: s.name,
+          ...(s.command ? { command: s.command } : {}),
+          you: s.gate ? `Gate ${s.gate.n} · ${s.gate.mode}: ${you}` : you,
+        },
+      ];
+    }),
+  ];
+}
+
 export const LOOP_BOXES = 52;
 export const LOOP_FLOOR = 24;
 export const LOOP_LEGEND = ['▶ here', '✓ passed', '■ stopped', '○ ahead', '⇄ swapped in forge.yaml'];
