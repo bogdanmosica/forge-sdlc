@@ -67,3 +67,40 @@ test('a policy gate passes on a thin edge labelled with its stops; an attended g
   assert.match(nodeLine(out, 'build'), /<br\/>reviewer ⇄ other:critic<br\/>/);
   assert.match(out, /^%% policy autonomous$/m);
 });
+
+const PLAN_ATTENDED = ['version: 1', 'workflow:', '  policy: autonomous', '  gates:', '    plan: attended', ''].join('\n');
+
+test('gates.plan attended and an effort stopped at plan (stop: attended): Gate 3 stopped naming gates.plan in forge.yaml, the stages before it passed', () => {
+  const dir = mermaidHost({ yaml: PLAN_ATTENDED });
+  writeState(dir, { efforts: { demo: { stage: 'plan', gate: 'plan', stop: 'attended', risk: 'normal', branch: 'feat/demo' } } });
+  const out = mermaid(dir, ['--effort', 'demo']);
+  assert.equal(nodeLine(out, 'G3').trim(), 'G3{{"■ Gate 3 · attended · gates.plan in forge.yaml<br/>STOPPED: attended"}}:::stopped');
+  for (const stage of ['map', 'intent', 'spec']) assert.match(nodeLine(out, stage), /:::passed$/, stage);
+  assert.match(nodeLine(out, 'spec'), /^\s*spec\["✓ 3 · spec<br\/>/);
+  assert.match(nodeLine(out, 'plan'), /^\s*plan\["▶ 4 · plan<br\/>.*"\]:::current$/);
+  for (const stage of ['build', 'built']) assert.match(nodeLine(out, stage), /:::ahead$/, stage);
+  assert.equal(nodeLine(out, 'G1').trim(), 'G1{{"✓ Gate 1 · policy"}}:::passed');
+  assert.equal(nodeLine(out, 'G2').trim(), 'G2{{"✓ Gate 2 · policy"}}:::passed');
+  assert.equal(nodeLine(out, 'G4').trim(), 'G4{{"Gate 4 · owner"}}:::gowner');
+  assert.match(out, /^%% demo: at plan, stopped \(attended\) · policy autonomous · risk normal$/m);
+});
+
+test('a risk: high effort draws every gate before Gate 4 attended (source risk: high) on a thick edge', () => {
+  const dir = mermaidHost({ yaml: PLAN_ATTENDED });
+  writeState(dir, { efforts: { hot: { stage: 'intent', gate: 'none', stop: 'none', risk: 'high', branch: 'feat/hot' } } });
+  const out = mermaid(dir, ['--effort', 'hot']);
+  for (const [id, next] of [['G1', 'spec'], ['G2', 'plan'], ['G3', 'build']]) {
+    assert.match(nodeLine(out, id), /Gate \d · attended · risk: high"\}\}:::gattended$/, id);
+    assert.equal(passEdge(out, id).trim(), `${id} ==>|"you pass it"| ${next}`);
+  }
+  assert.match(nodeLine(out, 'intent'), /:::current$/);
+});
+
+test('--effort with no state record draws the loop unpositioned, as without --effort', () => {
+  const dir = mermaidHost({ yaml: PLAN_ATTENDED });
+  assert.equal(mermaid(dir, ['--effort', 'ghost']), mermaid(dir));
+  writeState(dir, { efforts: { other: { stage: 'spec', gate: 'spec', stop: 'open', risk: 'normal', branch: 'feat/other' } } });
+  const out = mermaid(dir, ['--effort', 'ghost']);
+  assert.equal(out, mermaid(dir));
+  assert.doesNotMatch(out, /:::(passed|current|ahead|stopped)$/m);
+});
