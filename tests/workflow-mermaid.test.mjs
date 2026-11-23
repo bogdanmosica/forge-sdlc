@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 import { writeState } from '../plugins/forge-sdlc/hooks/scripts/lib.mjs';
 import { host } from './support/host.mjs';
+import { EDGE_LABEL_MAX, mermaidOf } from '../plugins/forge-sdlc/bin/workflow.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const script = path.join(root, 'plugins', 'forge-sdlc', 'bin', 'workflow.mjs');
@@ -43,8 +44,8 @@ test('on a host with no settings: flowchart TD, a box per stage with its roles a
   const out = mermaid(mermaidHost());
   assert.match(out, /^(%%.*\n)*flowchart TD\n/);
   for (const stage of ['map', 'intent', 'spec', 'plan', 'build', 'built']) assert.ok(nodeLine(out, stage), `a box for ${stage}`);
-  assert.match(nodeLine(out, 'map'), /^\s*map\["1 · map<br\/>the map and its tickets, worked with the owner<br\/>researcher · sonnet<br\/>prototyper · opus"\]$/);
-  assert.match(nodeLine(out, 'build'), /implementer · opus<br\/>verifier · sonnet<br\/>reviewer · opus<br\/>merger · sonnet"\]$/);
+  assert.match(nodeLine(out, 'map'), /^\s*map\["1 · map<br\/>the map and its tickets, worked with the owner<br\/>researcher · [^<"]+<br\/>prototyper · [^<"]+"\]$/);
+  assert.match(nodeLine(out, 'build'), /implementer · [^<"]+<br\/>verifier · [^<"]+<br\/>reviewer · [^<"]+<br\/>merger · [^<"]+"\]$/);
   assert.equal(nodeLine(out, 'G1').trim(), 'G1{{"Gate 1 · attended · default"}}:::gattended');
   assert.equal(nodeLine(out, 'G4').trim(), 'G4{{"Gate 4 · owner"}}:::gowner');
   assert.match(out, /^\s*intent --> G1$/m);
@@ -105,6 +106,58 @@ test('--effort with no state record draws the loop unpositioned, as without --ef
   assert.doesNotMatch(out, /:::(passed|current|ahead|stopped)$/m);
 });
 
+/** The resolved workflow's JSON for `dir`, as `workflow.mjs` prints it. */
+function resolved(dir) {
+  const r = run(['--project', dir], dir);
+  assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout);
+}
+
+test('each role line names the model the roster resolves, as it resolves it, not shortened', () => {
+  const plain = mermaidHost();
+  const tuned = mermaidHost({
+    yaml: ['version: 1', 'roles:', '  implementer:', '    model: claude-sonnet-5-5', '  reviewer:', '    agent: other:critic', '    model: haiku', ''].join('\n'),
+  });
+  for (const dir of [plain, tuned]) {
+    const out = mermaid(dir);
+    for (const stage of resolved(dir).stages) {
+      for (const r of stage.roles) {
+        const line = `${r.swapped ? `${r.role} ⇄ ${r.agent}` : r.role}${r.model ? ` · ${r.model}` : ''}`;
+        assert.ok(nodeLine(out, stage.name).includes(`<br/>${line}`), `${stage.name} names ${line}`);
+      }
+    }
+  }
+  const out = mermaid(tuned);
+  assert.match(nodeLine(out, 'build'), /<br\/>implementer · claude-sonnet-5-5<br\/>/);
+  assert.match(nodeLine(out, 'build'), /<br\/>reviewer ⇄ other:critic · haiku<br\/>/);
+  assert.match(nodeLine(mermaid(plain), 'map'), /<br\/>researcher · claude-[\w-]+<br\/>/, 'a plugin agent\'s frontmatter id, whole');
+});
+
+test('an effort waiting at a gate (gate set, stop none) marks that gate current with ▶', () => {
+  const dir = mermaidHost({ yaml: PLAN_ATTENDED });
+  writeState(dir, { efforts: { demo: { stage: 'spec', gate: 'spec', stop: 'none', risk: 'normal', branch: 'feat/demo' } } });
+  const out = mermaid(dir, ['--effort', 'demo']);
+  assert.equal(nodeLine(out, 'G2').trim(), 'G2{{"▶ Gate 2 · policy"}}:::current');
+  assert.equal(nodeLine(out, 'G1').trim(), 'G1{{"✓ Gate 1 · policy"}}:::passed');
+  assert.equal(nodeLine(out, 'G3').trim(), 'G3{{"Gate 3 · attended · gates.plan in forge.yaml"}}:::gattended');
+  assert.match(out, /^%% demo: at spec · policy autonomous · risk normal$/m);
+});
+
+/** A one-stage workflow for mermaidOf, with this `does` text and effort record. */
+const oneStage = (does, effort) => ({ policy: 'autonomous', effort, stages: [{ name: 'map', does, roles: [], gate: null }] });
+
+test('mermaidOf escapes ", < and > inside a label', () => {
+  const out = mermaidOf(oneStage('say "hi" <b>bold</b> & go'));
+  assert.equal(nodeLine(out, 'map').trim(), 'map["1 · map<br/>say #quot;hi#quot; &lt;b&gt;bold&lt;/b&gt; & go"]');
+});
+
+test('an effort slug is filtered to slug characters in the %% comment, so it cannot open a line of its own', () => {
+  const out = mermaidOf(oneStage('d', { slug: 'x\nflowchart LR\n"y"', stage: 'map', stop: 'none', risk: 'normal' }));
+  const lines = out.split('\n');
+  assert.equal(lines.filter((l) => l.startsWith('flowchart')).length, 1);
+  assert.equal(lines[2], '%% xflowchartLRy: at map · policy autonomous · risk normal');
+});
+
 /** Every line of Mermaid A is one of these: the init line, the header, a comment, a box, a hexagon, a plain or thick edge, a classDef. */
 const LINE_FORMS = [
   /^%%\{init: \{"flowchart": \{"wrappingWidth": 320\}\}\}%%$/,
@@ -138,7 +191,7 @@ test('only {{ }}, ==>, :::, <br/> and plain edges, and no edge label over the pr
     }
     const labels = [...out.matchAll(/^ {2}G\d (?:-->|==>)\|"([^"]*)"\|/gm)].map((m) => m[1]);
     assert.equal(labels.length, 4);
-    for (const label of labels) assert.ok(label.length <= 40, `edge label over 40 characters: ${label}`);
+    for (const label of labels) assert.ok(label.length <= EDGE_LABEL_MAX, `edge label over ${EDGE_LABEL_MAX} characters: ${label}`);
   }
 });
 
