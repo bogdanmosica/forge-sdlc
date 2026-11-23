@@ -334,8 +334,23 @@ function legendLines(W: number): string[] {
   return out;
 }
 
-function lines(_wf: LoopWorkflow, _W: number): LoopRow[] {
-  return [];
+function lines(wf: LoopWorkflow, W: number): LoopRow[] {
+  const out: LoopRow[] = [];
+  const push = (text: string, tone: LoopTone) => out.push({ text: fit(text, W), tone });
+  push(wf.effort?.slug || 'the loop', 'title');
+  push(`policy ${wf.policy}`, 'legend');
+  const STAGE_GLYPH = { passed: '✓', current: '▶', ahead: '○' } as const;
+  for (const s of wf.stages) {
+    const swap = s.roles.some((r) => r.swapped) ? ' ⇄' : '';
+    push(`${STAGE_GLYPH[s.status ?? 'ahead']} ${s.name}${swap}`, s.status ?? 'plain');
+    const g = s.gate;
+    if (!g) continue;
+    const status = g.status ?? 'ahead';
+    const tone: LoopTone = !g.status ? 'plain' : status === 'waiting' ? 'current' : status;
+    push(`${GATE_GLYPH[status]}   G${g.n} ${g.mode}`, tone);
+    if (status === 'stopped' && wf.effort) for (const line of stopLines(g, wf.effort)) push(`  ${line}`, 'note');
+  }
+  return out;
 }
 
 // Version directories newest first (`1.10.0` before `1.9.2`).

@@ -65,3 +65,26 @@ test("a stopped gate adds why: from its stop reason and resume:, and only attend
   for (const rows of [open, flagged, risky]) assert.doesNotMatch(line(rows, 'why').text, /forge\.yaml|forge\.md|default/);
   assert.equal(line(loopRows(loop(at('plan', 'plan')), 72), 'why'), undefined, 'a waiting gate has no why:');
 });
+
+test('below 52 columns one line per stage, its gate on the line under it, down to the 24-column floor', () => {
+  const wf = loop(at('plan', 'plan', 'attended'), 'version: 1\nworkflow:\n  gates:\n    plan: attended\n');
+  for (const [columns, width] of [[51, 51], [24, 24], [10, 24]]) {
+    const rows = loopRows(wf, columns);
+    for (const r of rows) assert.equal(r.text.length, width, `${columns}: every row is ${width} wide: "${r.text}"`);
+    const t = texts(rows);
+    assert.ok(!t.some((x) => /[╭╰│]/.test(x)), `${columns}: no boxes`);
+    const stages = t.filter((x) => /^[✓▶○] [a-z]/.test(x)).map((x) => x.slice(2).trim());
+    assert.deepEqual(stages, ['map', 'intent', 'spec', 'plan', 'build', 'built'], `${columns}: one line per stage`);
+    assert.equal(rows.find((r) => r.text.startsWith('▶ plan')).tone, 'current');
+    assert.equal(rows.find((r) => r.text.startsWith('✓ spec')).tone, 'passed');
+    const gate = rows.find((r) => r.text.startsWith('■   G3'));
+    assert.equal(gate.text.trimEnd(), '■   G3 attended');
+    assert.equal(gate.tone, 'stopped');
+    const below = texts(rows.slice(rows.indexOf(gate) + 1, rows.indexOf(gate) + 3));
+    assert.match(below[0], /^ {2}why: attended by/);
+    assert.match(below[1], /^ {2}resume: /);
+    assert.ok(t.some((x) => x.startsWith('○   G4 owner')));
+    assert.ok(t.some((x) => x.startsWith('✓   G1 attended')));
+  }
+  assert.equal(loopRows(wf, 51)[0].text.trimEnd(), 'demo');
+});
