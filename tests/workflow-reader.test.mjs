@@ -115,6 +115,55 @@ test('max_parallel_slices: forge.yaml, else ## Gates, else 3', () => {
   assert.equal(md.sources.maxParallelSlices, 'max_parallel_slices in forge.md ## Gates');
 });
 
+test('workflow.stages is reported: the plugin fixes the stages', () => {
+  const r = resolveRoster(yaml('workflow:', '  stages: [map, build]'), undefined);
+  assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);
+  assert.equal(r.problems.length, 1, JSON.stringify(r.problems));
+  assert.match(r.problems[0], /^roster: workflow\.stages .*ignored$/);
+});
+
+test('gates.pr is reported: Gate 4 is always the code owner’s', () => {
+  const r = resolveRoster(yaml('workflow:', '  gates:', '    pr: policy'), undefined);
+  assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);
+  assert.deepEqual(r.problems, ['roster: workflow.gates.pr is not a setting: Gate 4 is always the code owner’s; ignored']);
+});
+
+test('an unknown workflow: key and an unknown gate are reported with their key', () => {
+  const r = resolveRoster(yaml('workflow:', '  polcy: autonomous', '  gates:', '    deploy: policy'), undefined);
+  assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);
+  assert.equal(r.problems.length, 2, JSON.stringify(r.problems));
+  assert.match(r.problems[0], /^roster: workflow\.polcy is not a workflow key \(policy, max_parallel_slices, gates\); ignored$/);
+  assert.match(r.problems[1], /^roster: workflow\.gates\.deploy is not a gate \(intent, spec, plan\); ignored$/);
+});
+
+test('a gate value other than attended or policy, and a policy other than attended or autonomous, are reported and ignored', () => {
+  const r = resolveRoster(yaml('workflow:', '  policy: policy', '  gates:', '    plan: autonomous', '    spec: true'), GATES_MD('policy: autonomous'));
+  assert.equal(r.workflow.policy, 'autonomous');
+  assert.equal(r.workflow.sources.policy, 'policy in forge.md ## Gates');
+  assert.deepEqual(r.workflow.gates, { intent: 'policy', spec: 'policy', plan: 'policy' });
+  const own = r.problems.filter((p) => p.startsWith('roster: '));
+  assert.deepEqual(own, [
+    'roster: workflow.policy "policy" is not attended or autonomous; ignored',
+    'roster: workflow.gates.plan "autonomous" is not attended or policy; ignored',
+    'roster: workflow.gates.spec true is not attended or policy; ignored',
+  ]);
+});
+
+test('a workflow: or gates that is no map is reported', () => {
+  assert.deepEqual(resolveRoster(yaml('workflow: autonomous'), undefined).problems, ['roster: workflow is not a map; ignored']);
+  assert.deepEqual(resolveRoster(yaml('workflow:', '  gates: [plan]'), undefined).problems, ['roster: workflow.gates is not a map; ignored']);
+});
+
+test('a bad max_parallel_slices is reported and replaced by 3', () => {
+  for (const [value, shown] of [['0', '0'], ['-2', '-2'], ['many', '"many"'], ['2.5', '"2.5"'], ['[2]', '[2]']]) {
+    const r = resolveRoster(yaml('workflow:', `  max_parallel_slices: ${value}`), GATES_MD('max_parallel_slices: 4'));
+    assert.equal(r.workflow.maxParallelSlices, 3, value);
+    assert.equal(r.workflow.sources.maxParallelSlices, 'default', value);
+    const own = r.problems.filter((p) => p.startsWith('roster: '));
+    assert.deepEqual(own, [`roster: workflow.max_parallel_slices ${shown} is not a positive integer; 3 used`]);
+  }
+});
+
 test('workflow is a roster key: an empty workflow: section is no problem and changes nothing', () => {
   const r = resolveRoster(yaml('workflow:'), undefined);
   assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);

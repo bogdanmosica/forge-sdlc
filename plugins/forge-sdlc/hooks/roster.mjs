@@ -237,13 +237,15 @@ export const MAX_PARALLEL_SLICES = 3;
 
 /**
  * What forge.yaml's workflow: sets, each value already checked.
- * @typedef {{ policy?: Policy, maxParallelSlices?: number, gates: Partial<Record<GateKey, GateMode>> }} Settings
+ * (`maxParallelSlices` is `bad` for a value that is reported and replaced by the default.)
+ * @typedef {{ policy?: Policy, maxParallelSlices?: number | 'bad', gates: Partial<Record<GateKey, GateMode>> }} Settings
  * @typedef {typeof GATE_KEYS[number]} GateKey
  */
 /** @type {Settings} */
 const NO_SETTINGS = { gates: {} };
 const YAML = 'in forge.yaml';
 const MD = 'in forge.md ## Gates';
+const WORKFLOW_KEYS = ['policy', 'max_parallel_slices', 'gates'];
 
 /**
  * forge.yaml's workflow: section, read key by key.
@@ -258,13 +260,23 @@ function settingsOf(file, say) {
     if (value === null) continue;
     if (key === 'policy') {
       if (value === 'attended' || value === 'autonomous') out.policy = value;
+      else say(`workflow.policy ${quote(value)} is not attended or autonomous; ignored`);
     } else if (key === 'max_parallel_slices') {
       if (Number.isInteger(value) && Number(value) > 0) out.maxParallelSlices = Number(value);
-    } else if (key === 'gates' && isMap(value)) {
-      for (const [gate, mode] of Object.entries(value))
-        if (GATE_KEYS.includes(/** @type {GateKey} */ (gate)) && (mode === 'attended' || mode === 'policy'))
-          out.gates[/** @type {GateKey} */ (gate)] = mode;
-    }
+      else {
+        say(`workflow.max_parallel_slices ${quote(value)} is not a positive integer; ${MAX_PARALLEL_SLICES} used`);
+        out.maxParallelSlices = 'bad';
+      }
+    } else if (key === 'gates') {
+      if (!isMap(value)) say('workflow.gates is not a map; ignored');
+      for (const [gate, mode] of isMap(value) ? Object.entries(value) : []) {
+        if (gate === 'pr') say('workflow.gates.pr is not a setting: Gate 4 is always the code owner’s; ignored');
+        else if (!GATE_KEYS.includes(/** @type {GateKey} */ (gate))) say(`workflow.gates.${keyOf(gate)} is not a gate (${GATE_KEYS.join(', ')}); ignored`);
+        else if (mode === 'attended' || mode === 'policy') out.gates[/** @type {GateKey} */ (gate)] = mode;
+        else if (mode !== null) say(`workflow.gates.${gate} ${quote(mode)} is not attended or policy; ignored`);
+      }
+    } else if (key === 'stages') say('workflow.stages is not a host setting: the plugin’s workflow.yaml fixes the stages; ignored');
+    else say(`workflow.${keyOf(key)} is not a workflow key (${WORKFLOW_KEYS.join(', ')}); ignored`);
   }
   return out;
 }
@@ -291,8 +303,8 @@ function workflowOf(settings, config) {
   else if (mdPolicy !== undefined) [policy, policySource] = [mdPolicy === 'autonomous' ? 'autonomous' : 'attended', `policy ${MD}`];
   let max = MAX_PARALLEL_SLICES;
   let maxSource = 'default';
-  if (settings.maxParallelSlices) [max, maxSource] = [settings.maxParallelSlices, `workflow.max_parallel_slices ${YAML}`];
-  else if (mdMax > 0) [max, maxSource] = [mdMax, `max_parallel_slices ${MD}`];
+  if (typeof settings.maxParallelSlices === 'number') [max, maxSource] = [settings.maxParallelSlices, `workflow.max_parallel_slices ${YAML}`];
+  else if (!settings.maxParallelSlices && mdMax > 0) [max, maxSource] = [mdMax, `max_parallel_slices ${MD}`];
   /** @type {Workflow} */
   const out = {
     policy,
