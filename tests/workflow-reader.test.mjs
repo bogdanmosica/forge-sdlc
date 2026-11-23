@@ -24,6 +24,36 @@ test('no forge.yaml and no ## Gates yields today’s defaults: every gate attend
   assert.deepEqual(r.problems, []);
 });
 
+test('every workflow: knob is read from forge.yaml, each with its source', () => {
+  const r = resolveRoster(
+    yaml('workflow:', '  policy: autonomous', '  max_parallel_slices: 5', '  gates:', '    intent: attended', '    spec: policy', '    plan: attended'),
+    undefined,
+  );
+  assert.deepEqual(r.workflow, {
+    policy: 'autonomous',
+    maxParallelSlices: 5,
+    gates: { intent: 'attended', spec: 'policy', plan: 'attended' },
+    sources: {
+      policy: 'workflow.policy in forge.yaml',
+      maxParallelSlices: 'workflow.max_parallel_slices in forge.yaml',
+      intent: 'gates.intent in forge.yaml',
+      spec: 'gates.spec in forge.yaml',
+      plan: 'gates.plan in forge.yaml',
+    },
+  });
+  assert.deepEqual(r.problems, []);
+});
+
+test('every workflow: key is optional: one gate set, the rest from the global policy', () => {
+  const r = resolveRoster(yaml('workflow:', '  gates:', '    plan: attended'), undefined);
+  assert.deepEqual(r.workflow.gates, { intent: 'attended', spec: 'attended', plan: 'attended' });
+  assert.deepEqual(r.workflow.sources, { policy: 'default', maxParallelSlices: 'default', intent: 'default', spec: 'default', plan: 'gates.plan in forge.yaml' });
+  const p = resolveRoster(yaml('workflow:', '  policy: autonomous'), undefined).workflow;
+  assert.deepEqual(p.gates, { intent: 'policy', spec: 'policy', plan: 'policy' });
+  assert.equal(p.maxParallelSlices, 3);
+  assert.equal(p.sources.plan, 'workflow.policy in forge.yaml');
+});
+
 test('workflow is a roster key: an empty workflow: section is no problem and changes nothing', () => {
   const r = resolveRoster(yaml('workflow:'), undefined);
   assert.deepEqual(r.workflow, DEFAULT_WORKFLOW);

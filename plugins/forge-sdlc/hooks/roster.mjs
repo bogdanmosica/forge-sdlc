@@ -81,7 +81,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     slots,
     policy: [],
     allow: { agents: [], skills: [] },
-    workflow: workflowOf(),
+    workflow: workflowOf(NO_SETTINGS),
     problems: [],
   };
   fromForgeMd(roster, forgeConfig);
@@ -151,6 +151,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     const names = list === null ? [] : namesOf(list, `allow.${kind}`, kind === 'agents' ? 'agent type' : 'skill', say);
     if (names) roster.allow[kind] = names;
   }
+  roster.workflow = workflowOf(settingsOf(file, say));
   return roster;
 }
 
@@ -235,16 +236,67 @@ export const GATE_KEYS = /** @type {const} */ (['intent', 'spec', 'plan']);
 export const MAX_PARALLEL_SLICES = 3;
 
 /**
- * The workflow knobs.
+ * What forge.yaml's workflow: sets, each value already checked.
+ * @typedef {{ policy?: Policy, maxParallelSlices?: number, gates: Partial<Record<GateKey, GateMode>> }} Settings
+ * @typedef {typeof GATE_KEYS[number]} GateKey
+ */
+/** @type {Settings} */
+const NO_SETTINGS = { gates: {} };
+const YAML = 'in forge.yaml';
+
+/**
+ * forge.yaml's workflow: section, read key by key.
+ * @param {Record<string, unknown>} file
+ * @param {(line: string) => void} say
+ * @returns {Settings}
+ */
+function settingsOf(file, say) {
+  /** @type {Settings} */
+  const out = { gates: {} };
+  for (const [key, value] of entriesOf(file, 'workflow', say)) {
+    if (value === null) continue;
+    if (key === 'policy') {
+      if (value === 'attended' || value === 'autonomous') out.policy = value;
+    } else if (key === 'max_parallel_slices') {
+      if (Number.isInteger(value) && Number(value) > 0) out.maxParallelSlices = Number(value);
+    } else if (key === 'gates' && isMap(value)) {
+      for (const [gate, mode] of Object.entries(value))
+        if (GATE_KEYS.includes(/** @type {GateKey} */ (gate)) && (mode === 'attended' || mode === 'policy'))
+          out.gates[/** @type {GateKey} */ (gate)] = mode;
+    }
+  }
+  return out;
+}
+
+/**
+ * The workflow knobs: forge.yaml's settings over the defaults, each with its source.
+ * @param {Settings} settings
  * @returns {Workflow}
  */
-function workflowOf() {
-  return {
-    policy: 'attended',
-    maxParallelSlices: MAX_PARALLEL_SLICES,
+function workflowOf(settings) {
+  const policy = settings.policy ?? 'attended';
+  const policySource = settings.policy ? `workflow.policy ${YAML}` : 'default';
+  /** @type {Workflow} */
+  const out = {
+    policy,
+    maxParallelSlices: settings.maxParallelSlices ?? MAX_PARALLEL_SLICES,
     gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
-    sources: { policy: 'default', maxParallelSlices: 'default', intent: 'default', spec: 'default', plan: 'default' },
+    sources: {
+      policy: policySource,
+      maxParallelSlices: settings.maxParallelSlices ? `workflow.max_parallel_slices ${YAML}` : 'default',
+      intent: policySource,
+      spec: policySource,
+      plan: policySource,
+    },
   };
+  for (const gate of GATE_KEYS) {
+    const set = settings.gates[gate];
+    if (set) {
+      out.gates[gate] = set;
+      out.sources[gate] = `gates.${gate} ${YAML}`;
+    } else out.gates[gate] = policy === 'autonomous' ? 'policy' : 'attended';
+  }
+  return out;
 }
 
 /** A forge.md section as a map, anything else as none. */
