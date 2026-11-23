@@ -371,21 +371,21 @@ export const STOPS = /** @type {const} */ (['open', 'flagged', 'risk-high', 'att
  * @returns {ResolvedWorkflow}
  */
 export function resolveWorkflow(workflowText, roster, options) {
-  const r = roster ?? resolveRoster(undefined, undefined);
+  const r = isRoster(roster) ? roster : resolveRoster(undefined, undefined);
+  const problems = [...r.problems];
   const agentModels = isMap(options?.agentModels) ? options.agentModels : {};
   const at = positionOf(options?.effort);
   const riskHigh = isMap(options?.effort) && options.effort.risk === 'high';
-  const { value } = parseYamlSubset(String(workflowText ?? ''));
-  const file = isMap(value) ? value : {};
-  const described = Object.entries(isMap(file.stages) ? file.stages : {}).map(([name, s]) => describedOf(name, s));
+  const described = descriptionOf(workflowText, (line) => void problems.push(`workflow.yaml: ${line}`));
   /** @param {string} role @returns {WorkflowRole} */
   const roleIn = (role) => {
-    const rr = r.roles[role] ?? { agent: `${PLUGIN}:${role}`, swapped: false };
+    const set = Object.hasOwn(r.roles, role) ? r.roles[role] : undefined;
+    const rr = isMap(set) && typeof set.agent === 'string' ? set : { agent: `${PLUGIN}:${role}`, swapped: false };
     const model = rr.model ?? (Object.hasOwn(agentModels, rr.agent) && isModel(agentModels[rr.agent]) ? agentModels[rr.agent] : undefined);
     return { role, agent: rr.agent, ...(model ? { model } : {}), ...(rr.effort ? { effort: rr.effort } : {}), swapped: rr.swapped };
   };
   /** @param {string} slot @returns {WorkflowSlot} */
-  const slotIn = (slot) => ({ slot, skill: slot === 'policy' ? r.policy.join(', ') || 'none' : String(r.slots[slot] ?? '') });
+  const slotIn = (slot) => ({ slot, skill: slot === 'policy' ? r.policy.join(', ') || 'none' : String(Object.hasOwn(r.slots, slot) ? r.slots[slot] : '') });
   /** @param {NonNullable<Described['gate']>} g @returns {WorkflowGate} */
   const gateIn = (g) => {
     if (g.key === 'pr') return { ...g, mode: 'owner', source: 'always' };
@@ -416,7 +416,7 @@ export function resolveWorkflow(workflowText, roster, options) {
     policy: r.workflow.policy,
     maxParallelSlices: r.workflow.maxParallelSlices,
     effort: current >= 0 ? at : null,
-    problems: [...r.problems],
+    problems,
   };
 }
 
@@ -433,25 +433,160 @@ function positionOf(effort) {
   return { slug: String(effort.slug ?? ''), stage: String(effort.stage), gate, stop, risk: effort.risk === 'high' ? 'high' : 'normal' };
 }
 
+/** The plugin's stages as workflow.yaml ships them: the loop drawn when the file is malformed. */
+/** @type {readonly Described[]} */
+const FIXED_STAGES = [
+  {
+    name: 'map',
+    does: 'the map and its tickets, worked with the owner',
+    command: '/forge-sdlc:wayfinder',
+    roles: ['researcher', 'prototyper'],
+    slots: ['grilling', 'prototyper.prototype', 'domain-modeling'],
+  },
+  {
+    name: 'intent',
+    does: 'intent.md and the draft PR',
+    command: '/forge-sdlc:wayfinder',
+    roles: [],
+    slots: [],
+    gate: { key: 'intent', n: 1, artifact: 'intent.md', stops: ['open', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'spec',
+    does: 'spec.md under the policy skills',
+    command: '/forge-sdlc:spec',
+    roles: ['spec-writer'],
+    slots: ['spec-writer.codebase-design', 'policy'],
+    gate: { key: 'spec', n: 2, artifact: 'spec.md', stops: ['open', 'flagged', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'plan',
+    does: 'plan.md, slices, the quiz',
+    command: '/forge-sdlc:plan',
+    roles: [],
+    slots: [],
+    gate: { key: 'plan', n: 3, artifact: 'plan.md', stops: ['open', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'build',
+    does: 'one worktree per slice, merged when clean',
+    command: '/forge-sdlc:build',
+    roles: ['implementer', 'verifier', 'reviewer', 'merger'],
+    slots: ['implementer.tdd'],
+    gate: { key: 'pr', n: 4, artifact: 'the PR', stops: [] },
+  },
+  { name: 'built', does: 'ready for review; the code owner merges', roles: [], slots: [] },
+];
+const FILE_KEYS = ['version', 'stops', 'stages'];
+const STAGE_FIELDS = ['does', 'command', 'roles', 'slots', 'human', 'lead', 'gate', 'end'];
+const GATE_FIELDS = ['n', 'key', 'artifact', 'stops', 'owner'];
+
 /**
- * One stage of the file as the join reads it.
- * @param {string} name
+ * workflow.yaml read against the fixed stages and gates: its stages, or, when
+ * anything in it is wrong, each wrong thing reported and the fixed stages.
+ * @param {unknown} text
+ * @param {(line: string) => void} say
+ * @returns {readonly Described[]}
+ */
+function descriptionOf(text, say) {
+  /** @type {string[]} */
+  const bad = [];
+  const flag = (/** @type {string} */ line) => void bad.push(line);
+  const { value, errors } = parseYamlSubset(typeof text === 'string' ? text : '');
+  /** @type {Described[]} */
+  const described = [];
+  if (typeof text !== 'string') flag('the file is missing or unreadable');
+  for (const e of errors) flag(`line ${e.line}: ${e.message}`);
+  if (typeof text === 'string' && !isMap(value)) flag('the file is not a map of keys');
+  if (isMap(value)) {
+    for (const key of Object.keys(value)) if (!FILE_KEYS.includes(key)) flag(`${keyOf(key)} is not a workflow.yaml key (${FILE_KEYS.join(', ')})`);
+    if (value.version !== 1) flag(`version ${quote(value.version ?? null)} is not 1`);
+    if (!Array.isArray(value.stops) || value.stops.join() !== STOPS.join()) flag(`stops is not [${STOPS.join(', ')}]`);
+    const stages = value.stages;
+    if (!isMap(stages)) flag('stages is not a map');
+    else {
+      if (Object.keys(stages).join() !== STAGES.join()) flag(`stages are not ${STAGES.join(', ')}, in that order`);
+      for (const fixed of FIXED_STAGES) if (Object.hasOwn(stages, fixed.name)) described.push(stageOf(fixed, stages[fixed.name], flag));
+    }
+  }
+  if (!bad.length) return described;
+  for (const line of bad) say(line);
+  say('the plugin’s fixed stages are drawn until the file is fixed');
+  return FIXED_STAGES;
+}
+
+/**
+ * One stage of the file, checked against its fixed counterpart.
+ * @param {Described} fixed
  * @param {unknown} s
+ * @param {(line: string) => void} flag
  * @returns {Described}
  */
-function describedOf(name, s) {
-  const stage = isMap(s) ? s : {};
-  const list = (/** @type {unknown} */ v) => (Array.isArray(v) ? v.map(String) : []);
-  const g = isMap(stage.gate) ? stage.gate : undefined;
-  return {
-    name,
-    does: String(stage.does ?? ''),
-    ...(typeof stage.command === 'string' ? { command: stage.command } : {}),
-    roles: list(stage.roles),
-    slots: list(stage.slots),
-    ...(g ? { gate: { key: String(g.key), n: Number(g.n), artifact: String(g.artifact ?? ''), stops: list(g.stops) } } : {}),
+function stageOf(fixed, s, flag) {
+  const where = `stages.${fixed.name}`;
+  if (!isMap(s)) {
+    flag(`${where} is not a map`);
+    return fixed;
+  }
+  for (const key of Object.keys(s)) if (!STAGE_FIELDS.includes(key)) flag(`${where}.${keyOf(key)} is not a stage key (${STAGE_FIELDS.join(', ')})`);
+  if (typeof s.does !== 'string' || !s.does) flag(`${where}.does is not a line of text`);
+  if (s.command != null && typeof s.command !== 'string') flag(`${where}.command is not a command`);
+  /** @type {Described} */
+  const out = {
+    name: fixed.name,
+    does: String(s.does ?? ''),
+    ...(typeof s.command === 'string' ? { command: s.command } : {}),
+    roles: knownOf(s.roles, `${where}.roles`, ROLES, 'role', flag),
+    slots: knownOf(s.slots, `${where}.slots`, SLOT_NAMES, 'slot', flag),
   };
+  const g = s.gate;
+  if (!fixed.gate) {
+    if (g != null) flag(`${where}.gate: the ${fixed.name} stage ends at no gate`);
+    return out;
+  }
+  if (!isMap(g)) {
+    flag(`${where}.gate is not a map`);
+    return out;
+  }
+  for (const key of Object.keys(g)) if (!GATE_FIELDS.includes(key)) flag(`${where}.gate.${keyOf(key)} is not a gate key (${GATE_FIELDS.join(', ')})`);
+  if (g.key !== fixed.gate.key || g.n !== fixed.gate.n) flag(`${where}.gate is not Gate ${fixed.gate.n}, key ${fixed.gate.key}`);
+  if (typeof g.artifact !== 'string' || !g.artifact) flag(`${where}.gate.artifact is not a line of text`);
+  const owners = fixed.gate.key === 'pr';
+  if (owners && g.stops != null) flag(`${where}.gate.stops: Gate 4 is the code owner’s and stops on nothing`);
+  if (!owners && g.owner != null) flag(`${where}.gate.owner: only Gate 4 is the code owner’s`);
+  out.gate = { key: fixed.gate.key, n: fixed.gate.n, artifact: String(g.artifact ?? ''), stops: owners ? [] : knownOf(g.stops, `${where}.gate.stops`, STOPS, 'stop reason', flag) };
+  return out;
 }
+
+/**
+ * A list whose every item is one of `known`; anything else is flagged.
+ * @param {unknown} list
+ * @param {string} key
+ * @param {readonly string[]} known
+ * @param {string} what
+ * @param {(line: string) => void} flag
+ * @returns {string[]}
+ */
+function knownOf(list, key, known, what, flag) {
+  if (list == null) return [];
+  if (!Array.isArray(list)) {
+    flag(`${key} is not a list`);
+    return [];
+  }
+  for (const item of list) if (!known.includes(item)) flag(`${key} holds ${quote(item)}, not a ${what} (${known.join(', ')})`);
+  return list.filter((item) => known.includes(item));
+}
+
+/** Whether a value has the fields the join reads off a roster. @param {unknown} r @returns {r is Roster} */
+const isRoster = (r) =>
+  isMap(r) &&
+  isMap(r.roles) &&
+  isMap(r.slots) &&
+  Array.isArray(r.policy) &&
+  Array.isArray(r.problems) &&
+  isMap(r.workflow) &&
+  isMap(r.workflow.gates) &&
+  isMap(r.workflow.sources);
 
 /** A forge.md section as a map, anything else as none. */
 const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {string} */ name) => {

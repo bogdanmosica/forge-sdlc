@@ -165,3 +165,64 @@ test('risk: normal leaves the settings’ modes', () => {
   const w = resolveWorkflow(SHIPPED, roster, { effort: { slug: 'demo', stage: 'spec', gate: 'spec', risk: 'normal' } });
   assert.deepEqual(byName(w).spec.gate.mode, 'policy');
 });
+
+// A malformed workflow.yaml is a problem and the loop falls back to the fixed stages.
+const MALFORMED = {
+  'no file': undefined,
+  'an empty file': '',
+  'a YAML error': SHIPPED.replace('version: 1', 'version: 1\n\tstray: tab'),
+  'not a map': '- map\n- intent',
+  'version 2': SHIPPED.replace('version: 1', 'version: 2'),
+  'stages reordered': SHIPPED.replace(/  map:[\s\S]*?(?=  intent:)/, '').replace('  built:', '  built:\n    does: x\n  map:\n    does: y'),
+  'a stage the loop does not have': SHIPPED.replace('  built:', '  deploy:\n    does: ship it\n  built:'),
+  'a role the roster does not know': SHIPPED.replace('roles: [spec-writer]', 'roles: [spec-writer, architect]'),
+  'a slot the roster does not know': SHIPPED.replace('slots: [implementer.tdd]', 'slots: [implementer.tdd, reviewer.lint]'),
+  'a gate under the wrong key': SHIPPED.replace('key: plan', 'key: quiz'),
+  'a gate on a stage that has none': SHIPPED.replace('    end: true', '    gate:\n      n: 5\n      key: ship\n      artifact: x\n      stops: [open]'),
+  'a stop outside the closed set': SHIPPED.replace('stops: [open, risk-high, attended]', 'stops: [open, lunch]'),
+  'a stage key it does not read': SHIPPED.replace('    end: true', '    end: true\n    order: 7'),
+};
+
+for (const [what, text] of Object.entries(MALFORMED)) {
+  test(`${what}: a workflow.yaml problem, and the fixed stages`, () => {
+    const roster = resolveRoster(undefined, undefined);
+    const w = resolveWorkflow(text, roster, { agentModels: MODELS });
+    assert.ok(w.problems.length > 0, 'a problem is reported');
+    assert.ok(w.problems.every((p) => p.startsWith('workflow.yaml: ')), w.problems.join('\n'));
+    assert.deepEqual(w.stages, resolveWorkflow(SHIPPED, roster, { agentModels: MODELS }).stages);
+  });
+}
+
+test('the fixed stages are the shipped file’s: the fallback and the file resolve alike', () => {
+  const roster = resolveRoster(undefined, undefined);
+  const effort = { slug: 'demo', stage: 'plan', gate: 'plan', stop: 'open' };
+  const fallback = resolveWorkflow('', roster, { agentModels: MODELS, effort });
+  const shipped = resolveWorkflow(SHIPPED, roster, { agentModels: MODELS, effort });
+  assert.deepEqual(fallback.stages, shipped.stages);
+  assert.deepEqual(shipped.problems, []);
+});
+
+test('the roster’s problems, workflow: ones included, come first in problems', () => {
+  const roster = resolveRoster(yaml('workflow:', '  gates:', '    pr: policy'), undefined);
+  const w = resolveWorkflow('', roster);
+  assert.equal(w.problems[0], 'roster: workflow.gates.pr is not a setting: Gate 4 is always the code owner’s; ignored');
+  assert.ok(w.problems.slice(1).every((p) => p.startsWith('workflow.yaml: ')));
+});
+
+test('it never throws, whatever it is given, and still returns the whole loop', () => {
+  const texts = [undefined, null, 42, {}, 'stages:\n  map: 1', SHIPPED];
+  const rosters = [undefined, null, 42, {}, { roles: 'x', workflow: [] }, resolveRoster(undefined, undefined)];
+  const options = [undefined, null, 42, { agentModels: 7, effort: 'plan' }, { agentModels: { 'forge-sdlc:merger': 'nonsense' }, effort: { stage: 'plan', gate: {}, stop: [] } }];
+  for (const t of texts)
+    for (const r of rosters)
+      for (const o of options) {
+        const w = resolveWorkflow(t, r, o);
+        assert.deepEqual(w.stages.map((s) => s.name), ['map', 'intent', 'spec', 'plan', 'build', 'built']);
+      }
+});
+
+test('the reader stays pure: no imports, no require, no Node API', () => {
+  const source = readFileSync(new URL('../plugins/forge-sdlc/hooks/roster.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /^\s*import\s/m);
+  assert.doesNotMatch(source, /\bimport\(|\brequire\(|\bprocess\.|\bBuffer\b|\bglobalThis\b/);
+});
