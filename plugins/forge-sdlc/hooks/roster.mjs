@@ -17,8 +17,21 @@
  *   slots: Record<string, string>,
  *   policy: string[],
  *   allow: { agents: string[], skills: string[] },
+ *   workflow: Workflow,
  *   problems: string[],
  * }} Roster
+ */
+/** @typedef {'attended' | 'autonomous'} Policy */
+/** @typedef {'attended' | 'policy'} GateMode */
+/**
+ * The host's workflow: knobs, merged with forge.md's deprecated `## Gates`;
+ * each knob's source names where it came from (`default` when nowhere).
+ * @typedef {{
+ *   policy: Policy,
+ *   maxParallelSlices: number,
+ *   gates: { intent: GateMode, spec: GateMode, plan: GateMode },
+ *   sources: { policy: string, maxParallelSlices: string, intent: string, spec: string, plan: string },
+ * }} Workflow
  */
 
 export const PLUGIN = 'forge-sdlc';
@@ -68,6 +81,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     slots,
     policy: [],
     allow: { agents: [], skills: [] },
+    workflow: workflowOf(),
     problems: [],
   };
   fromForgeMd(roster, forgeConfig);
@@ -217,13 +231,29 @@ function fromForgeMd(roster, config) {
   }
 }
 
+export const GATE_KEYS = /** @type {const} */ (['intent', 'spec', 'plan']);
+export const MAX_PARALLEL_SLICES = 3;
+
+/**
+ * The workflow knobs.
+ * @returns {Workflow}
+ */
+function workflowOf() {
+  return {
+    policy: 'attended',
+    maxParallelSlices: MAX_PARALLEL_SLICES,
+    gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
+    sources: { policy: 'default', maxParallelSlices: 'default', intent: 'default', spec: 'default', plan: 'default' },
+  };
+}
+
 /** A forge.md section as a map, anything else as none. */
 const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {string} */ name) => {
   const section = isMap(config) ? config[name] : undefined;
   return isMap(section) ? section : {};
 };
 
-const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];
+const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow', 'workflow'];
 const ROLE_FIELDS = ['agent', 'model', 'effort'];
 
 /** An agent type or skill name as the Agent and Skill tools name them. */
