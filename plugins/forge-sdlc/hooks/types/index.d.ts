@@ -27,6 +27,7 @@ export type RunPaneUsage = {
 export type RunPaneNotes = {
   pane?: string;
   routing?: string;
+  roster?: string; // docs/agents/forge.yaml's problems and the deprecated forge.md sections
   crew?: string;
   mark?: string;
   worktrees?: string;
@@ -119,11 +120,13 @@ export type RunPanePrices = {
 };
 
 // What routing applied to one spawned agent, keyed by agent id: the type it was
-// spawned as, the model and/or effort the host config set, and whether that
-// changed the default (the Agent call's model, else the frontmatter's; the
-// frontmatter's effort). Only an overridden agent's row is marked.
+// called as (the role), the agent the roster swapped in for it, the model and/or
+// effort the roster or host config set, and whether that changed the default
+// (the Agent call's model, else the frontmatter's; the frontmatter's effort; any
+// swap). Only an overridden agent's row is marked.
 export type AgentRouting = {
   type: string;
+  agent?: string; // the swapped-in type (docs/agents/forge.yaml roles.<role>.agent); absent when not swapped
   model?: string;
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   overridden: boolean;
@@ -140,7 +143,10 @@ export type ForgeView = { tab: 'commands' | 'agents' | 'loop'; upstream: boolean
 export type ForgeSkill = { name: string; description: string; hint?: string };
 // An agent as the panel lists it: a skill's fields plus the model and effort its frontmatter names.
 export type ForgeAgent = ForgeSkill & { model?: string; effort?: string };
-export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[] };
+// The host roster as the panel shows it, from docs/agents/forge.yaml through hooks/roster.mjs; absent without the file.
+export type ForgeRosterRole = { agent: string; model?: string; effort?: string; swapped: boolean };
+export type ForgeRoster = { roles: Record<string, ForgeRosterRole>; slots: Record<string, string>; policy: string[] };
+export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[]; roster?: ForgeRoster };
 
 export type SessionStatus = 'working' | 'idle' | 'needs-you';
 

@@ -16,7 +16,7 @@
 // skills one folder down, by category (skills/<category>/<name>/SKILL.md).
 import { atom, read, update } from 'claude-code';
 import type { CommandSpec, EngineInterface, On } from 'claude-code';
-import type { ForgeSkills, ForgeView } from './types';
+import type { ForgeRoster, ForgeSkills, ForgeView } from './types';
 import {
   GATES,
   LOOP,
@@ -26,14 +26,19 @@ import {
   newestVersionFirst,
   parseAgent,
   parseSkill,
+  slotLines,
   upstreamGroup,
 } from './forge/help';
 import type { Agent, Group, Skill } from './forge/help';
+import { HOST_CONFIG, parseForgeConfig } from './run-pane/config';
+import { resolveRoster } from './roster.mjs';
 
 const PANE = 'forge';
 const USAGE =
   "Usage: /forge [loop | agents | close]. No argument opens the panel on the commands; agents on the plugin's agents; loop on how the loop runs and where you are needed; close closes it.";
 const OFFICIAL = 'claude-plugins-official';
+// The host's roster, beside its config, read against the session folder as HOST_CONFIG is.
+const ROSTER_FILE = 'docs/agents/forge.yaml';
 
 const view = atom({ plugin: 'forge-sdlc', key: 'forgeView' } as const, { tab: 'commands', upstream: false } as ForgeView);
 const skills = atom(
@@ -113,13 +118,34 @@ async function agentsIn($: EngineInterface, dir: string): Promise<Agent[]> {
   return parsed.filter((a): a is Agent => a !== null);
 }
 
+// A file's text, undefined when it is missing or unreadable.
+async function readOrUndefined($: EngineInterface, path: string): Promise<string | undefined> {
+  try {
+    return await $.fs.read(path);
+  } catch {
+    return undefined;
+  }
+}
+
+// The host's roster through the shared reader, forge.md's deprecated sections
+// folded in; undefined without forge.yaml, so the panel is as before. Only
+// what the panel draws is kept.
+async function hostRoster($: EngineInterface): Promise<ForgeRoster | undefined> {
+  const yaml = await readOrUndefined($, ROSTER_FILE);
+  if (yaml === undefined) return undefined;
+  const md = await readOrUndefined($, HOST_CONFIG);
+  const { roles, slots, policy } = resolveRoster(yaml, md === undefined ? undefined : parseForgeConfig(md));
+  return { roles, slots, policy };
+}
+
 async function loadSkills($: EngineInterface): Promise<void> {
-  const [plugin, upstream, agents] = await Promise.all([
+  const [plugin, upstream, agents, roster] = await Promise.all([
     skillsIn($, $.plugin.root),
     upstreamSkills($),
     agentsIn($, $.plugin.root),
+    hostRoster($),
   ]);
-  await update($, skills, () => ({ plugin, upstream, agents }));
+  await update($, skills, () => ({ plugin, upstream, agents, ...(roster ? { roster } : {}) }));
 }
 
 // Opens the panel on a tab, the skills and agents read afresh.
@@ -206,7 +232,7 @@ export function registerForge(on: On): void {
         {v.tab === 'agents' && (
           <Box key="agents" flexDirection="column">
             {s.agents.length === 0 && <Text dimColor>no agents found under the plugin's agents folder</Text>}
-            {agentRows(s.agents).map((r) => (
+            {agentRows(s.agents, s.roster).map((r) => (
               <Box key={r.command} flexDirection="column" marginBottom={1}>
                 <Box key="name" flexDirection="row">
                   <Text bold wrap="truncate-end">
@@ -217,6 +243,18 @@ export function registerForge(on: On): void {
                 <Text dimColor wrap="truncate-end">{`  ${r.description}`}</Text>
               </Box>
             ))}
+            {s.roster && (
+              <Box key="slots" flexDirection="column">
+                <Text bold underline>
+                  slots
+                </Text>
+                {slotLines(s.roster).map((line) => (
+                  <Text key={line} wrap="truncate-end">
+                    {line}
+                  </Text>
+                ))}
+              </Box>
+            )}
           </Box>
         )}
         {v.tab === 'loop' && (

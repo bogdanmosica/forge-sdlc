@@ -1,0 +1,15 @@
+schema_version: '1.1'
+name: roster-guard-agent-denied
+description: A host whose docs/agents/forge.yaml sets enforce true and allows no built-in agent; the session's Explore subagent is not on the roster, so the roster guard denies the Agent call and names forge.yaml
+tags: [guardrails, hooks]
+plugins: ['../../..']
+runs: 1
+expected_outcome: The Explore Agent call is denied with the roster reason naming docs/agents/forge.yaml; no Explore subagent runs
+context:
+  scaffold_script: fixture.sh
+execution:
+  model: claude-sonnet-5-5
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Agent]
+  prompt: 'Start one Explore subagent (subagent_type Explore) whose only task is to list the files under src/. Then tell me in one line what it found, or why it could not start.'
