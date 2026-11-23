@@ -53,3 +53,17 @@ test('on a host with no settings: flowchart TD, a box per stage with its roles a
   assert.equal(passEdge(out, 'G4').trim(), 'G4 ==>|"code owner reviews, merges"| built');
   assert.doesNotMatch(out, /:::(passed|current|stopped)\b/, 'unpositioned: no position classes on any node');
 });
+
+test('a policy gate passes on a thin edge labelled with its stops; an attended gate names its source; a swapped role shows ⇄ and its agent', () => {
+  const dir = mermaidHost({
+    yaml: ['version: 1', 'roles:', '  reviewer:', '    agent: other:critic', 'workflow:', '  policy: autonomous', '  gates:', '    plan: attended', ''].join('\n'),
+  });
+  const out = mermaid(dir);
+  assert.equal(nodeLine(out, 'G1').trim(), 'G1{{"Gate 1 · policy"}}:::gpolicy');
+  assert.equal(passEdge(out, 'G1').trim(), 'G1 -->|"passes unless open · risk-high"| spec');
+  assert.equal(passEdge(out, 'G2').trim(), 'G2 -->|"passes unless open · flagged · risk-high"| plan', 'Gate 2 alone lists flagged');
+  assert.equal(nodeLine(out, 'G3').trim(), 'G3{{"Gate 3 · attended · gates.plan in forge.yaml"}}:::gattended');
+  assert.equal(passEdge(out, 'G3').trim(), 'G3 ==>|"you pass it"| build');
+  assert.match(nodeLine(out, 'build'), /<br\/>reviewer ⇄ other:critic<br\/>/);
+  assert.match(out, /^%% policy autonomous$/m);
+});
