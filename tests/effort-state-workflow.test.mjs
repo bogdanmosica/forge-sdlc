@@ -42,3 +42,30 @@ test('gates: each gate\'s mode and source, from forge.yaml over the default, Gat
     pr: { mode: 'owner', source: 'always' },
   });
 });
+
+test('stop: attended gives the why naming the forge.yaml key that makes the gate attended', () => {
+  const cases = [
+    ['workflow:\n  gates:\n    plan: attended\n', 'gate plan is attended in forge.yaml (gates.plan)'],
+    ['workflow:\n  policy: attended\n', 'gate plan is attended in forge.yaml (workflow.policy)'],
+    ['workflow:\n  policy: autonomous\n  gates:\n    plan: attended\n', 'gate plan is attended in forge.yaml (gates.plan)'],
+  ];
+  for (const [yaml, why] of cases) {
+    const dir = stateHost({ yaml, efforts: { x: effort('plan', 'plan', { stop: 'attended' }) } });
+    const r = run(dir, 'x');
+    assert.deepEqual({ stop: r.stop, why: r.why, next: r.next }, { stop: 'attended', why, next: 'build' }, yaml);
+  }
+});
+
+test('stop: attended reads was-attended when the current settings no longer make the gate attended', () => {
+  const cases = [
+    ['no forge.yaml', BRANCHES_ONLY, undefined],
+    ['gates.plan now policy', BRANCHES_ONLY, 'workflow:\n  gates:\n    plan: policy\n'],
+    ['workflow.policy now autonomous', BRANCHES_ONLY, 'workflow:\n  policy: autonomous\n'],
+    ['attended only from ## Gates', forgeMd().replace('- spec: always', '- policy: attended'), undefined],
+  ];
+  for (const [name, config, yaml] of cases) {
+    const dir = stateHost({ config, yaml, efforts: { x: effort('plan', 'plan', { stop: 'attended' }) } });
+    const r = run(dir, 'x');
+    assert.deepEqual({ stop: r.stop, why: r.why }, { stop: 'attended', why: 'gate plan was attended in forge.yaml' }, name);
+  }
+});

@@ -26,11 +26,23 @@ const WHY = {
   built: 'Gate 4: the PR is ready for the code owner',
 };
 
-/** Why the run stopped, by the state's `stop` (the closed set of the gate policy reference); it replaces the stage's line. */
+/** The forge.yaml sources that make a gate attended and so write `stop: attended`; any other source writes no stop. */
+const ATTENDED_IN_YAML = /^(gates\.(?:intent|spec|plan)|workflow\.policy) in forge\.yaml$/;
+
+/**
+ * Why the run stopped, by the state's `stop` (the closed set of the gate policy reference, `attended` last);
+ * it replaces the stage's line. `attended` names the forge.yaml key that makes the gate attended now, read
+ * from the current settings like `policy`, or says it was when they no longer do.
+ */
 const STOP_WHY = {
-  open: 'an open line waits for the owner',
-  flagged: 'a flagged concern waits for the owner',
-  'risk-high': 'risk high, the effort runs attended',
+  open: () => 'an open line waits for the owner',
+  flagged: () => 'a flagged concern waits for the owner',
+  'risk-high': () => 'risk high, the effort runs attended',
+  attended: (gate) => {
+    const g = settings().stages.find((s) => s.gate?.key === gate)?.gate;
+    const key = g?.mode === 'attended' ? ATTENDED_IN_YAML.exec(g.source)?.[1] : undefined;
+    return key ? `gate ${gate} is attended in forge.yaml (${key})` : `gate ${gate} was attended in forge.yaml`;
+  },
 };
 
 const args = process.argv.slice(2);
@@ -45,6 +57,9 @@ const config = readHostConfig(dir);
 const shape = config?.branches?.effort || DEFAULT_BRANCHES.effort;
 const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
+/** The host's current gate settings: the resolved workflow with no effort position, read once. */
+let unpositioned;
+const settings = () => (unpositioned ??= readWorkflow(dir));
 /** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
 const policy = config?.gates?.policy === 'autonomous' ? 'autonomous' : 'attended';
 
@@ -97,7 +112,7 @@ function where(slug) {
   const record = state?.efforts?.[slug];
   if (record?.stage in NEXT) {
     const stop = Object.hasOwn(STOP_WHY, record.stop ?? '') ? record.stop : 'none';
-    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop];
+    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop](record.gate);
     return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop, gates: gatesOf(slug) };
   }
   const derived = fromArtifacts(slug);
