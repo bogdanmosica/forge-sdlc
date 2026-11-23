@@ -100,3 +100,56 @@ test('GATE-POLICY.md: every source a passing gate can print has its tail in the 
     assert.ok(row.includes(`\`${generic}\``), `${gate.source} → ${tail}`);
   }
 });
+
+/* The stages: one pointer line to GATE-POLICY.md, their own gate key, artifact and next command */
+
+const STAGES = [
+  { skill: 'wayfinder', gateStep: 7, key: 'intent', n: 1, artifact: 'intent.md', next: '/forge-sdlc:wayfinder <slug>', link: '](GATE-POLICY.md)', steps: [1, 7] },
+  { skill: 'spec', gateStep: 7, key: 'spec', n: 2, artifact: 'spec.md', next: '/forge-sdlc:plan <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 6, 7] },
+  { skill: 'plan', gateStep: 3, key: 'plan', n: 3, artifact: 'plan.md', next: '/forge-sdlc:build <slug>', link: '](../wayfinder/GATE-POLICY.md)', steps: [1, 3, 5, 6, 7] },
+];
+
+for (const s of STAGES) {
+  const text = read(`skills/${s.skill}/SKILL.md`);
+  const gate = stepOf(text, s.gateStep);
+
+  test(`${s.skill}: reads Gate ${s.n} through bin/workflow.mjs --gate ${s.key}, not the host config's gates`, () => {
+    assert.ok(text.includes(`node "\${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --gate ${s.key} --project .`), 'the --gate line');
+    assert.doesNotMatch(text, /gates\.policy|gates\.spec|`spec:` key/, 'no gate read from forge-config');
+  });
+
+  test(`${s.skill}: the gate section is one pointer line to GATE-POLICY.md with its gate key, artifact and next command`, () => {
+    const pointer = gate.split('\n').find((l) => l.includes(s.link));
+    assert.ok(pointer, 'a line links GATE-POLICY.md');
+    assert.ok(pointer.includes(`gate key \`${s.key}\``), 'names its gate key');
+    assert.ok(pointer.includes(`artifact ${s.artifact}`), 'names its artifact');
+    assert.ok(pointer.includes(`next command \`${s.next}\``), 'names its next command');
+    for (const restated of [/other than `- none`/, /first in that order/, /## Gates/, /`policy autonomous`/, /only-on-open/, /`default`/]) {
+      assert.doesNotMatch(gate, restated, `restates the reference: ${restated}`);
+    }
+  });
+
+  test(`${s.skill}: chooses its gate line by the gate's mode, never by the global policy`, () => {
+    assert.match(gate, /[Mm]ode `policy`/);
+    assert.match(gate, /[Mm]ode `attended`/);
+    for (const n of s.steps) assert.doesNotMatch(stepOf(text, n), /`autonomous`/, `step ${n} names the global policy`);
+  });
+}
+
+test('wayfinder Resume continues on any Gate <n> passed line, whatever its tail', () => {
+  const skill = read('skills/wayfinder/SKILL.md');
+  const resume = /^## Resume\n([\s\S]*)$/m.exec(skill)?.[1] ?? '';
+  const step3 = /^3\. \*\*Run the next stage\.\*\*[^\n]*/m.exec(resume)?.[0] ?? '';
+  assert.match(step3, /`Gate <n> passed`/);
+  assert.match(step3, /whatever its tail/);
+  assert.match(resume, /\{ slug, stage, gate, next, why, source, policy, stop, gates \}/);
+});
+
+test('plan: the policy-passed quiz lines end (source: <tail>), in step 3 and in PLAN-TEMPLATE.md', () => {
+  const step3 = stepOf(read('skills/plan/SKILL.md'), 3);
+  assert.match(step3, /`recommended:`[^\n]*`\(source: <tail>\)`[^\n]*\[gate policy\]|`\(source: <tail>\)`[^\n]*report line/);
+  const template = read('skills/plan/PLAN-TEMPLATE.md');
+  const quiz = template.slice(template.indexOf('## Quiz')).split('\n').filter((l) => l.startsWith('- recommended: '));
+  assert.equal(quiz.length, 4);
+  for (const l of quiz) assert.match(l, /\(source: <tail>\)$/);
+});

@@ -51,7 +51,7 @@ test('spec/SKILL.md: the frame the design requires, by pointer', () => {
   assert.match(body, /PR\.md/, 'the local gate record');
   assert.match(body, /\.forge\/state\.json/);
   assert.match(body, /Gate 2/);
-  assert.match(body, /only-on-open/);
+  assert.match(body, /workflow\.mjs" --gate spec/);
   for (const section of ['## Spec', '## Flagged concerns', '## Assumptions to confirm']) {
     assert.ok(body.includes(`\`${section}\``), `names the PR body section ${section}`);
   }
@@ -133,18 +133,17 @@ test('spec step 7: applies the gate policy reference and leaves its rules there'
   }
 });
 
-test('spec step 7: the report is a short list, one gate line per policy and outcome', () => {
+test('spec step 7: the report is a short list, one gate line per gate mode and outcome', () => {
   const lines = step(7).split('\n').filter((l) => l.startsWith('- '));
-  assert.equal(lines.length, 4);
-  assert.ok(lines.some((l) => l.includes('`attended`') && l.includes('/forge-sdlc:plan <slug>')), 'attended stop');
-  assert.ok(lines.some((l) => l.includes('`autonomous`') && l.includes('/forge-sdlc:wayfinder <slug>')), 'autonomous stop resumes through wayfinder');
-  assert.ok(lines.some((l) => l.includes('`Gate 2 passed: only-on-open, nothing open`')), 'attended pass');
-  assert.ok(lines.some((l) => l.includes('`Gate 2 passed: policy autonomous, nothing open`')), 'autonomous pass');
+  assert.equal(lines.length, 3);
+  assert.ok(lines.some((l) => l.includes('mode `attended`') && l.includes('/forge-sdlc:plan <slug>') && l.includes('`source`')), 'attended stops with its source');
+  assert.ok(lines.some((l) => l.includes('mode `policy`, stopped') && l.includes('/forge-sdlc:wayfinder <slug>')), 'a policy stop resumes through wayfinder');
+  assert.ok(lines.some((l) => l.includes('mode `policy`, passed') && l.includes('`Gate 2 passed: <tail>, nothing open`')), 'a policy pass keeps the report line');
 });
 
-test('spec step 7: a stop under autonomous writes stop: <reason>, and the Done line reads it back', () => {
+test('spec step 7: a stop writes stop: <reason> where the reference\'s State write says, and the Done line reads it back', () => {
   const step7 = step(7);
-  assert.match(step7, /`autonomous`[^\n]*`stop: <reason>`/);
+  assert.match(step7, /A stop writes `stop: <reason>`[^\n]*State write/);
   const lines = step7.split('\n').filter((l) => l.startsWith('- '));
   assert.ok(lines.every((l) => !l.includes('`stop: <reason>`')), 'the state write sits outside the report list');
   assert.match(step7, /Done when [^\n]*`stop: <reason>`/);
@@ -156,7 +155,7 @@ test('spec: risk high keeps the needs-tech-lead label in step 5', () => {
 
 test('spec step 1: Gate 1 is accepted by the human typing the command or by the policy passing it; the policy is kept', () => {
   const step1 = step(1);
-  assert.match(step1, /gates\.policy/);
+  assert.match(step1, /workflow\.mjs" --gate spec --project \./);
   assert.match(step1, /accepts Gate 1[^\n]*policy[^\n]*`status: accepted`|policy[^\n]*accepts Gate 1[^\n]*`status: accepted`/);
   assert.match(step1, /Done when [^\n]*gate policy/);
 });

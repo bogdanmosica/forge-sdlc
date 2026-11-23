@@ -247,17 +247,18 @@ test('GATE-POLICY.md beside wayfinder: the gate read from bin/workflow.mjs, the 
   assert.match(ref, /runs attended from here/);
 });
 
-test('step 1 keeps the gate policy with the default branch and the risk globs', () => {
+test('step 1 keeps the default branch and the risk globs; the gate is read at Gate 1, not from the host config', () => {
   const step1 = section('1\\. Resolve the input');
-  assert.match(step1, /default branch[^\n]*`risk\.high` globs[^\n]*`gates\.policy`/);
+  assert.match(step1, /default branch[^\n]*`risk\.high` globs/);
+  assert.doesNotMatch(step1, /`gates\.policy`/);
 });
 
-test('step 7 applies the gate policy: attended stops, a policy pass continues into spec, a stop writes stop', () => {
+test('step 7 applies the gate policy by the gate\'s mode: attended stops, a policy pass continues into spec, a stop writes stop', () => {
   const step7 = section('7\\. [^\\n]*');
   assert.ok(step7.includes(GATE_LINK), 'step 7 links the gate policy');
-  assert.match(step7, /`attended`[^\n]*this run ends here/);
-  assert.match(step7, /`Gate 1 passed: policy autonomous, nothing open`[^\n]*\[Resume\]\(#resume\) step 3[^\n]*`spec`/);
-  assert.match(step7, /`stop: <reason>`[^\n]*reasons/);
+  assert.match(step7, /mode `attended`[^\n]*this run ends here/);
+  assert.match(step7, /mode `policy`, passed: the reference's report line[^\n]*\[Resume\]\(#resume\) step 3[^\n]*`spec`/);
+  assert.match(step7, /A stop writes `stop`[^\n]*State write/);
   assert.match(step7, /`risk-high`[^\n]*runs attended from here/);
   assert.match(step7, /Done when [^\n]+\.\s*$/);
 });
@@ -265,13 +266,13 @@ test('step 7 applies the gate policy: attended stops, a policy pass continues in
 test('Resume continues past every Gate <n> passed to the first stop or Gate 4, reading each next stage by file', () => {
   const r = section('Resume');
   assert.ok(r.includes(GATE_LINK), 'Resume links the gate policy');
-  assert.match(r, /\{ slug, stage, gate, next, why, source, policy, stop \}/);
+  assert.match(r, /\{ slug, stage, gate, next, why, source, policy, stop, gates \}/);
   const step3 = /^3\. \*\*Run the next stage\.\*\*[^\n]*/m.exec(r)?.[0] ?? '';
   assert.match(step3, /`Gate <n> passed`[^\n]*1, 2 or 3/);
   assert.match(step3, /next stage from `effort-state\.mjs`/);
   assert.match(step3, /first stop or (at )?Gate 4/);
   assert.match(step3, /SKILL\.md` when (that|the) stage starts/);
-  assert.match(step3, /`only-on-open`[^\n]*same rule/);
+  assert.match(step3, /whatever its tail/, 'every tail of the report line continues');
   assert.doesNotMatch(step3, /After `spec`, a report of `Gate 2 passed` continues into `plan`/, 'the Gate 2 special case is folded into the rule');
 });
 

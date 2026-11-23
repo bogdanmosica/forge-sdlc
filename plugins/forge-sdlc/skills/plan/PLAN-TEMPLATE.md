@@ -50,7 +50,7 @@ Spec: [spec.md](spec.md). Tickets: <`#n`…`#m` on the tracker, or `.scratch/<sl
 
 ## Quiz
 
-- recommended: granularity: <n slices, and why that size> (source: policy autonomous)
-- recommended: blocking edges: <the edges, as drafted> (source: policy autonomous)
-- recommended: merge or split: <none, or the merge or split the draft made> (source: policy autonomous)
-- recommended: proofs: <each slice's proof is its observable done> (source: policy autonomous)
+- recommended: granularity: <n slices, and why that size> (source: <tail>)
+- recommended: blocking edges: <the edges, as drafted> (source: <tail>)
+- recommended: merge or split: <none, or the merge or split the draft made> (source: <tail>)
+- recommended: proofs: <each slice's proof is its observable done> (source: <tail>)

@@ -154,13 +154,13 @@ test('plan: each slice enters state with status open and mode normal (docs/contr
 const step = (n) => stepOf(skill, n);
 const QUIZ = ['granularity', 'blocking edges', 'merge or split', 'proofs'];
 
-test('plan step 3: the dialog quiz under attended or risk high; under autonomous the drafted breakdown answers it', () => {
+test('plan step 3: the dialog quiz in mode attended or risk high; in mode policy the drafted breakdown answers it', () => {
   const step3 = step(3);
   assert.ok(step3.includes('](../wayfinder/GATE-POLICY.md)'), 'links the gate policy reference');
   assert.match(step3, /`attended`[^\n]*`risk: high`[^\n]*AskUserQuestion|AskUserQuestion[^\n]*`attended`/);
-  assert.match(step3, /`autonomous`[^\n]*`risk: normal`[^\n]*drafted breakdown/);
+  assert.match(step3, /Mode `policy` with `risk: normal`[^\n]*drafted breakdown/);
   assert.match(step3, /`## Quiz`/, 'the four lines are the template\'s ## Quiz lines');
-  assert.match(step3, /`recommended:`[^\n]*`\(source: policy autonomous\)`/);
+  assert.match(step3, /`recommended:`[^\n]*`\(source: <tail>\)`/);
   assert.match(step3, /Done when /);
 });
 
@@ -192,9 +192,9 @@ test('plan step 7: the attended report keeps its wayfinder resume alternative (s
   assert.match(step(7), /`\/forge-sdlc:build <slug>` \(or `\/forge-sdlc:wayfinder <slug>`\)/);
 });
 
-test('plan step 7: under autonomous a stopped Gate 3 (risk high only) reports its reasons and resumes through wayfinder', () => {
+test('plan step 7: in mode policy a stopped Gate 3 (risk high only) reports its reasons and resumes through wayfinder', () => {
   const step7 = step(7);
-  assert.match(step7, /`Gate 3 passed: policy autonomous, nothing open`/);
+  assert.match(step7, /`Gate 3 passed: <tail>, nothing open`/);
   assert.match(step7, /stopped[^\n]*`risk-high`[^\n]*`\/forge-sdlc:wayfinder <slug>`/);
   assert.doesNotMatch(step7, /`open:`/, 'no open: Quiz line to report');
   assert.doesNotMatch(step7, /changes the breakdown/, 'no settled Quiz line reruns plan');
@@ -206,12 +206,12 @@ test('PLAN-TEMPLATE.md: ## Quiz after ## Prefactoring, four recommended lines, n
   const quiz = template.slice(template.indexOf('## Quiz') + '## Quiz'.length).split('\n').filter((l) => l.trim());
   assert.equal(quiz.length, 4, 'only the four lines, nothing that would leak into plan.md');
   QUIZ.forEach((q, k) => assert.ok(quiz[k].startsWith(`- recommended: ${q}: `), q));
-  for (const l of quiz) assert.match(l, /\(source: policy autonomous\)$/);
+  for (const l of quiz) assert.match(l, /\(source: <tail>\)$/);
 });
 
 test('plan steps 1, 5 and 6: a policy-passed Gate 2, the Quiz block in plan.md and the PR body', () => {
   assert.match(step(1), /policy[^\n]*Gate 2|Gate 2[^\n]*policy/);
-  assert.match(step(5), /`## Quiz`[^\n]*after `## Prefactoring`[^\n]*`autonomous` only/);
+  assert.match(step(5), /`## Quiz`[^\n]*after `## Prefactoring`[^\n]*mode `policy` only/);
   assert.match(step(6), /`## Plan`[^\n]*Quiz[^\n]*under the slice table|under the slice table[^\n]*Quiz/);
 });
 
