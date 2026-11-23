@@ -327,9 +327,9 @@ function stopLines(g: LoopGate, effort: NonNullable<LoopWorkflow['effort']>): st
 function legendLines(W: number): string[] {
   const out: string[] = [];
   for (const item of LOOP_LEGEND) {
-    const last = out.length - 1;
-    if (last >= 0 && out[last].length + 2 + item.length <= W) out[last] += `  ${item}`;
-    else out.push(item);
+    const last = out.pop();
+    if (last !== undefined && last.length + 2 + item.length <= W) out.push(`${last}  ${item}`);
+    else out.push(...(last === undefined ? [] : [last]), item);
   }
   return out;
 }
