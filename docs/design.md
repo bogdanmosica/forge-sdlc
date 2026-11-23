@@ -156,7 +156,7 @@ Decision (gates): Gates 1 to 3 pass by the host's **gate policy**, `policy` unde
    - **Spec gate**: wait at Gate 2 `always` or `only-on-open` (when an assumption is `open` rather than `recommended`).
    - **Risk globs**: paths that mark an effort `risk: high` (auth, payments, migrations, infra). Default: none.
    - **Protected branches**: default branch plus any others.
-4. Write `docs/agents/forge.md` (section 8) and a `### Delivery loop` sub-block under `## Agent skills` in CLAUDE.md (or AGENTS.md, whichever exists). Re-running updates in place.
+4. Write `docs/agents/forge.md` (section 8), the policy skills into the roster `docs/agents/forge.yaml` (`slots.policy`), and a `### Delivery loop` sub-block under `## Agent skills` in CLAUDE.md (or AGENTS.md, whichever exists). Re-running updates in place.
 
 ### `wayfinder` (Plan, the front door)
 
@@ -227,6 +227,8 @@ Each is a file in `agents/` with `name`, `description`, `model`, `effort`, tool 
 | reviewer | Test | Opus, high | all but `Edit, Write, NotebookEdit, Agent` | Reviews one axis of one slice's diff, reports Important and Nit |
 | merger | Build, Test | Sonnet, low | `Bash, Read, Grep, Glob, Write, Edit, Skill, Agent` | Follows slice-review, which writes the review record, then merges `--no-ff` or marks the slice red; reads evidence, never runs tests itself |
 
+The table is the default: each agent file's frontmatter is the default model and effort, and the plugin's agent the default for its role, which the host's roster (`docs/agents/forge.yaml`, section 8) may override per role, swapping in another agent or another model and effort at spawn. What a replacement has to honour, role by role, is `skills/build/ROLES.md`.
+
 Decision (write scopes): the researcher's, spec-writer's and verifier's limits on what they write live in their briefs; no hook enforces them, and the researcher, having no Bash, leaves committing its note to the session that dispatched it ([ADR 0011](adr/0011-agent-write-scopes-held-by-the-brief.md)).
 
 Decision (verifier): the record is written by `bin/verify-record.mjs`, not by an agent's judgement; the implementer runs it before it stops, the Stop hook names it, and `build` and `slice-review` call the verifier agent when the record is not fresh and green ([ADR 0008](adr/0008-verify-record-written-by-the-script.md)).
@@ -280,6 +282,7 @@ Skills advise, hooks enforce. Every hook is a Node script under `hooks/scripts/`
 | format-after-edit | PostToolUse Edit/Write | Run `forge.md`'s Formatter command on the edited file, from its checkout's root; never blocks | Run formatters after edits |
 | verified-before-stop | Stop, SubagentStop | In a slice checkout (branch `slice/<slug>-<nn>`): block the stop unless `.forge/verify/<slug>-<nn>.json` in the host is green at the checkout's current HEAD; the reason is the `verify-record.mjs` command to run. It blocks whether or not the engine sets `stop_hook_active`: the per-slice block count is the loop guard. After three blocks on one slice the next stop passes once with the red reason, the slice is marked red (its `agent` cleared) and the count resets. A `SubagentStop` whose cwd names no slice is gated the same way on the slice whose `agent` in the host's state is the payload's `agent_id`, while its worktree exists; the reason names the slice and its branch, never the id. A subagent past its context budget (as `context-budget` measures it) stops without a green record, once, with a message: its slice stays open, its `agent` kept, the count cleared, for the lead's continuation | Quantifiable done; verification before completion |
 | context-budget | PreToolUse every tool | For a subagent's call (the payload carries `agent_id`): read the tail of its transcript, `<dir of transcript_path>/<session_id>/subagents/agent-<agent_id>.jsonl`, and deny once its last usage (input + cache read + cache creation) has reached `forge.md`'s `## Budgets` `agent_context` (default 150000); the reason asks for the report: done, left, where. `SubagentHandback` and `SendMessage` pass; the main session is never blocked; a missing or unparsable transcript passes | Keep each agent's context small; a fresh member continues |
+| roster-guard | PreToolUse Agent, Skill | With `enforce: true` in the host's `docs/agents/forge.yaml`, deny every Agent or Skill call the roster does not account for, the lead's and the members' alike: an Agent type passes as a role default `forge-sdlc:<role>`, a role's roster agent or an `allow.agents` entry (no type reads as `general-purpose`); a skill as a slot's skill, a `policy` entry, any `forge-sdlc:*` skill or an `allow.skills` entry. A plugin-qualified entry matches exactly, a bare one with or without a plugin prefix. No file, or `enforce` not `true`, is no decision; a file too broken to read `enforce` is not enforced. The reason names the file and the keys, never the value | Hooks as guardrails; the factory's setup held to one reviewed file |
 | skills-version | SessionStart (startup, resume, clear) | Check the installed `mattpocock-skills` against `UPSTREAM.lock`; warn once when it is missing, another version, or has lost a locked heading | Continuous evals when the setup changes (the warning is the trigger to rerun them) |
 
 Decision (test-frozen): fix mode belongs to a checkout, so a fix implementer on one slice freezes only that slice's tests while parallel implementers keep editing theirs ([ADR 0007](adr/0007-fix-mode-per-checkout.md)).
@@ -306,7 +309,7 @@ Not hooked, on purpose: anything a linter already enforces, and anything that wo
 
 ## 8. Host configuration
 
-Written once by `init`, edited by hand later. `docs/agents/forge.md`:
+Written once by `init`, edited by hand later: `docs/agents/forge.md`, and the roster `docs/agents/forge.yaml` below it. `docs/agents/forge.md`:
 
 ```markdown
 # forge-sdlc host config
@@ -337,9 +340,6 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 ## Risk
 - high: src/auth/**, src/payments/**, migrations/**
 
-## Policy skills
-- skills: security-review        # applied by the spec-writer and the reviewer; or none
-
 ## Test file globs
 - globs: **/*.test.*, **/*.spec.*, tests/**
 
@@ -348,7 +348,7 @@ Written once by `init`, edited by hand later. `docs/agents/forge.md`:
 - names.implementer: Scotty, Miles O'Brien, Rom, Nog, Quark   # optional, one per overridden role
 ```
 
-Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Two further sections are optional, never written by init and read only by the run pane mod (`plugins/forge-sdlc/hooks/ROUTING.md`): `## Routing`, `model.<role>` and `effort.<role>` bullets that override an agent file's frontmatter at spawn, and `## Mark`, the `text` and `color` of the word at the left of the band above the prompt. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is ignored ([ADR 0018](adr/0018-gates-pass-by-policy.md)).
+Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Two further sections are optional, never written by init and read only by the run pane mod (`plugins/forge-sdlc/hooks/ROUTING.md`): `## Routing`, `model.<role>` and `effort.<role>` bullets that override an agent file's frontmatter at spawn, and `## Mark`, the `text` and `color` of the word at the left of the band above the prompt. `## Routing`, and `## Policy skills` from hosts set up before 0.8.0, are deprecated: the roster replaces them, they are still read until 0.9.0, and each bullet left in them is a band line naming the roster key to move it to. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is ignored ([ADR 0018](adr/0018-gates-pass-by-policy.md)).
 
 CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup created, replaced in place on re-run:
 
@@ -358,7 +358,28 @@ CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup c
 forge-sdlc runs the loop: wayfinder → intent → spec → plan → build, one folder per effort under `docs/efforts/`, one pushed branch `feat/<slug>`, one PR. Config and proof commands: `docs/agents/forge.md`.
 ```
 
-Policy skills are the playbook's Design-stage idea: the spec-writer calls each listed skill by name so brand, security or compliance rules constrain the spec, and what a skill cannot resolve becomes a line under `## Flagged concerns`.
+The roster, `docs/agents/forge.yaml`, is optional: without it the plugin's own agents fill the seven roles and today's skills the six slots. `init` writes it with `version: 1` and `slots.policy` from its policy-skills question, creating the file or rewriting only that key; every other key is the owner's. The shape, the precedence and the band's lines are in `plugins/forge-sdlc/hooks/ROUTING.md`, the role contracts and the slot rule in `skills/build/ROLES.md`:
+
+```yaml
+version: 1                      # required when the file exists
+enforce: false                  # only the literal true enforces (roster-guard, section 7)
+roles:                          # researcher, prototyper, spec-writer, implementer, verifier, reviewer, merger
+  reviewer:
+    agent: my-plugin:reviewer   # the Agent-tool type; swapped in at spawn
+    model: sonnet               # an alias or a claude-* id
+    effort: medium              # low | medium | high | xhigh | max
+slots:
+  implementer.tdd: mattpocock-skills:tdd   # required: swap only
+  domain-modeling: disabled                # optional: swap or disable
+  policy: [security-review]                # applied by the spec-writer and the reviewer; [] for none
+allow:
+  agents: [Explore]             # under enforce, built-ins and extra skills that fill no role or slot
+  skills: []
+```
+
+Decision (roster): a second host config file, `docs/agents/forge.yaml`, holds which agent fills each role with its model and effort, which skill fills each slot, and whether calls outside it are denied; forge.md keeps every other section. Roles swap in the run pane mod at `agent.spawn` so no lead changes its calls, slots resolve through `bin/roster.mjs <slot> --project <host>` at each call site, and one pure reader (`hooks/roster.mjs`) parses a strict YAML subset with no dependency ([ADR 0025](adr/0025-the-roster-in-forge-yaml.md)).
+
+Policy skills are the playbook's Design-stage idea: the spec-writer calls each skill of the roster's `policy` slot by name so brand, security or compliance rules constrain the spec, and what a skill cannot resolve becomes a line under `## Flagged concerns`.
 
 ## 9. State in the host
 
@@ -405,7 +426,7 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── intent/SKILL.md       # Destination by hand
 │   │   ├── spec/SKILL.md         # + SPEC-EXTRAS.md (the three added sections)
 │   │   ├── plan/SKILL.md         # + PLAN-TEMPLATE.md
-│   │   ├── build/SKILL.md        # + MEMBERS.md (the member call every dispatching skill links)
+│   │   ├── build/SKILL.md        # + MEMBERS.md (the member call every dispatching skill links), ROLES.md (the role contracts, the slot rule)
 │   │   ├── slice-review/SKILL.md
 │   │   ├── status/SKILL.md
 │   │   └── help/SKILL.md         # opens the mod's /forge panel
@@ -416,6 +437,7 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   ├── crew.json                 # the crew theme presets: five themes, one name pool per role
 │   ├── hooks/
 │   │   ├── hooks.json
+│   │   ├── roster.mjs            # the roster reader: forge.yaml's YAML subset resolved over the defaults, shared by hooks, bin and mod
 │   │   └── scripts/              # one file per hook (section 7), lib.mjs for stdin, config, state, git, decisions
 │   ├── bin/
 │   │   ├── forge-config.mjs      # prints a host's parsed docs/agents/forge.md
@@ -424,7 +446,8 @@ forge-sdlc/                       # the repository: marketplace + host of its ow
 │   │   ├── effort-state.mjs      # an effort's stage, gate and next command, from state or its artifacts
 │   │   ├── host-dir.mjs          # the host of a path, resolved through git as the hooks do (hostDirOf)
 │   │   ├── verify-record.mjs     # runs a slice's proof and the host's commands, writes .forge/verify/<slug>-<nn>.json
-│   │   └── crew-name.mjs         # a member's next name from the host's crew theme, recorded in .forge/state.json
+│   │   ├── crew-name.mjs         # a member's next name from the host's crew theme, recorded in .forge/state.json
+│   │   └── roster.mjs            # a slot's resolved skill, or the whole roster as JSON with its problems
 │   ├── evals/                    # claude plugin eval suites (section 12)
 │   │   ├── triggering/  guardrails/  frame/  upstream/   # one folder per case: case.yaml, fixture.sh, graders/
 │   │   ├── fixtures/word-count/  # the three-ticket fixture effort the frame suite builds

@@ -28,9 +28,6 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 ## Risk
 - high: <globs, or none>         # src/auth/**, src/payments/**, migrations/**
 
-## Policy skills
-- skills: <skill names, or none> # applied by the spec-writer and the reviewer
-
 ## Test file globs
 - globs: <globs>                 # **/*.test.*, **/*.spec.*, tests/**
 

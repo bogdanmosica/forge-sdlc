@@ -18,7 +18,7 @@ Done when the idea is in hand, the config printed and the upstream file read.
 
 ## 2. Name the Destination
 
-Upstream's `Chart the map` step 1, through `mattpocock-skills:grilling` and `mattpocock-skills:domain-modeling`: the human answers every question themselves. The **Destination** is written under the playbook's intent headings, so it becomes the intent later without a rewrite:
+Upstream's `Chart the map` step 1, through the `grilling` slot's skill (default `mattpocock-skills:grilling`, printed by `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" grilling --project .`) and the `domain-modeling` slot's (default `mattpocock-skills:domain-modeling`, printed by `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" domain-modeling --project .`), per the [slot rule](../build/ROLES.md#slots): the human answers every question themselves. The **Destination** is written under the playbook's intent headings, so it becomes the intent later without a rewrite:
 
 ```markdown
 ## Destination
@@ -50,9 +50,9 @@ Upstream's `Work through the map`, in this session, ticket after ticket, until t
 
 | Label | Resolved by | How |
 | --- | --- | --- |
-| `wayfinder:grilling` | this session, HITL | `mattpocock-skills:grilling` then `mattpocock-skills:domain-modeling`; the human answers, the agent asks |
+| `wayfinder:grilling` | this session, HITL | the `grilling` then the `domain-modeling` slot's skill, resolved as in step 2; the human answers, the agent asks |
 | `wayfinder:research` | `forge-sdlc:researcher`, a [member call](../build/MEMBERS.md), role `researcher`, in the background, all at once | prompt: the ticket pointer, the slug, the note path `docs/research/<slug>/<topic>.md` |
-| `wayfinder:prototype` | `forge-sdlc:prototyper`, a [member call](../build/MEMBERS.md), role `prototyper`, foreground under a plain lead, that passes `isolation: "worktree"` on the call, so it runs in its own worktree under any lead; one at a time | prompt: the ticket pointer and its question; the human reacts to the verdict before the ticket closes |
+| `wayfinder:prototype` | `forge-sdlc:prototyper`, a [member call](../build/MEMBERS.md), role `prototyper`, foreground under a plain lead, that passes `isolation: "worktree"` on the call, so it runs in its own worktree under any lead; one at a time | prompt: the ticket pointer and its question, and the host project dir (the folder holding `docs/agents/forge.md`), since its own worktree cannot resolve the host; the human reacts to the verdict before the ticket closes |
 | `wayfinder:task` | this session | done by the agent where it can, else a checklist the human works |
 
 Each resolution: the answer on the ticket, the ticket closed, its gist in the map's Decisions so far, fog graduated per upstream. Then re-commit `map.md` (and any research note): `map(<slug>): <ticket name>`.

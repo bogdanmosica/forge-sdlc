@@ -12,10 +12,11 @@ argument-hint: <slug>
 - The checkout is on `feat/<slug>` and `docs/efforts/<slug>/intent.md` is committed there (`git log -1 -- docs/efforts/<slug>/intent.md` prints a commit).
 - `intent.md` has no `open:` assumption line. Each one is a question only the owner settles: print every `open:` line verbatim and stop; the owner answers by editing intent.md (`recommended:` with a source), then reruns this command.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" to-spec` prints the to-spec file. Exit 1 stops with the install line it printed.
-- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; keep `gates.spec` (missing means `always`) and `gates.policy`, read as the [gate policy](../wayfinder/GATE-POLICY.md) says. Read the `## Policy skills` bullets of `docs/agents/forge.md` as the policy skill list (or none).
+- `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mjs"` prints the host config; keep `gates.spec` (missing means `always`) and `gates.policy`, read as the [gate policy](../wayfinder/GATE-POLICY.md) says.
+- The spec-writer has no Bash, so resolve its slots for it, per the [slot rule](../build/ROLES.md#slots): the `spec-writer.codebase-design` slot's skill (default `mattpocock-skills:codebase-design`, or `disabled`) is the line `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" spec-writer.codebase-design --project .` prints, and the policy skill list (comma-separated, or `none`) is the line `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" policy --project .` prints: the roster's `slots.policy`, with its fallback to the deprecated `## Policy skills` of `docs/agents/forge.md`.
 - The human typing this command, or the policy passing Gate 1 under `autonomous`, accepts Gate 1: when intent.md's frontmatter reads `status: draft`, set `status: accepted`; it commits with the spec in step 3.
 
-Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:wayfinder <slug>`). Done when intent.md is committed with no `open:` line and you hold the to-spec path, the spec gate, the gate policy and the policy skills.
+Anything missing stops with one line naming it and the command that produces it (`/forge-sdlc:wayfinder <slug>`). Done when intent.md is committed with no `open:` line and you hold the to-spec path, the spec gate, the gate policy, the codebase-design slot's skill and the policy skills.
 
 ## 2. Spawn the spec-writer
 
@@ -25,7 +26,8 @@ One [member call](../build/MEMBERS.md), role `spec-writer`, foreground under a p
 - the to-spec file from step 1, and `${CLAUDE_PLUGIN_ROOT}/skills/spec/SPEC-EXTRAS.md` resolved
 - `docs/efforts/<slug>/intent.md`; `docs/efforts/<slug>/map.md` and its closed tickets' pointers, when the map exists
 - `GLOSSARY.md` (or the glossary `docs/agents/` names) and `docs/adr/`, when present
-- the policy skills by name, or `none`
+- the `spec-writer.codebase-design` slot's skill from step 1, or `disabled`
+- the policy skills from step 1 by name, or `none`
 
 The frontmatter, the three added sections and the assumption lines are defined in [SPEC-EXTRAS.md](SPEC-EXTRAS.md). Done when spec.md exists with that frontmatter and `## Affected users and systems`, `## Flagged concerns`, `## Assumptions to confirm` each present; otherwise send the agent the missing piece and wait again.
 

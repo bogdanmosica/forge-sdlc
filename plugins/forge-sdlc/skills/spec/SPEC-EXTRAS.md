@@ -29,7 +29,7 @@ One bullet per user group and per system the change touches, with how: reads, wr
 
 ## Flagged concerns
 
-A concern a policy skill (host config, `## Policy skills`) raised that the spec could not resolve from the intent, the decisions and the codebase. The owner settles each one at Gate 2; a flagged concern is why the spec stops there.
+A concern a policy skill (the roster's `policy` slot, in `docs/agents/forge.yaml`) raised that the spec could not resolve from the intent, the decisions and the codebase. The owner settles each one at Gate 2; a flagged concern is why the spec stops there.
 
 ```markdown
 - <skill name>: <the concern, one sentence> (section: <the spec section it bears on>)
