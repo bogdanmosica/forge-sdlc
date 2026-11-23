@@ -146,7 +146,40 @@ export type ForgeAgent = ForgeSkill & { model?: string; effort?: string };
 // The host roster as the panel shows it, from docs/agents/forge.yaml through hooks/roster.mjs; absent without the file.
 export type ForgeRosterRole = { agent: string; model?: string; effort?: string; swapped: boolean };
 export type ForgeRoster = { roles: Record<string, ForgeRosterRole>; slots: Record<string, string>; policy: string[] };
-export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[]; roster?: ForgeRoster };
+// The loop as the panel draws it: the plugin's workflow.yaml joined with the host roster through hooks/roster.mjs
+// resolveWorkflow, positioned from the newest effort's record in .forge/state.json; `effort` null without one.
+export type ForgeWorkflowRole = { role: string; agent: string; model?: string; effort?: string; swapped: boolean };
+export type ForgeWorkflowGate = {
+  key: string;
+  n: number;
+  artifact: string;
+  stops: string[];
+  mode: 'attended' | 'policy' | 'owner';
+  source: string;
+  status?: 'passed' | 'waiting' | 'stopped' | 'ahead';
+};
+export type ForgeWorkflowStage = {
+  name: string;
+  does: string;
+  command?: string;
+  roles: ForgeWorkflowRole[];
+  slots: { slot: string; skill: string }[];
+  status?: 'passed' | 'current' | 'ahead';
+  gate?: ForgeWorkflowGate;
+};
+export type ForgeWorkflow = {
+  stages: ForgeWorkflowStage[];
+  policy: 'attended' | 'autonomous';
+  maxParallelSlices: number;
+  effort: { slug: string; stage: string; gate: string; stop: string; risk: 'normal' | 'high' } | null;
+};
+export type ForgeSkills = {
+  plugin: ForgeSkill[];
+  upstream: ForgeSkill[];
+  agents: ForgeAgent[];
+  roster?: ForgeRoster;
+  workflow?: ForgeWorkflow;
+};
 // Why a run stopped at its gate, an effort's `stop` in .forge/state.json (docs/contracts.md): the closed set
 // in write order, `attended` last (a gate set attended in docs/agents/forge.yaml); absent reads as none.
 export type ForgeStop = 'open' | 'flagged' | 'risk-high' | 'attended';

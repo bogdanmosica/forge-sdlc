@@ -9,8 +9,13 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const pluginRoot = resolve(fileURLToPath(new URL('../plugins/forge-sdlc/', import.meta.url)));
-const { GATES, GROUPS, HIDDEN, LOOP, MOD_COMMANDS, commandGroups, newestVersionFirst, parseAgent, parseSkill } =
+const { GATES, GROUPS, HIDDEN, LOOP, MOD_COMMANDS, commandGroups, loopProse, newestVersionFirst, parseAgent, parseSkill } =
   await import('../plugins/forge-sdlc/hooks/forge/help.ts');
+const { resolveRoster, resolveWorkflow } = await import('../plugins/forge-sdlc/hooks/roster.mjs');
+const workflowText = readFileSync(join(pluginRoot, 'workflow.yaml'), 'utf8');
+// The plugin's workflow.yaml resolved with a host's forge.yaml (none: the defaults).
+const loopOf = (yaml) => resolveWorkflow(workflowText, resolveRoster(yaml, undefined)).stages;
+const MIXED = ['version: 1', 'workflow:', '  policy: autonomous', '  gates:', '    plan: attended', ''].join('\n');
 const skills = readdirSync(join(pluginRoot, 'skills')).filter((d) =>
   existsSync(join(pluginRoot, 'skills', d, 'SKILL.md')),
 );
@@ -45,28 +50,50 @@ test("every skill's and agent's frontmatter reads as the panel shows it: a name,
   }
 });
 
-test('the loop view names real commands and marks where the driver is needed at each of the four gates', () => {
-  for (const stage of LOOP) {
-    for (const command of stage.text.match(/\/forge-sdlc:[a-z-]+/g) ?? []) {
-      assert.ok(
-        skills.includes(command.slice('/forge-sdlc:'.length)),
-        `${stage.stage} names ${command}, which is no skill`,
-      );
-    }
+test("the loop prose is keyed to the workflow's stages: their names in order after watch and setup, each stage's command from the workflow", () => {
+  const stages = loopOf(undefined);
+  assert.deepEqual(Object.keys(LOOP).sort(), stages.map((s) => s.name).sort(), 'LOOP holds one entry per workflow stage, by its name');
+  const prose = loopProse(stages);
+  assert.deepEqual(
+    prose.map((p) => p.name),
+    ['watch', 'setup', 'map', 'intent', 'spec', 'plan', 'build', 'built'],
+  );
+  assert.equal(prose.find((p) => p.name === 'spec')?.command, '/forge-sdlc:spec', 'the command comes from the workflow');
+  assert.equal(prose.find((p) => p.name === 'built')?.command, undefined, 'a stage with no command shows none');
+  for (const p of prose) {
+    assert.ok(p.you, `${p.name} says what the driver does`);
+    for (const command of `${p.command ?? ''} ${p.you}`.match(/\/forge-sdlc:[a-z-]+/g) ?? [])
+      assert.ok(skills.includes(command.slice('/forge-sdlc:'.length)), `${p.name} names ${command}, which is no skill`);
   }
-  const you = LOOP.filter((s) => s.you).map((s) => s.you);
-  assert.equal(you.length, LOOP.length, 'every stage says where the driver is needed');
-  for (const gate of [1, 2, 3, 4]) assert.ok(you.some((y) => y.includes(`Gate ${gate}:`)), `Gate ${gate}`);
-  assert.match(you.join('\n'), /open: line/, 'the open: line the policy stops on');
   assert.match(GATES, /attended.*autonomous/s, 'the two gate policies');
   assert.match(GATES, /Gate 4 is always/);
+  assert.match(GATES, /workflow\.policy in docs\/agents\/forge\.yaml/, 'the global policy names its forge.yaml key');
+  assert.match(GATES, /gates\.intent, gates\.spec or gates\.plan/, 'the per-gate override');
 });
 
-test('the loop view says the front door resumes a stopped effort, and that Gate 4 stays the code owner’s', () => {
-  const plan = LOOP.find((s) => s.stage === 'Plan')?.you ?? '';
-  assert.match(plan, /\/forge-sdlc:wayfinder <slug> resumes/, 'a stopped effort resumes with /forge-sdlc:wayfinder <slug>');
-  const deploy = LOOP.find((s) => s.stage === 'Deploy')?.you ?? '';
-  assert.match(deploy, /code owner/);
+test("each gate's you: line names the gate from the workflow and its mode, the per-gate override included", () => {
+  const you = (stages, name) => loopProse(stages).find((p) => p.name === name)?.you ?? '';
+  const attended = loopOf(undefined);
+  assert.match(you(attended, 'intent'), /^Gate 1 · attended: accept intent\.md/);
+  assert.match(you(attended, 'spec'), /^Gate 2 · attended: approve spec\.md/);
+  assert.match(you(attended, 'plan'), /^Gate 3 · attended: answer plan's quiz/);
+  assert.match(you(attended, 'build'), /^Gate 4 · owner: /);
+  assert.doesNotMatch(you(attended, 'map'), /Gate \d/, 'a stage with no gate names none');
+  // autonomous with gates.plan: attended: Gates 1 and 2 pass by policy, Gate 3 stays yours
+  const mixed = loopOf(MIXED);
+  assert.match(you(mixed, 'intent'), /^Gate 1 · policy: the policy accepts intent\.md when no open: line remains/);
+  assert.match(you(mixed, 'spec'), /^Gate 2 · policy: the policy approves spec\.md when nothing is open or flagged/);
+  assert.match(you(mixed, 'plan'), /^Gate 3 · attended: answer plan's quiz/);
+  assert.doesNotMatch(you(mixed, 'plan'), /the policy/);
+});
+
+test('the loop prose says the front door resumes a stopped effort, and that Gate 4 stays the code owner’s', () => {
+  const prose = loopProse(loopOf(undefined));
+  const you = (name) => prose.find((p) => p.name === name)?.you ?? '';
+  assert.match(you('intent'), /\/forge-sdlc:wayfinder <slug> resumes/, 'a stopped effort resumes with /forge-sdlc:wayfinder <slug>');
+  assert.match(you('build'), /code owner/);
+  assert.match(you('watch'), /cmux claude-teams/);
+  assert.match(you('setup'), /\/forge-sdlc:init/);
 });
 
 test("one group is flagged for the mod's own commands, and commandGroups puts them there whatever it is titled", () => {
