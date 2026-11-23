@@ -201,6 +201,161 @@ export const upstreamGroup = (skills: Skill[]): Group => ({
   rows: [...skills].sort((a, b) => a.name.localeCompare(b.name)).map((s) => row(UPSTREAM, s)),
 });
 
+// The loop as the /forge loop tab draws it (terminal B), from the resolved
+// workflow (hooks/roster.mjs resolveWorkflow) and the panel's width: rows of
+// text, each as wide as the panel, and the tone the panel paints it in. From
+// LOOP_BOXES columns passed stages fold to one line with their gate at the
+// right, and the current stage and those ahead are boxes with their gate in
+// the bottom border; below it, one line per stage, down to LOOP_FLOOR.
+// The shapes here are the reader's, written out: this module has no imports.
+export type LoopTone = 'title' | 'legend' | 'plain' | 'passed' | 'current' | 'ahead' | 'stopped' | 'swapped' | 'note';
+export type LoopRow = { text: string; tone: LoopTone };
+export type LoopGate = {
+  key: string;
+  n: number;
+  artifact: string;
+  stops: string[];
+  mode: string;
+  source: string;
+  status?: 'passed' | 'waiting' | 'stopped' | 'ahead';
+};
+export type LoopStage = {
+  name: string;
+  does: string;
+  command?: string;
+  roles: { role: string; agent: string; model?: string; effort?: string; swapped: boolean }[];
+  slots: { slot: string; skill: string }[];
+  status?: 'passed' | 'current' | 'ahead';
+  gate?: LoopGate;
+};
+export type LoopWorkflow = {
+  stages: LoopStage[];
+  policy: string;
+  maxParallelSlices: number;
+  effort: { slug: string; stage: string; gate: string; stop: string; risk: string } | null;
+};
+export const LOOP_BOXES = 52;
+export const LOOP_FLOOR = 24;
+export const LOOP_LEGEND = ['▶ here', '✓ passed', '■ stopped', '○ ahead', '⇄ swapped in forge.yaml'];
+
+// Cut to w with an ellipsis, or padded to w.
+const cut = (s: string, w: number): string => (s.length > w ? `${s.slice(0, Math.max(0, w - 1))}…` : s);
+const fit = (s: string, w: number): string => cut(s, w).padEnd(w);
+
+export function loopRows(workflow: LoopWorkflow, columns: number): LoopRow[] {
+  const W = Math.max(LOOP_FLOOR, Math.floor(columns));
+  return W >= LOOP_BOXES ? boxes(workflow, W) : lines(workflow, W);
+}
+
+const GATE_GLYPH = { passed: '✓', waiting: '▶', stopped: '■', ahead: '○' } as const;
+
+// A gate's text in its stage's bottom border.
+function gateText(g: LoopGate, stop: string): string {
+  const glyph = GATE_GLYPH[g.status ?? 'ahead'];
+  if (g.status === 'passed')
+    return `${glyph} Gate ${g.n} · passed by ${g.mode === 'policy' ? 'policy' : g.mode === 'owner' ? 'the code owner' : 'you'}`;
+  if (g.status === 'stopped') return `${glyph} Gate ${g.n} · ${g.mode} · STOPPED: ${stop}`;
+  if (g.status === 'waiting') return `${glyph} Gate ${g.n} · ${g.mode} · waiting`;
+  if (g.mode === 'policy') return `${glyph} Gate ${g.n} · policy · stops on ${g.stops.filter((s) => s !== 'attended').join(' · ')}`;
+  return `${glyph} Gate ${g.n} · ${g.mode} · always stops`;
+}
+
+function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
+  const out: LoopRow[] = [];
+  const push = (text: string, tone: LoopTone) => out.push({ text: fit(text, W), tone });
+  const effort = wf.effort;
+  const title = effort
+    ? `${effort.slug} · policy ${wf.policy} · risk ${effort.risk} · ≤${wf.maxParallelSlices} slices`
+    : `the loop · policy ${wf.policy} · ≤${wf.maxParallelSlices} slices`;
+  push(title, 'title');
+  for (const line of legendLines(W)) push(line, 'legend');
+  const inner = W - 4;
+  wf.stages.forEach((s, i) => {
+    if (s.status === 'passed' && (!s.gate || s.gate.status === 'passed')) {
+      const who = s.roles.length ? s.roles.map((r) => r.role + (r.swapped ? ' ⇄' : '')).join(' · ') : 'lead';
+      const right = s.gate ? `Gate ${s.gate.n} ✓ ${s.gate.mode}` : '';
+      const left = `${fit(`✓ ${s.name}`, 10)}${who}`;
+      push(right ? `${fit(left, W - right.length - 1)} ${right}` : left, 'passed');
+      return;
+    }
+    const tone: LoopTone = s.status ?? 'plain';
+    if (!s.gate && i === wf.stages.length - 1) {
+      push(`  ▼ ${s.status === 'current' ? '▶ ' : ''}${s.name}  ${s.does}`, tone);
+      return;
+    }
+    const tag = s.status === 'current' ? ' ▶ here ' : '';
+    const name = fit(` ${s.name} `, Math.min(s.name.length + 2, W - 4 - tag.length)).trimEnd() + ' ';
+    out.push({ text: `╭─${name}${'─'.repeat(W - 3 - name.length - tag.length)}${tag}╮`, tone });
+    const row = (text: string, t: LoopTone = tone) => out.push({ text: `│ ${fit(text, inner)} │`, tone: t });
+    row(s.does);
+    const roleW = 12;
+    const modelW = 16;
+    const models = s.roles.map((r) => [r.model, r.effort].filter(Boolean).join(' · '));
+    const agentW = inner - roleW - 1 - (models.some(Boolean) ? modelW + 1 : 0);
+    if (!s.roles.length) row(`${fit('lead', roleW)} ${s.command ?? ''}`);
+    s.roles.forEach((r, k) => {
+      const agent = fit((r.swapped ? '⇄ ' : '') + r.agent, agentW);
+      row(`${fit(r.role, roleW)} ${agent}${models.some(Boolean) ? ` ${models[k]}` : ''}`, r.swapped ? 'swapped' : tone);
+    });
+    const skills = s.slots
+      .flatMap((k) => k.skill.split(', '))
+      .filter((k) => k && k !== 'none' && k !== 'disabled')
+      .map((k) => k.slice(k.lastIndexOf(':') + 1));
+    if (skills.length) row(`skills  ${skills.join(' · ')}`);
+    if (!s.gate) {
+      out.push({ text: `╰${'─'.repeat(W - 2)}╯`, tone });
+      return;
+    }
+    const g = s.gate;
+    const gt = ` ${cut(gateText(g, effort?.stop ?? 'none'), W - 6)} `;
+    out.push({ text: `╰─${gt}${'─'.repeat(W - 3 - gt.length)}╯`, tone: g.status === 'stopped' ? 'stopped' : g.status === 'waiting' ? 'current' : tone });
+    if (g.status === 'stopped' && effort) for (const line of stopLines(g, effort)) push(`  ${line}`, 'note');
+  });
+  return out;
+}
+
+// What a stopped gate adds under it: why, from the stop reason (only
+// `attended` names where its setting came from), and the command that resumes.
+function stopLines(g: LoopGate, effort: NonNullable<LoopWorkflow['effort']>): string[] {
+  const why: Record<string, string> = {
+    open: `an open: line in ${g.artifact}`,
+    flagged: `a flagged concern in ${g.artifact}`,
+    'risk-high': 'risk: high, every gate attended',
+    attended: `attended by ${g.source}`,
+  };
+  return [`why: ${why[effort.stop] ?? effort.stop}`, `resume: /forge-sdlc:wayfinder ${effort.slug}`];
+}
+
+// The legend, its entries kept whole, as many to a line as the width holds.
+function legendLines(W: number): string[] {
+  const out: string[] = [];
+  for (const item of LOOP_LEGEND) {
+    const last = out.pop();
+    if (last !== undefined && last.length + 2 + item.length <= W) out.push(`${last}  ${item}`);
+    else out.push(...(last === undefined ? [] : [last]), item);
+  }
+  return out;
+}
+
+function lines(wf: LoopWorkflow, W: number): LoopRow[] {
+  const out: LoopRow[] = [];
+  const push = (text: string, tone: LoopTone) => out.push({ text: fit(text, W), tone });
+  push(wf.effort?.slug || 'the loop', 'title');
+  push(`policy ${wf.policy}`, 'legend');
+  const STAGE_GLYPH = { passed: '✓', current: '▶', ahead: '○' } as const;
+  for (const s of wf.stages) {
+    const swap = s.roles.some((r) => r.swapped) ? ' ⇄' : '';
+    push(`${STAGE_GLYPH[s.status ?? 'ahead']} ${s.name}${swap}`, s.status ?? 'plain');
+    const g = s.gate;
+    if (!g) continue;
+    const status = g.status ?? 'ahead';
+    const tone: LoopTone = !g.status ? 'plain' : status === 'waiting' ? 'current' : status;
+    push(`${GATE_GLYPH[status]}   G${g.n} ${g.mode}`, tone);
+    if (status === 'stopped' && wf.effort) for (const line of stopLines(g, wf.effort)) push(`  ${line}`, 'note');
+  }
+  return out;
+}
+
 // Version directories newest first (`1.10.0` before `1.9.2`).
 export const newestVersionFirst = (versions: string[]): string[] =>
   [...versions].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
