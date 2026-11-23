@@ -88,3 +88,45 @@ test('below 52 columns one line per stage, its gate on the line under it, down t
   }
   assert.equal(loopRows(wf, 51)[0].text.trimEnd(), 'demo');
 });
+
+test('with no effort no width draws a position: every stage a box or a line ahead, nothing passed, here or stopped', () => {
+  const wf = loop(null);
+  for (const columns of [72, 52, 51, 24]) {
+    const rows = loopRows(wf, columns).filter((r) => r.tone !== 'legend');
+    for (const r of rows) assert.doesNotMatch(r.text, /[▶✓■]/, `${columns}: "${r.text}" draws no position`);
+    assert.ok(!rows.some((r) => ['passed', 'current', 'stopped', 'note'].includes(r.tone)), `${columns}: no tone of a position`);
+    assert.match(rows[0].text, /^the loop/);
+  }
+  const t = texts(loopRows(wf, 72));
+  assert.deepEqual(
+    t.filter((x) => x.startsWith('╭─')).map((x) => x.split(' ')[1]),
+    ['map', 'intent', 'spec', 'plan', 'build'],
+    'every stage with a gate, and map, is a box',
+  );
+  assert.ok(t.some((x) => /^╰─ ○ Gate 3 · attended · always stops ─+╯$/.test(x)));
+});
+
+test('a role the roster swaps shows its agent marked, in its own tone; passed stages mark it too', () => {
+  const forgeYaml = 'version: 1\nroles:\n  implementer:\n    agent: my-team:builder\n    model: opus\n';
+  const box = loopRows(loop(at('build', 'pr')), 72);
+  assert.ok(!box.some((r) => r.tone === 'swapped'), 'nothing swapped without a roster');
+  const rows = loopRows(loop(at('build', 'pr'), forgeYaml), 72);
+  const swapped = rows.find((r) => r.tone === 'swapped');
+  assert.match(swapped.text, /^│ implementer {2}⇄ my-team:builder +opus +│$/);
+  const writer = 'version: 1\nroles:\n  spec-writer:\n    agent: my-team:writer\n';
+  assert.ok(texts(loopRows(loop(at('plan', 'plan'), writer), 72)).some((x) => /^✓ spec +spec-writer ⇄ +Gate 2 ✓ attended$/.test(x)));
+  assert.ok(texts(loopRows(loop(at('plan', 'plan'), forgeYaml), 40)).includes('○ build ⇄'.padEnd(40)));
+});
+
+test('help.ts keeps no imports of its own, so node loads it with its types stripped', () => {
+  const source = readFileSync(plugin('hooks/forge/help.ts'), 'utf8');
+  assert.doesNotMatch(source, /^\s*import\b|\brequire\(|\bimport\(/m);
+});
+
+test('a passed stage folds only once its gate has passed: a gate still waiting keeps its stage a box', () => {
+  const t = texts(loopRows(loop(at('built', 'pr')), 72));
+  assert.ok(t.some((x) => x.startsWith('╭─ build ')), 'build waits at Gate 4, so it stays a box');
+  assert.ok(t.some((x) => /^╰─ ▶ Gate 4 · owner · waiting ─+╯$/.test(x)));
+  assert.ok(!t.some((x) => x.startsWith('✓ build')));
+  assert.ok(t.some((x) => x.startsWith('  ▼ ▶ built ')), 'built is where the effort is');
+});

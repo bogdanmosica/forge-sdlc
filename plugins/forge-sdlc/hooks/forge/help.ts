@@ -271,14 +271,14 @@ function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
   for (const line of legendLines(W)) push(line, 'legend');
   const inner = W - 4;
   wf.stages.forEach((s, i) => {
-    if (s.status === 'passed') {
+    if (s.status === 'passed' && (!s.gate || s.gate.status === 'passed')) {
       const who = s.roles.length ? s.roles.map((r) => r.role + (r.swapped ? ' ⇄' : '')).join(' · ') : 'lead';
       const right = s.gate ? `Gate ${s.gate.n} ✓ ${s.gate.mode}` : '';
       const left = `${fit(`✓ ${s.name}`, 10)}${who}`;
       push(right ? `${fit(left, W - right.length - 1)} ${right}` : left, 'passed');
       return;
     }
-    const tone: LoopTone = s.status === 'current' ? 'current' : s.status === 'ahead' ? 'ahead' : 'plain';
+    const tone: LoopTone = s.status ?? 'plain';
     if (!s.gate && i === wf.stages.length - 1) {
       push(`  ▼ ${s.status === 'current' ? '▶ ' : ''}${s.name}  ${s.does}`, tone);
       return;
@@ -305,7 +305,7 @@ function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
     }
     const g = s.gate;
     const gt = ` ${cut(gateText(g, effort?.stop ?? 'none'), W - 6)} `;
-    out.push({ text: `╰─${gt}${'─'.repeat(W - 3 - gt.length)}╯`, tone: g.status === 'stopped' ? 'stopped' : tone });
+    out.push({ text: `╰─${gt}${'─'.repeat(W - 3 - gt.length)}╯`, tone: g.status === 'stopped' ? 'stopped' : g.status === 'waiting' ? 'current' : tone });
     if (g.status === 'stopped' && effort) for (const line of stopLines(g, effort)) push(`  ${line}`, 'note');
   });
   return out;
