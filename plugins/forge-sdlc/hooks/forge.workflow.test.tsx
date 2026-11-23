@@ -67,6 +67,7 @@ const WORKFLOW = [
 ].join('\n');
 
 const ATTENDED_PLAN = ['version: 1', 'workflow:', '  gates:', '    plan: attended', ''].join('\n');
+const AUTONOMOUS_ATTENDED_PLAN = ['version: 1', 'workflow:', '  policy: autonomous', '  gates:', '    plan: attended', ''].join('\n');
 const MAP = '# Map: demo\n';
 const state = (efforts: Record<string, unknown>) => JSON.stringify({ version: 1, efforts });
 
@@ -168,8 +169,8 @@ test("the loop tab draws the newest effort: the current stage, and a stopped gat
   }
 });
 
-test('the prose rows stay under the diagram: what runs at each stage and where you are needed', async ($, on) => {
-  seat(on, { 'forge-sdlc/workflow.yaml': WORKFLOW });
+test("the prose rows stay under the diagram, keyed to the workflow's stages: each one's command and what you do there", async ($, on) => {
+  seat(on, { 'forge-sdlc/workflow.yaml': WORKFLOW, 'docs/agents/forge.yaml': AUTONOMOUS_ATTENDED_PLAN });
   await start($);
   await forge($);
   for (const surface of SURFACES) {
@@ -181,9 +182,23 @@ test('the prose rows stay under the diagram: what runs at each stage and where y
     // the diagram first, then the prose
     expect(loop.slice(0, diagram.length), surface).toEqual(diagram);
     const prose = loop.slice(diagram.length);
-    expect(prose[0], surface).toBe('Watch');
-    for (const stage of ['Setup', 'Plan', 'Design', 'Build', 'Deploy']) expect(prose, surface).toContain(stage);
-    expect(prose.filter((l) => l.startsWith('  you: ')).length, surface).toBe(6);
+    const headings = prose.filter((l) => !l.startsWith('  ')).slice(0, 8);
+    expect(headings, surface).toEqual([
+      'watch',
+      'setup',
+      'map · /forge-sdlc:wayfinder',
+      'intent · /forge-sdlc:wayfinder',
+      'spec · /forge-sdlc:spec',
+      'plan · /forge-sdlc:plan',
+      'build · /forge-sdlc:build',
+      'built',
+    ]);
+    const you = prose.filter((l) => l.startsWith('  you: '));
+    expect(you.length, surface).toBe(8);
+    // each gate's line names its mode: autonomous passes Gates 1 and 2, gates.plan keeps Gate 3 attended
+    expect(you.join('\n'), surface).toMatch(/^ {2}you: Gate 1 · policy: the policy accepts intent\.md/m);
+    expect(you.join('\n'), surface).toMatch(/^ {2}you: Gate 3 · attended: answer plan's quiz/m);
+    expect(you.join('\n'), surface).toMatch(/^ {2}you: Gate 4 · owner: /m);
     await ui.unmount();
   }
 });
