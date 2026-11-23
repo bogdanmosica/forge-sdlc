@@ -297,7 +297,10 @@ function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
       const agent = fit((r.swapped ? '⇄ ' : '') + r.agent, agentW);
       row(`${fit(r.role, roleW)} ${agent}${models.some(Boolean) ? ` ${models[k]}` : ''}`, r.swapped ? 'swapped' : tone);
     });
-    const skills = s.slots.map((k) => k.skill.slice(k.skill.lastIndexOf(':') + 1)).filter((k) => k && k !== 'none');
+    const skills = s.slots
+      .flatMap((k) => k.skill.split(', '))
+      .filter((k) => k && k !== 'none' && k !== 'disabled')
+      .map((k) => k.slice(k.lastIndexOf(':') + 1));
     if (skills.length) row(`skills  ${skills.join(' · ')}`);
     if (!s.gate) {
       out.push({ text: `╰${'─'.repeat(W - 2)}╯`, tone });
