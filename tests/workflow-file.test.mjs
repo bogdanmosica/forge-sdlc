@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { parseYamlSubset } from '../plugins/forge-sdlc/hooks/roster.mjs';
+import { ROLES, SLOT_NAMES, parseYamlSubset, resolveRoster, resolveWorkflow } from '../plugins/forge-sdlc/hooks/roster.mjs';
 
 const root = new URL('../plugins/forge-sdlc/', import.meta.url);
 const text = readFileSync(new URL('workflow.yaml', root), 'utf8');
@@ -37,4 +37,33 @@ test('its gates are intent, spec, plan and pr, numbered 1 to 4, on intent, spec,
     ['plan', 'plan', 3],
     ['build', 'pr', 4],
   ]);
+});
+
+test('the shipped file resolves with no problems', () => {
+  assert.deepEqual(resolveWorkflow(text, resolveRoster(undefined, undefined)).problems, []);
+});
+
+test('every role and slot it names is one the roster knows', () => {
+  for (const [name, stage] of Object.entries(file.stages)) {
+    for (const role of stage.roles ?? []) assert.ok(ROLES.includes(role), `${name}: role ${role}`);
+    for (const slot of stage.slots ?? []) assert.ok(SLOT_NAMES.includes(slot), `${name}: slot ${slot}`);
+  }
+});
+
+test('flagged is only in Gate 2’s stops, and Gate 4 is the owner’s', () => {
+  const gates = resolveWorkflow(text, resolveRoster(undefined, undefined)).stages.filter((s) => s.gate).map((s) => s.gate);
+  assert.deepEqual(gates.filter((g) => g.stops.includes('flagged')).map((g) => g.n), [2]);
+  assert.deepEqual(gates.map((g) => g.stops), [
+    ['open', 'risk-high', 'attended'],
+    ['open', 'flagged', 'risk-high', 'attended'],
+    ['open', 'risk-high', 'attended'],
+    [],
+  ]);
+  const pr = gates.find((g) => g.key === 'pr');
+  assert.equal(pr.mode, 'owner');
+  assert.equal(file.stages.build.gate.owner, 'always');
+});
+
+test('its closed set of stops is open, flagged, risk-high, attended, in write order', () => {
+  assert.deepEqual(file.stops, ['open', 'flagged', 'risk-high', 'attended']);
 });
