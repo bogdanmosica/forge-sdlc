@@ -1,0 +1,59 @@
+# The forge-sdlc loop as the plugin runs it: its stages in order under
+# effort-state.mjs's names, each stage's roles and slots, and the gate it ends
+# at with that gate's stop reasons. Descriptive only: a host tunes the gates
+# under workflow: in docs/agents/forge.yaml, never the stages. Read by the
+# shared reader (hooks/roster.mjs, resolveWorkflow) in the forge.yaml YAML
+# subset; tests/workflow-file.test.mjs holds it to the fixed names.
+version: 1
+stops: [open, flagged, risk-high, attended]
+stages:
+  map:
+    does: the map and its tickets, worked with the owner
+    command: /forge-sdlc:wayfinder
+    roles: [researcher, prototyper]
+    slots: [grilling, prototyper.prototype, domain-modeling]
+    human: charting and grilling stay the owner's
+  intent:
+    does: intent.md and the draft PR
+    command: /forge-sdlc:wayfinder
+    roles: []
+    slots: []
+    gate:
+      n: 1
+      key: intent
+      artifact: intent.md
+      stops: [open, risk-high, attended]
+  spec:
+    does: spec.md under the policy skills
+    command: /forge-sdlc:spec
+    roles: [spec-writer]
+    slots: [spec-writer.codebase-design, policy]
+    gate:
+      n: 2
+      key: spec
+      artifact: spec.md
+      stops: [open, flagged, risk-high, attended]
+  plan:
+    does: plan.md, slices, the quiz
+    command: /forge-sdlc:plan
+    roles: []
+    slots: []
+    lead: the plan quiz
+    gate:
+      n: 3
+      key: plan
+      artifact: plan.md
+      stops: [open, risk-high, attended]
+  build:
+    does: one worktree per slice, merged when clean
+    command: /forge-sdlc:build
+    roles: [implementer, verifier, reviewer, merger]
+    slots: [implementer.tdd]
+    gate:
+      n: 4
+      key: pr
+      artifact: the PR
+      owner: always
+  built:
+    does: ready for review; the code owner merges
+    end: true
