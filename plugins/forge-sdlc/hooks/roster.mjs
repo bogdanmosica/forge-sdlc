@@ -233,11 +233,11 @@ function fromForgeMd(roster, config) {
   }
   for (const [key, value] of Object.entries(sectionOf(config, 'gates'))) {
     const v = String(value ?? '').trim();
-    const move = GATES_MOVED[key];
+    const move = Object.hasOwn(GATES_MOVED, key) ? GATES_MOVED[key] : undefined;
     if (key === 'spec' && v === 'only-on-open') roster.problems.push(`## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in ${ROSTER_FILE}`);
     else if (key === 'spec')
       roster.problems.push(`## Gates: spec ${v === 'always' ? v : quote(value)} is deprecated and has no ${ROSTER_FILE} equivalent; Gate 2 follows workflow.policy`);
-    else if (move) roster.problems.push(`## Gates: ${key} is deprecated; move it to ${move} in ${ROSTER_FILE}`);
+    else if (move) roster.problems.push(`## Gates: ${keyOf(key)} is deprecated; move it to ${move} in ${ROSTER_FILE}`);
     else roster.problems.push(`## Gates: ${keyOf(key)} is deprecated and has no ${ROSTER_FILE} equivalent; it stops working when ## Gates is removed`);
   }
 }
