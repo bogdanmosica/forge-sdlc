@@ -6,6 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { resolveRoster } from '../roster.mjs';
+
 /** The host config `/forge-sdlc:init` writes, relative to the project dir. */
 export const HOST_CONFIG = path.join('docs', 'agents', 'forge.md');
 
@@ -64,6 +66,19 @@ export function readHostConfig(projectDir) {
   const file = path.join(projectDir, HOST_CONFIG);
   if (!existsSync(file)) return null;
   return parseForgeConfig(readFileSync(file, 'utf8'));
+}
+
+/** The roster file, relative to the project dir: optional, beside the host config. */
+export const ROSTER_FILE = path.join('docs', 'agents', 'forge.yaml');
+
+/**
+ * The host's resolved roster (roster.mjs): its forge.yaml over the defaults and its forge.md's
+ * deprecated sections. Without forge.yaml, the defaults and whatever forge.md still sets.
+ */
+export function readRoster(hostDir) {
+  const file = path.join(hostDir, ROSTER_FILE);
+  const yaml = existsSync(file) ? readFileSync(file, 'utf8') : undefined;
+  return resolveRoster(yaml, readHostConfig(hostDir) ?? undefined);
 }
 
 /** The problem a `dependency_dir` other than none is since 0.7.0 (ADR 0022); the run pane's worktrees.ts says the same. */

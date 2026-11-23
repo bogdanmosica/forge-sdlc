@@ -17,9 +17,10 @@ Each Agent call below is a [member call](../build/MEMBERS.md), and the session r
 - Both refs resolve: `git rev-parse --verify <effort>` and `git rev-parse --verify <slice>`.
 - The diff `git diff <effort>...<slice>` (three dots: against the merge-base) is non-empty.
 - `node "${CLAUDE_PLUGIN_ROOT}/bin/skill-path.mjs" code-review` prints the code-review file; exit 1 stops with the install line it printed.
-- The slice ticket: `slices["<slug>-<nn>"].ticket` in `.forge/state.json`, else row `<nn>` of `docs/efforts/<slug>/plan.md`. The policy skills: the `## Policy skills` bullets of `docs/agents/forge.md`, or none.
+- The slice ticket: `slices["<slug>-<nn>"].ticket` in `.forge/state.json`, else row `<nn>` of `docs/efforts/<slug>/plan.md`.
+- The policy skills, for the reviewer, which has no Bash, per the [slot rule](../build/ROLES.md#slots): the line `node "${CLAUDE_PLUGIN_ROOT}/bin/roster.mjs" policy --project <project dir>` prints, comma-separated or `none`: the roster's `slots.policy`, with its fallback to the deprecated `## Policy skills` of `docs/agents/forge.md`.
 
-A bad ref or an empty diff stops here with one line naming it. Done when you hold the two refs, the worktree, a non-empty diff, the code-review path and the ticket pointer (or `none`).
+A bad ref or an empty diff stops here with one line naming it. Done when you hold the two refs, the worktree, a non-empty diff, the code-review path, the ticket pointer (or `none`) and the policy skills (or `none`).
 
 ## 2. Review
 
@@ -29,7 +30,7 @@ Three Agent calls in one message, so they run in parallel, each a [member call](
 - the diff command `git diff <effort>...<slice>`, the effort and slice branches, the worktree
 - Standards: the code-review file from step 1
 - Spec: `docs/efforts/<slug>/spec.md` and the ticket pointer
-- Bugs and security: `${CLAUDE_PLUGIN_ROOT}/review/REVIEW.md` resolved, `docs/agents/REVIEW.md` when the host has one, the policy skills by name
+- Bugs and security: `${CLAUDE_PLUGIN_ROOT}/review/REVIEW.md` resolved, `docs/agents/REVIEW.md` when the host has one, the policy skills from step 1 by name, or `none`
 
 Done when all three reports are back, each under its axis heading with `### Important` and `### Nit`.
 

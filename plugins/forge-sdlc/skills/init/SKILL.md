@@ -1,10 +1,10 @@
 ---
 name: init
-description: Set up a host for the forge-sdlc loop once, after Matt's setup-matt-pocock-skills, by deriving the proof commands and branches from the repo and asking only what it cannot know, then writing docs/agents/forge.md and the Delivery loop block in CLAUDE.md.
+description: Set up a host for the forge-sdlc loop once, after Matt's setup-matt-pocock-skills, by deriving the proof commands and branches from the repo and asking only what it cannot know, then writing docs/agents/forge.md, the policy skills in docs/agents/forge.yaml and the Delivery loop block in CLAUDE.md.
 disable-model-invocation: true
 ---
 
-Setup writes one file, `docs/agents/forge.md`, the **host config** every forge-sdlc skill and hook reads, and one sub-block in CLAUDE.md that points at it. Ask only what the host cannot know about itself; everything else is a **derived value** read from the repo and confirmed in passing.
+Setup writes `docs/agents/forge.md`, the **host config** every forge-sdlc skill and hook reads, the policy skills into `docs/agents/forge.yaml`, the **roster**, and one sub-block in CLAUDE.md that points at the config. Ask only what the host cannot know about itself; everything else is a **derived value** read from the repo and confirmed in passing.
 
 ## 1. Precondition
 
@@ -26,7 +26,7 @@ One section per AskUserQuestion call, derived value first, `(Recommended)` on it
    **Worktrees**: the `install` command run at the root of each new slice worktree, which lives beside the repository and gets a real install, never a symlink (`pnpm install --frozen-lockfile --prefer-offline`, `npm ci`, `uv sync`, `bundle install`, or none). Derived from the lockfile at the root; asked only when none or several exist. A re-run that finds `dependency_dir` replaces it with `install`.
 4. **Gates**: first `Policy: attended or autonomous?`, the gate policy: `attended` (the owner passes each of Gates 1 to 3) or `autonomous` (a gate passes by policy when nothing in its artifacts needs the owner, and the run stops only where they do). Lead with `attended`, or with the current value on a re-run. Then `spec` is `always` (the owner approves every spec) or `only-on-open` (a spec with no `open:` assumption flows into plan). Lead with `always`. `max_parallel_slices`, lead with 3.
 5. **Risk globs**: paths that make an effort `risk: high` (auth, payments, migrations, infra), or none.
-6. **Policy skills**: skills the spec-writer and reviewer apply by name (`security-review`, a host skill), or none.
+6. **Policy skills**: skills the spec-writer and reviewer apply by name (`security-review`, a host skill), or none. The answer goes to `slots.policy` in `docs/agents/forge.yaml`, the roster, never to forge.md; a re-run leads with the current `slots.policy`, else the deprecated `## Policy skills` bullet.
 7. **Crew**: the crew theme that names every agent the loop starts, display only. Derived from nothing, so always asked; a re-run leads with the current theme. Header `Crew`, question `Crew theme: which theme names the agents while they run?`, options `None` (agents are named after their role, an implementer after its slice; maps to `none`), `A preset`, `My own theme`.
    `A preset` asks again through the same dialog, header `Crew`, question `Crew preset: which preset names the agents?`, one page per call: `Warcraft`, `Star Trek`, `Star Wars`, `More presets`; after `More presets`, `Game of Thrones`, `Super Mario`. Ids, the presets of the plugin's `crew.json`: `Warcraft` to `warcraft`, `Star Trek` to `star-trek`, `Star Wars` to `star-wars`, `Game of Thrones` to `got`, `Super Mario` to `mario`.
    Free text at any Crew step is a theme. Free text that names a preset, in any case (`mario`, `Star trek`), maps to its id. Any other free text is the theme as typed, and init writes a `names.<role>` bullet for each of the eight roles, `researcher`, `prototyper`, `spec-writer`, `implementer`, `verifier`, `reviewer`, `merger` and `general`, with characters of that theme in display form, each name once: at least five for `implementer` and three for every other role. `My own theme` with nothing typed asks again. A dismissed Crew question or preset page keeps the current theme, `none` on a fresh host.
@@ -34,6 +34,15 @@ One section per AskUserQuestion call, derived value first, `(Recommended)` on it
 ## 4. Write
 
 - `docs/agents/forge.md` from the template, every section present, every bullet one `- key: value` line, a trailing `# comment` only where the template has one. Re-run: rewrite the file whole from the answers; the one thing a human adds by hand, a `names.<role>` bullet under `## Crew`, is kept while the theme stays and replaced when the theme changes.
+- `docs/agents/forge.yaml`, the roster, holding the Policy skills answer as `slots.policy`, a list of skill names, `[]` for none. Created when absent, with `version: 1` and that one key:
+
+  ```yaml
+  version: 1
+  slots:
+    policy: [security-review]
+  ```
+
+  When it exists, rewrite only `slots.policy` and keep every other key, comment and line as the owner wrote them (`version`, `enforce`, `roles`, the other slots, `allow`); add `slots:` when it is missing. Every other roster key is the owner's, and init never writes it. A re-run that finds a `## Policy skills` section in forge.md drops it, since the template no longer has it.
 - The `### Delivery loop` sub-block under `## Agent skills` in whichever of CLAUDE.md or AGENTS.md Matt's setup edited, replaced in place when present:
 
   ```markdown
@@ -49,4 +58,4 @@ Then check the file reads back: `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mj
 
 ## 5. Report
 
-Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed). Done when the config reads back, both files are written and, on GitHub, `gh label list --search wayfinder:` shows all five labels.
+Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed). Done when the config reads back, forge.md, forge.yaml and the Delivery loop block are written and, on GitHub, `gh label list --search wayfinder:` shows all five labels.
