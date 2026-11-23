@@ -19,10 +19,10 @@ import type { CommandSpec, EngineInterface, On } from 'claude-code';
 import type { ForgeRoster, ForgeSkills, ForgeView, ForgeWorkflow } from './types';
 import {
   GATES,
-  LOOP,
   UPSTREAM,
   agentRows,
   commandGroups,
+  loopProse,
   loopRows,
   newestVersionFirst,
   parseAgent,
@@ -315,11 +315,10 @@ export function registerForge(on: On): void {
                 ))}
               </Box>
             )}
-            {LOOP.map((stage) => (
-              <Box key={stage.stage} flexDirection="column" marginBottom={1}>
-                <Text bold>{stage.stage}</Text>
-                <Text wrap="wrap">{`  ${stage.text}`}</Text>
-                {stage.you && <Text color="yellow" wrap="wrap">{`  you: ${stage.you}`}</Text>}
+            {loopProse(s.workflow?.stages ?? []).map((p) => (
+              <Box key={`prose-${p.name}`} flexDirection="column" marginBottom={1}>
+                <Text bold>{p.command ? `${p.name} · ${p.command}` : p.name}</Text>
+                <Text color="yellow" wrap="wrap">{`  you: ${p.you}`}</Text>
               </Box>
             ))}
             <Box key="gates">
