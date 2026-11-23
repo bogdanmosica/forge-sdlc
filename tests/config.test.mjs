@@ -128,14 +128,14 @@ test('docs/contracts.md: the state shape has crew per effort, member and agent p
   assert.match(names, /^\| Crew presets \|[^\n]*crew\.json/m);
 });
 
-test('docs/contracts.md: the effort record has the optional stop, and the effort-position row prints policy and stop', () => {
+test('docs/contracts.md: the effort record has the optional stop, attended last, and the effort-position row prints policy, stop and gates', () => {
   const contracts = readFileSync(path.join(repoRoot, 'docs', 'contracts.md'), 'utf8');
   const shape = /## `\.forge\/state\.json`[\s\S]*?```json\n([\s\S]*?)```/.exec(contracts)[1];
-  assert.match(shape, /"gate": [^\n]*\n\s*"stop": "open \| flagged \| risk-high"/, 'stop beside gate');
+  assert.match(shape, /"gate": [^\n]*\n\s*"stop": "open \| flagged \| risk-high \| attended"/, 'stop beside gate');
   const state = /## `\.forge\/state\.json`\n([\s\S]*?)\n## /.exec(contracts)[1];
   assert.match(state, /^- `stop`[^\n]*additive[^\n]*absent[^\n]*none/m, 'stop is additive, absent reads as none');
   const names = /## Names\n([\s\S]*?)\n## /.exec(contracts)[1];
-  assert.match(names, /^\| Effort position \|[^\n]*\{ slug, stage, gate, next, why, source, policy, stop \}/m);
+  assert.match(names, /^\| Effort position \|[^\n]*\{ slug, stage, gate, next, why, source, policy, stop, gates \}/m);
 });
 
 test('docs/design.md: section 8 shows the policy bullet first under Gates, section 9 shows stop beside gate', () => {

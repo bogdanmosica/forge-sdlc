@@ -147,6 +147,9 @@ export type ForgeAgent = ForgeSkill & { model?: string; effort?: string };
 export type ForgeRosterRole = { agent: string; model?: string; effort?: string; swapped: boolean };
 export type ForgeRoster = { roles: Record<string, ForgeRosterRole>; slots: Record<string, string>; policy: string[] };
 export type ForgeSkills = { plugin: ForgeSkill[]; upstream: ForgeSkill[]; agents: ForgeAgent[]; roster?: ForgeRoster };
+// Why a run stopped at its gate, an effort's `stop` in .forge/state.json (docs/contracts.md): the closed set
+// in write order, `attended` last (a gate set attended in docs/agents/forge.yaml); absent reads as none.
+export type ForgeStop = 'open' | 'flagged' | 'risk-high' | 'attended';
 
 export type SessionStatus = 'working' | 'idle' | 'needs-you';
 
