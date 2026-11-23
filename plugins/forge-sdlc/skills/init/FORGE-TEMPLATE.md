@@ -20,11 +20,6 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 ## Worktrees
 - install: <command | none>   # run at the root of each new slice worktree (beside the repository), e.g. pnpm install --frozen-lockfile --prefer-offline
 
-## Gates
-- policy: attended               # or: autonomous
-- spec: always                   # or: only-on-open
-- max_parallel_slices: 3
-
 ## Risk
 - high: <globs, or none>         # src/auth/**, src/payments/**, migrations/**
 

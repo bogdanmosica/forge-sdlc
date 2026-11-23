@@ -90,10 +90,6 @@ test('init/SKILL.md: the Gates question asks the policy first, leading with atte
   assert.match(q, /`always`[^\n]*`only-on-open`/, 'spec keeps its two values');
 });
 
-test('init: the template carries ## Gates with policy attended first', () => {
-  assert.match(template, /^## Gates\n- policy: attended\b[^\n]*autonomous\n- spec: always\b/m);
-});
-
 test('init: the template carries ## Crew with theme none, and Write keeps hand-written names bullets', () => {
   assert.match(template, /^## Crew\n- theme: none\b/m);
   assert.match(body, /`names\.<role>`[^\n]*kept/, 'a re-run keeps names bullets while the theme stays');
