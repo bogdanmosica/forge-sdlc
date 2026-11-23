@@ -4,7 +4,8 @@
 // JSON with its `problems`; `--gate <intent|spec|plan|pr>` prints that gate's
 // `{ key, n, mode, source, stops }`; `--mermaid [--effort <slug>]` prints the loop as a Mermaid
 // flowchart (Mermaid A), positioned from the effort's record in .forge/state.json when there is one.
-// --project defaults to the cwd. Reads only. Exit 0; 2 on bad usage.
+// --project defaults to the cwd. Reads only. Exit 0; 2 on bad usage; 1, the error on stderr, when
+// --effort meets a .forge/state.json that is not JSON.
 
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
@@ -60,14 +61,15 @@ function main(argv) {
 /** The longest edge label, in characters: the prototype's longest, drawn on one line at its wrappingWidth 320. */
 export const EDGE_LABEL_MAX = 40;
 
+/** An effort slug kept to slug characters, so the %% comment it heads stays one line. */
+const slugText = (s) => String(s).replace(/[^\w.-]/g, '');
+
 /** Text safe inside a quoted Mermaid label. */
 const esc = (s) => String(s).replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** A model id as the diagram names it: `claude-opus-5-5` is `opus`. */
-const shortModel = (m) => String(m).replace(/^claude-/, '').replace(/-\d.*$/, '');
-
+/** A role as its box names it: the role (`⇄` and the agent when swapped) and the model the roster resolves, as it resolves it. */
 const roleLine = (r) => {
-  const model = r.model ? ` · ${shortModel(r.model)}` : '';
+  const model = r.model ? ` · ${r.model}` : '';
   return r.swapped ? `${r.role} ⇄ ${r.agent}${model}` : `${r.role}${model}`;
 };
 
@@ -104,7 +106,7 @@ const CLASSDEFS = [
 /** The resolved workflow (readWorkflow's result) as Mermaid A, one line per statement. */
 export function mermaidOf(workflow) {
   const { stages, effort } = workflow;
-  const where = effort ? `${effort.slug}: at ${effort.stage}${effort.stop !== 'none' ? `, stopped (${effort.stop})` : ''} · ` : '';
+  const where = effort ? `${slugText(effort.slug)}: at ${effort.stage}${effort.stop !== 'none' ? `, stopped (${effort.stop})` : ''} · ` : '';
   const out = [
     '%%{init: {"flowchart": {"wrappingWidth": 320}}}%%',
     'flowchart TD',

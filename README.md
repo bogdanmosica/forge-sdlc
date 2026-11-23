@@ -53,12 +53,12 @@ The loop as `node plugins/forge-sdlc/bin/workflow.mjs --mermaid` draws it for a 
 %%{init: {"flowchart": {"wrappingWidth": 320}}}%%
 flowchart TD
 %% policy attended
-  map["1 · map<br/>the map and its tickets, worked with the owner<br/>researcher · sonnet<br/>prototyper · opus"]
+  map["1 · map<br/>the map and its tickets, worked with the owner<br/>researcher · claude-sonnet-5-5<br/>prototyper · claude-opus-5-5"]
   intent["2 · intent<br/>intent.md and the draft PR"]
   G1{{"Gate 1 · attended · default"}}:::gattended
   intent --> G1
   G1 ==>|"you pass it"| spec
-  spec["3 · spec<br/>spec.md under the policy skills<br/>spec-writer · opus"]
+  spec["3 · spec<br/>spec.md under the policy skills<br/>spec-writer · claude-opus-5-5"]
   G2{{"Gate 2 · attended · default"}}:::gattended
   spec --> G2
   G2 ==>|"you pass it"| plan
@@ -66,7 +66,7 @@ flowchart TD
   G3{{"Gate 3 · attended · default"}}:::gattended
   plan --> G3
   G3 ==>|"you pass it"| build
-  build["5 · build<br/>one worktree per slice, merged when clean<br/>implementer · opus<br/>verifier · sonnet<br/>reviewer · opus<br/>merger · sonnet"]
+  build["5 · build<br/>one worktree per slice, merged when clean<br/>implementer · claude-opus-5-5<br/>verifier · claude-sonnet-5-5<br/>reviewer · claude-opus-5-5<br/>merger · claude-sonnet-5-5"]
   G4{{"Gate 4 · owner"}}:::gowner
   build --> G4
   G4 ==>|"code owner reviews, merges"| built
