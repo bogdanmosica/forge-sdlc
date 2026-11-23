@@ -3,10 +3,11 @@
 // Reasons name branches, paths and pattern names; never a matched value.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { resolveRoster } from '../roster.mjs';
+import { PLUGIN, resolveRoster, resolveWorkflow } from '../roster.mjs';
 
 /** The host config `/forge-sdlc:init` writes, relative to the project dir. */
 export const HOST_CONFIG = path.join('docs', 'agents', 'forge.md');
@@ -79,6 +80,37 @@ export function readRoster(hostDir) {
   const file = path.join(hostDir, ROSTER_FILE);
   const yaml = existsSync(file) ? readFileSync(file, 'utf8') : undefined;
   return resolveRoster(yaml, readHostConfig(hostDir) ?? undefined);
+}
+
+/** The plugin root, two folders above this file. */
+const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** The plugin's description of its loop (descriptive: hosts tune it under workflow: in forge.yaml). */
+export const WORKFLOW_FILE = path.join(PLUGIN_ROOT, 'workflow.yaml');
+
+/** `{ 'forge-sdlc:<name>': model }` from the frontmatter of each plugin agent that names one. */
+function agentModels() {
+  const dir = path.join(PLUGIN_ROOT, 'agents');
+  const models = {};
+  for (const name of existsSync(dir) ? readdirSync(dir) : []) {
+    if (!name.endsWith('.md')) continue;
+    const front = /^---\n([\s\S]*?)\n---/.exec(readFileSync(path.join(dir, name), 'utf8'))?.[1] ?? '';
+    const model = /^model:\s*(\S+)\s*$/m.exec(front)?.[1];
+    if (model) models[`${PLUGIN}:${path.basename(name, '.md')}`] = model;
+  }
+  return models;
+}
+
+/**
+ * The host's resolved workflow (roster.mjs, resolveWorkflow): the plugin's workflow.yaml joined with
+ * the host's roster and the plugin agents' frontmatter models. With `slug`, positioned from that
+ * effort's record in .forge/state.json; unpositioned when it has none. Reads only.
+ */
+export function readWorkflow(hostDir, slug) {
+  const text = existsSync(WORKFLOW_FILE) ? readFileSync(WORKFLOW_FILE, 'utf8') : undefined;
+  const record = slug ? effortOf(readState(hostDir), slug) : null;
+  const effort = record ? { ...record, slug } : undefined;
+  return resolveWorkflow(text, readRoster(hostDir), { agentModels: agentModels(), effort });
 }
 
 /** The problem a `dependency_dir` other than none is since 0.7.0 (ADR 0022); the run pane's worktrees.ts says the same. */

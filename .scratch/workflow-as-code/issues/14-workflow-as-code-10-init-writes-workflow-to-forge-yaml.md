@@ -21,3 +21,10 @@ node --test tests/workflow-init.test.mjs tests/init.test.mjs tests/roster-init.t
 ```
 
 passes: the init workflow checks and the existing init, roster-init and evals tests green
+
+## Assumptions
+
+- recommended: under `autonomous` the Gate 2 question is not asked, since every gate already passes by policy, and an existing `gates.spec` is kept as the owner wrote it; under `attended` a no removes a `gates.spec: policy` (source: spec "Init asks, under its Gates question, the global policy, then (under `attended`) whether Gate 2 passes by policy"; "`gates.spec: policy` only when chosen")
+- recommended: a re-run reads `## Gates` `spec: only-on-open` as yes to Gate 2, and drops the `## Gates` section from forge.md along with `## Policy skills` (source: spec "A re-run leads with the current `workflow:` values, else the `## Gates` bullets"; "its forge.md template drops `## Gates`")
+- recommended: the evals' fixture host writes `version: 1` and `workflow: { policy: attended, max_parallel_slices: 3 }` to forge.yaml (the old `## Gates` had `spec: always`, no override) and keeps its `## Policy skills` bullet, which this slice does not move; the roster-guard fixtures still overwrite forge.yaml with their own roster (source: spec Testing "the frame evals' host fixture writes `workflow:` in forge.yaml instead of `## Gates`")
+- recommended: tests/config.test.mjs's "gates.policy attended for a host written from the init template" now asserts no `gates` section, since the template has none (source: spec "its forge.md template drops `## Gates`")
