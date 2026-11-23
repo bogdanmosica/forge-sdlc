@@ -153,3 +153,16 @@ test('plan: the policy-passed quiz lines end (source: <tail>), in step 3 and in 
   assert.equal(quiz.length, 4);
   for (const l of quiz) assert.match(l, /\(source: <tail>\)$/);
 });
+
+test('build step 1 reads max_parallel_slices from bin/workflow.mjs, not forge-config', () => {
+  const step1 = stepOf(read('skills/build/SKILL.md'), 1);
+  assert.ok(step1.includes('node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --project .'), 'the workflow line');
+  assert.match(step1, /`maxParallelSlices`/);
+  assert.doesNotMatch(step1, /forge-config\.mjs/);
+});
+
+test('status keeps printing the why: step 1 holds why, step 3 prints (<why>) after the stop', () => {
+  const skill = read('skills/status/SKILL.md');
+  assert.match(stepOf(skill, 1), /Done when [^\n]*`why`/);
+  assert.match(stepOf(skill, 3), /stopped: <stop> \(<why>\)/);
+});
