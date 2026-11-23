@@ -104,9 +104,9 @@ test('bin/forge-config.mjs prints crew.theme none for a host written from the in
   assert.deepEqual(printConfig(dir).crew, { theme: 'none' });
 });
 
-test('bin/forge-config.mjs prints gates.policy attended for a host written from the init template', () => {
+test('bin/forge-config.mjs prints no gates for a host written from the init template: the gate policy is workflow.policy in forge.yaml', () => {
   const { dir } = host({ branch: 'main', config: template });
-  assert.equal(printConfig(dir).gates.policy, 'attended');
+  assert.equal(printConfig(dir).gates, undefined);
 });
 
 test("bin/forge-config.mjs prints a names.<role> bullet under crew, the names in display form", () => {
