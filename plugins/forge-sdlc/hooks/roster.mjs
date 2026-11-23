@@ -374,6 +374,7 @@ export function resolveWorkflow(workflowText, roster, options) {
   const r = roster ?? resolveRoster(undefined, undefined);
   const agentModels = isMap(options?.agentModels) ? options.agentModels : {};
   const at = positionOf(options?.effort);
+  const riskHigh = isMap(options?.effort) && options.effort.risk === 'high';
   const { value } = parseYamlSubset(String(workflowText ?? ''));
   const file = isMap(value) ? value : {};
   const described = Object.entries(isMap(file.stages) ? file.stages : {}).map(([name, s]) => describedOf(name, s));
@@ -388,6 +389,7 @@ export function resolveWorkflow(workflowText, roster, options) {
   /** @param {NonNullable<Described['gate']>} g @returns {WorkflowGate} */
   const gateIn = (g) => {
     if (g.key === 'pr') return { ...g, mode: 'owner', source: 'always' };
+    if (riskHigh) return { ...g, mode: 'attended', source: 'risk: high' };
     const key = /** @type {GateKey} */ (g.key);
     return { ...g, mode: r.workflow.gates[key], source: r.workflow.sources[key] };
   };

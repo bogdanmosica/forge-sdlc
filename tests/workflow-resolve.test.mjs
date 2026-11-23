@@ -143,3 +143,25 @@ test('a stop outside the closed set reads as none: the gate waits', () => {
   assert.equal(byName(w).spec.gate.status, 'waiting');
   assert.equal(w.effort.stop, 'none');
 });
+
+test('risk: high shows every gate attended with source risk: high, whatever the settings; Gate 4 stays the owner’s', () => {
+  const roster = resolveRoster(yaml('workflow:', '  policy: autonomous', '  gates:', '    spec: policy'), undefined);
+  const w = resolveWorkflow(SHIPPED, roster, { effort: { slug: 'demo', stage: 'spec', gate: 'spec', stop: 'risk-high', risk: 'high' } });
+  assert.deepEqual(
+    w.stages.filter((s) => s.gate).map((s) => [s.gate.key, s.gate.mode, s.gate.source]),
+    [
+      ['intent', 'attended', 'risk: high'],
+      ['spec', 'attended', 'risk: high'],
+      ['plan', 'attended', 'risk: high'],
+      ['pr', 'owner', 'always'],
+    ],
+  );
+  assert.equal(w.policy, 'autonomous');
+  assert.equal(w.effort.risk, 'high');
+});
+
+test('risk: normal leaves the settings’ modes', () => {
+  const roster = resolveRoster(yaml('workflow:', '  policy: autonomous'), undefined);
+  const w = resolveWorkflow(SHIPPED, roster, { effort: { slug: 'demo', stage: 'spec', gate: 'spec', risk: 'normal' } });
+  assert.deepEqual(byName(w).spec.gate.mode, 'policy');
+});
