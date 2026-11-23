@@ -193,6 +193,24 @@ test('an unknown ## Gates bullet is deprecated with no forge.yaml equivalent', (
   ]);
 });
 
+test('a ## Gates bullet named like an Object.prototype member is an unknown bullet, not a moved one', () => {
+  assert.deepEqual(resolveRoster(undefined, GATES_MD('constructor: auto', 'toString: x')).problems, [
+    '## Gates: constructor is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Gates is removed',
+    '## Gates: toString is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Gates is removed',
+  ]);
+});
+
+test('an empty ## Gates value gives its deprecation line; an empty policy is anything else, so attended', () => {
+  const r = resolveRoster(undefined, GATES_MD('policy:', 'spec:', 'max_parallel_slices:'));
+  assert.equal(r.workflow.policy, 'attended');
+  assert.equal(r.workflow.maxParallelSlices, 3);
+  assert.deepEqual(r.workflow.gates, DEFAULT_WORKFLOW.gates);
+  assert.equal(r.workflow.sources.policy, 'policy in forge.md ## Gates');
+  assert.ok(r.problems.includes('## Gates: policy is deprecated; move it to workflow.policy in docs/agents/forge.yaml'));
+  assert.ok(r.problems.some((p) => p.startsWith('## Gates: spec "" is deprecated')));
+  assert.ok(r.problems.includes('## Gates: max_parallel_slices is deprecated; move it to workflow.max_parallel_slices in docs/agents/forge.yaml'));
+});
+
 test('resolveRoster never throws on odd ## Gates values', () => {
   for (const gates of [null, 5, { policy: null, spec: 7, max_parallel_slices: {} }, ['policy']])
     assert.doesNotThrow(() => resolveRoster('version: 1\nworkflow:\n  gates:', /** @type {any} */ ({ gates })));
