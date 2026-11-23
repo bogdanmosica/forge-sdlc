@@ -223,23 +223,24 @@ test('this session is the lead of its member calls, reading the reference by pat
 const GATE_LINK = '[gate policy](GATE-POLICY.md)';
 const section = (heading) => new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(skill)?.[1] ?? '';
 
-test('GATE-POLICY.md beside wayfinder: the four stops, the three reasons in order, the report line, the state write', () => {
+test('GATE-POLICY.md beside wayfinder: the gate read from bin/workflow.mjs, the stops, the four reasons in order, the report line, the state write', () => {
   const file = path.join(skillDir, 'GATE-POLICY.md');
   assert.ok(existsSync(file), 'skills/wayfinder/GATE-POLICY.md');
   const ref = readFileSync(file, 'utf8');
-  assert.match(ref, /`gates\.policy`/);
+  assert.match(ref, /bin\/workflow\.mjs" --gate <key>/);
   assert.match(ref, /`attended`/);
   assert.match(ref, /`autonomous`/);
   assert.match(ref, /no `open:` line/);
   assert.match(ref, /other than `- none`/);
   assert.match(ref, /`risk: normal`/);
   assert.match(ref, /Gate 4[^\n]*always stops/);
-  assert.match(ref, /`spec:` key/);
-  const reasons = ['open', 'flagged', 'risk-high'].map((r) => ref.indexOf(`| \`${r}\` |`));
+  assert.match(ref, /`spec: only-on-open`/);
+  const reasons = ['open', 'flagged', 'risk-high', 'attended'].map((r) => ref.indexOf(`| \`${r}\` |`));
   assert.ok(reasons.every((i) => i > 0), 'a row per stop reason');
-  assert.deepEqual([...reasons].sort((a, b) => a - b), reasons, 'reasons in the order open, flagged, risk-high');
+  assert.deepEqual([...reasons].sort((a, b) => a - b), reasons, 'reasons in the order open, flagged, risk-high, attended');
   assert.match(ref, /first in that order[^\n]*written[^\n]*names all of them/);
-  assert.match(ref, /^`Gate <n> passed: policy autonomous, nothing open`$/m);
+  assert.match(ref, /^`Gate <n> passed: <tail>, nothing open`$/m);
+  assert.match(ref, /\| `policy autonomous` \|$/m);
   assert.match(ref, /`stop: <reason>` beside `gate`/);
   assert.match(ref, /every other stage state write drops `stop`/i);
   assert.match(ref, /Gate 4 writes none/);

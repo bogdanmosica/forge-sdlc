@@ -225,11 +225,11 @@ test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; 
   assert.match(stop, /`open` \(an `open:` line in intent\.md or spec\.md\)/);
 });
 
-test('the gate policy reference: the open reason stays intent.md or spec.md (spec: open limited to them)', () => {
+test('the gate policy reference: the open reason names intent.md, spec.md or plan.md (workflow-as-code spec: the table gains plan.md)', () => {
   const ref = readFileSync(path.join(dir, '..', 'wayfinder', 'GATE-POLICY.md'), 'utf8');
   const row = ref.split('\n').find((l) => l.startsWith('| `open` |'));
   assert.ok(row, 'an open row');
-  assert.match(row, /`intent\.md` or `spec\.md` \|$/);
+  assert.match(row, /`intent\.md`, `spec\.md` or `plan\.md` \|$/);
 });
 
 test('design: plan step 2 has no Gate 3 stop on an open: Quiz line', () => {
