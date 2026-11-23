@@ -103,3 +103,30 @@ test('init/SKILL.md: an existing forge.yaml keeps every other key, gates.intent 
 test('init/SKILL.md: a re-run drops forge.md ## Gates, since the template no longer has it', () => {
   assert.match(section('Write'), /re-run[^\n]*`## Gates`[^\n]*drops it/);
 });
+
+const hostSh = path.join(root, 'evals', 'lib', 'host.sh');
+
+/** The frame evals' fixture host: `repo` and `config` from evals/lib/host.sh, as a scaffold runs them. */
+function evalHost() {
+  const work = mkdtempSync(path.join(tmpdir(), 'forge-eval-host-'));
+  const env = { PATH: process.env.PATH, HOME: work, TMPDIR: tmpdir(), TERM: 'dumb' };
+  const r = spawnSync('bash', ['-c', 'source "$1"; repo; config; commit "forge config"', 'fixture', hostSh], { cwd: work, env, encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return work;
+}
+
+test('evals/lib/host.sh: config writes the workflow knobs to forge.yaml, and forge.md has no ## Gates', () => {
+  const work = evalHost();
+  const md = readFileSync(path.join(work, 'docs', 'agents', 'forge.md'), 'utf8');
+  assert.doesNotMatch(md, /^## Gates/m);
+  const yamlFile = path.join(work, 'docs', 'agents', 'forge.yaml');
+  assert.ok(existsSync(yamlFile), 'config writes docs/agents/forge.yaml');
+  const roster = resolveRoster(readFileSync(yamlFile, 'utf8'), parseForgeConfig(md));
+  assert.equal(roster.version, 1);
+  assert.deepEqual(roster.problems.filter((p) => /^roster:|^## Gates/.test(p)), [], 'no forge.yaml or ## Gates problem');
+  assert.equal(roster.workflow.policy, 'attended');
+  assert.equal(roster.workflow.sources.policy, 'workflow.policy in forge.yaml');
+  assert.equal(roster.workflow.maxParallelSlices, 3);
+  assert.equal(roster.workflow.sources.maxParallelSlices, 'workflow.max_parallel_slices in forge.yaml');
+  assert.equal(roster.workflow.gates.spec, 'attended');
+});
