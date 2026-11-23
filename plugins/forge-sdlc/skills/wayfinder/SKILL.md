@@ -1,6 +1,6 @@
 ---
 name: wayfinder
-description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug. Under the autonomous gate policy one run goes on through spec, plan and build to the first stop or Gate 4.
+description: The front door of the forge-sdlc loop. Start an effort from an idea or a tracker issue by charting and working a wayfinder map on feat/<slug>, then write intent.md and open the draft PR (Gate 1); resume an effort by its slug. Each gate the workflow lets pass by policy goes on in the same run, through spec, plan and build to the first stop or Gate 4.
 disable-model-invocation: true
 argument-hint: "<idea> | #issue | <slug>"
 ---
@@ -83,11 +83,11 @@ Done when the PR (or PR.md) shows both sections and `.forge/state.json` reads ba
 
 ## 7. Gate 1
 
-Read Gate 1 with `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --gate intent --project .` and apply the [gate policy](GATE-POLICY.md): gate key `intent`, artifact intent.md, next command `/forge-sdlc:wayfinder <slug>`. A stop writes `stop` to the effort as step 6 writes state, where the reference's State write says. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line by the gate's mode:
+Read Gate 1 with `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --gate intent --project .` and apply the [gate policy](GATE-POLICY.md): gate key `intent`, artifact intent.md, next command `/forge-sdlc:wayfinder <slug>`. A stop writes `stop` to the effort as step 6 writes state, where the reference's State write says. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line, picked by the first of the gate's `stops` that holds, as the reference's Report line says:
 
 - mode `policy`, passed: the reference's report line, then continue as [Resume](#resume) step 3 with `spec` as next, in this run.
-- mode `policy`, stopped: the reasons and `/forge-sdlc:wayfinder <slug>`, as the reference says, and for `risk-high` that the effort runs attended from here; this run ends here.
-- mode `attended`: the next move, with the gate's `source`: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`; this run ends here.
+- stopped by `open` or `risk-high`, whatever the mode: the reasons and `/forge-sdlc:wayfinder <slug>`, as the reference's Report line says; this run ends here.
+- stopped by mode `attended`, none of those holding: the next move, with the gate's `source`: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`; this run ends here.
 
 Done when the report is printed and the run has ended at Gate 1 or gone on into `spec`.
 
