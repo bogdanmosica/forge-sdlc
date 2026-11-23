@@ -57,10 +57,10 @@ With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.
 
 Apply the [gate policy](../wayfinder/GATE-POLICY.md) to the Gate 2 read in step 1: gate key `spec`, artifact spec.md, next command `/forge-sdlc:plan <slug>`. A passed gate lets `/forge-sdlc:wayfinder` continue into plan. A stop writes `stop: <reason>` to the effort as step 6 writes state, where the reference's State write says.
 
-Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line by the gate's mode:
+Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line, picked by the first of the gate's `stops` that holds, as the reference's Report line says:
 
 - mode `policy`, passed: the reference's report line, `Gate 2 passed: <tail>, nothing open`.
-- mode `policy`, stopped: the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference says.
-- mode `attended`: `Gate 2: <the reasons>; approve, then /forge-sdlc:plan <slug>`, with the gate's `source`.
+- stopped by `open`, `flagged` or `risk-high`, whatever the mode: the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference's Report line says.
+- stopped by mode `attended`, none of those holding: `Gate 2:`, then the next move with the gate's `source`: the owner reads spec.md, then approves it by running `/forge-sdlc:plan <slug>`.
 
 Done when the report is printed and, after a stop the reference's State write records, the state reads back `stop: <reason>`.
