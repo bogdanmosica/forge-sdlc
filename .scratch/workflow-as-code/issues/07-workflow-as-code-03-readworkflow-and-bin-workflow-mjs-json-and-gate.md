@@ -9,11 +9,11 @@ Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
 **Blocked by:** workflow-as-code-02
 
-- [ ] JSON form against fixture hosts with and without forge.yaml
-- [ ] `--gate` for each key, a `gates.plan: attended` host naming `gates.plan in forge.yaml`
-- [ ] `--project` defaults to the cwd
-- [ ] exit 2 on an unknown flag or gate key
-- [ ] `readHostConfig` and `forge-config.mjs` unchanged
+- [x] JSON form against fixture hosts with and without forge.yaml
+- [x] `--gate` for each key, a `gates.plan: attended` host naming `gates.plan in forge.yaml`
+- [x] `--project` defaults to the cwd
+- [x] exit 2 on an unknown flag or gate key
+- [x] `readHostConfig` and `forge-config.mjs` unchanged
 
 ## Proof
 
@@ -22,3 +22,10 @@ node --test tests/workflow-bin.test.mjs
 ```
 
 passes against fixture hosts in a temp dir
+
+## Assumptions
+
+- recommended: `readWorkflow(hostDir, effort?)` takes the effort's slug and reads its record from `.forge/state.json` itself, so `--mermaid --effort <slug>` (slice 04) and `effort-state.mjs` (slice 05) pass a slug; a slug with no record reads unpositioned (source: spec, "positioned from the effort's record in `.forge/state.json` ... when `--effort` is given")
+- recommended: the agents' frontmatter models are keyed `forge-sdlc:<file name>` from `plugins/forge-sdlc/agents/*.md`, the agent type the roster names (source: spec, `resolveWorkflow` "`agentModels` holds each plugin agent's frontmatter model")
+- recommended: `--project` defaults to the cwd as given, not to the host `host-dir.mjs` would resolve from it (source: spec, "All forms take `--project <host>`, defaulting to the cwd")
+- recommended: `--mermaid` is bad usage (exit 2) until slice 04 adds it (source: plan row 03 names only the JSON and `--gate` forms)
