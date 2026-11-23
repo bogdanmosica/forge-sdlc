@@ -159,3 +159,92 @@ test("the loop tab draws the newest effort: the current stage, and a stopped gat
     await ui.unmount();
   }
 });
+
+test('the prose rows stay under the diagram: what runs at each stage and where you are needed', async ($, on) => {
+  seat(on, { 'forge-sdlc/workflow.yaml': WORKFLOW });
+  await start($);
+  await forge($);
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const tree = await ui.drawn();
+    const loop = textsUnder(tree, 'loop');
+    const diagram = textsUnder(tree, 'diagram');
+    expect(diagram.length, surface).toBeGreaterThan(0);
+    // the diagram first, then the prose
+    expect(loop.slice(0, diagram.length), surface).toEqual(diagram);
+    const prose = loop.slice(diagram.length);
+    expect(prose[0], surface).toBe('Watch');
+    for (const stage of ['Setup', 'Plan', 'Design', 'Build', 'Deploy']) expect(prose, surface).toContain(stage);
+    expect(prose.filter((l) => l.startsWith('  you: ')).length, surface).toBe(6);
+    await ui.unmount();
+  }
+});
+
+test("the gates' line names forge.yaml's workflow: and the per-gate override", async ($, on) => {
+  seat(on, { 'forge-sdlc/workflow.yaml': WORKFLOW });
+  await start($);
+  await forge($);
+  const ui = await mount($, 'terminal');
+  const loop = textsUnder(await ui.drawn(), 'loop').join('\n');
+  expect(loop).toMatch(/workflow\.policy in docs\/agents\/forge\.yaml/);
+  expect(loop).toMatch(/gates\.intent, gates\.spec or gates\.plan/);
+  expect(loop).toMatch(/Gate 4 is always the code owner/);
+  await ui.unmount();
+});
+
+test('below 52 columns the loop is one line per stage, the stopped gate still saying why and how to resume', async ($, on) => {
+  seat(on, {
+    'forge-sdlc/workflow.yaml': WORKFLOW,
+    'docs/agents/forge.yaml': ATTENDED_PLAN,
+    'docs/efforts/demo/map.md': MAP,
+    '.forge/state.json': state({ demo: { stage: 'plan', gate: 'plan', stop: 'attended', risk: 'normal' } }),
+  });
+  await start($);
+  await forge($);
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface, 40);
+    const diagram = textsUnder(await ui.drawn(), 'diagram');
+    const text = diagram.join('\n');
+    expect(text, surface).not.toMatch(/[╭╰│]/);
+    expect(diagram.every((l) => l.length === 40), surface).toBe(true);
+    const stages = diagram.filter((l) => /^[✓▶○] [a-z]+/.test(l)).map((l) => l.trim());
+    expect(stages, surface).toEqual(['✓ map', '✓ intent', '✓ spec', '▶ plan', '○ build', '○ built']);
+    expect(text, surface).toMatch(/^■ {3}G3 attended/m);
+    expect(text, surface).toMatch(/^ {2}why: attended by gates\.plan/m);
+    expect(text, surface).toMatch(/^ {2}resume: \/forge-sdlc:wayfinder demo/m);
+    await ui.unmount();
+  }
+});
+
+test('no effort: the loop is drawn unpositioned, every gate with who passes it', async ($, on) => {
+  seat(on, { 'forge-sdlc/workflow.yaml': WORKFLOW, 'docs/agents/forge.yaml': ATTENDED_PLAN });
+  await start($);
+  await forge($);
+  for (const surface of SURFACES) {
+    const ui = await mount($, surface);
+    const text = textsUnder(await ui.drawn(), 'diagram').join('\n');
+    expect(text, surface).toMatch(/^the loop · policy attended · ≤3 slices/);
+    // no stage passed or here, no gate passed, waiting or stopped (the legend aside)
+    expect(text, surface).not.toMatch(/^✓ |▶ here ╮|[✓▶■] Gate/m);
+    expect(text, surface).not.toMatch(/why:|resume:/);
+    for (const stage of ['map', 'intent', 'spec', 'plan', 'build']) expect(text, surface).toMatch(new RegExp(`^╭─ ${stage} ─+╮$`, 'm'));
+    expect(text, surface).toMatch(/^╰─ ○ Gate 3 · attended · always stops ─+╯$/m);
+    expect(text, surface).toMatch(/^╰─ ○ Gate 4 · owner · always stops ─+╯$/m);
+    await ui.unmount();
+  }
+});
+
+test('a map with no record in .forge/state.json is the loop unpositioned too', async ($, on) => {
+  seat(on, {
+    'forge-sdlc/workflow.yaml': WORKFLOW,
+    'docs/efforts/demo/map.md': MAP,
+    '.forge/state.json': state({ other: { stage: 'build', gate: 'pr', risk: 'normal' } }),
+  });
+  await start($);
+  await forge($);
+  const ui = await mount($, 'terminal');
+  const text = textsUnder(await ui.drawn(), 'diagram').join('\n');
+  expect(text).toMatch(/^the loop · policy attended/);
+  expect(text).not.toMatch(/▶ here ╮/);
+  await ui.unmount();
+});

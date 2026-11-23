@@ -105,7 +105,7 @@ export const LOOP: { stage: string; text: string; you?: string }[] = [
   },
 ];
 export const GATES =
-  'Gates 1 to 3 pass by the gate policy under ## Gates in forge.md: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. Gate 4 is always the code owner’s.';
+  'Gates 1 to 3 pass by the gate policy, workflow.policy in docs/agents/forge.yaml: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. gates.intent, gates.spec or gates.plan under workflow: sets that one gate to attended or policy, whatever the global policy. Gate 4 is always the code owner’s.';
 
 // A SKILL.md's frontmatter to its name, the first sentence of its description
 // and its argument hint; null when the file has no frontmatter or no name.

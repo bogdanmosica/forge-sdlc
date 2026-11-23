@@ -60,6 +60,8 @@ test('the loop view names real commands and marks where the driver is needed at 
   assert.match(you.join('\n'), /open: line/, 'the open: line the policy stops on');
   assert.match(GATES, /attended.*autonomous/s, 'the two gate policies');
   assert.match(GATES, /Gate 4 is always/);
+  assert.match(GATES, /workflow\.policy in docs\/agents\/forge\.yaml/, 'the global policy names its forge.yaml key');
+  assert.match(GATES, /gates\.intent, gates\.spec or gates\.plan/, 'the per-gate override');
 });
 
 test('the loop view says the front door resumes a stopped effort, and that Gate 4 stays the code owner’s', () => {
