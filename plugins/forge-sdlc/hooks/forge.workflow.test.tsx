@@ -74,7 +74,11 @@ const state = (efforts: Record<string, unknown>) => JSON.stringify({ version: 1,
 // puts its root, the host's files by their path below the session folder (the
 // kit may resolve them under the plugin root: the host's path wins). A key is a
 // file; a prefix of a key is a folder.
-function seat(on: On, files: Record<string, string>): void {
+// `hostDir`, when set, is what `node <plugin root>/bin/host-dir.mjs` prints (a
+// slice worktree's host in the main checkout, a monorepo's projects/<x>): the
+// run state answers only under it. Unset, node cannot run and the session's
+// directory is the host, as outside a repository.
+function seat(on: On, files: Record<string, string>, opts: { hostDir?: string } = {}): void {
   mock.env(on, { HOME: '/home' });
   const norm = (p: string) =>
     (p.match(/(?:^|\/)((?:docs|\.forge|\.scratch)\/.*)$/)?.[1] ?? p.match(/(forge-sdlc(?:\/.*)?)$/)?.[1] ?? p).replace(/\/$/, '');
@@ -94,13 +98,16 @@ function seat(on: On, files: Record<string, string>): void {
     return { value: [...names].map(([name, kind]) => ({ name, kind, size: 0, mtimeMs: 0, isLink: false })) };
   });
   on('fs.read', ($, e) => {
-    const text = files[norm(e.path)];
+    const outsideHost = opts.hostDir !== undefined && /(?:^|\/)\.forge\//.test(e.path) && !e.path.startsWith(`${opts.hostDir}/`);
+    const text = outsideHost ? undefined : files[norm(e.path)];
     if (text === undefined) throw new Error(`ENOENT: ${e.path}`);
     return { value: text };
   });
   on('fs.exists', ($, e) => ({ value: Object.keys(files).some((k) => k.startsWith(norm(e.path))) }));
-  on('process.run', () => {
-    throw new Error('spawn glab ENOENT');
+  on('process.run', ($, e) => {
+    if (opts.hostDir !== undefined && e.argv[0] === 'node' && e.argv[1]?.endsWith('/bin/host-dir.mjs'))
+      return { value: { exitCode: 0, stdout: `${opts.hostDir}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } };
+    throw new Error('spawn node ENOENT');
   });
   on('agent.list', () => ({ value: [] }));
 }
@@ -239,6 +246,55 @@ test('a map with no record in .forge/state.json is the loop unpositioned too', a
     'forge-sdlc/workflow.yaml': WORKFLOW,
     'docs/efforts/demo/map.md': MAP,
     '.forge/state.json': state({ other: { stage: 'build', gate: 'pr', risk: 'normal' } }),
+  });
+  await start($);
+  await forge($);
+  const ui = await mount($, 'terminal');
+  const text = textsUnder(await ui.drawn(), 'diagram').join('\n');
+  expect(text).toMatch(/^the loop · policy attended/);
+  expect(text).not.toMatch(/▶ here ╮/);
+  await ui.unmount();
+});
+
+test('from a slice worktree or a subfolder host the loop reads .forge/state.json where bin/host-dir.mjs says', async ($, on) => {
+  seat(
+    on,
+    {
+      'forge-sdlc/workflow.yaml': WORKFLOW,
+      'docs/agents/forge.yaml': ATTENDED_PLAN,
+      'docs/efforts/demo/map.md': MAP,
+      '.forge/state.json': state({ demo: { stage: 'plan', gate: 'plan', stop: 'attended', risk: 'normal' } }),
+    },
+    { hostDir: '/repo/projects/a' },
+  );
+  await start($);
+  await forge($);
+  const ui = await mount($, 'terminal');
+  const text = textsUnder(await ui.drawn(), 'diagram').join('\n');
+  expect(text).toMatch(/^demo · policy attended/);
+  expect(text).toMatch(/^╭─ plan ─+ ▶ here ╮$/m);
+  await ui.unmount();
+});
+
+test("an agent's frontmatter model shows in its stage's box when the roster sets none", async ($, on) => {
+  seat(on, {
+    'forge-sdlc/workflow.yaml': WORKFLOW,
+    'forge-sdlc/agents/implementer.md': '---\nname: implementer\ndescription: Builds one slice.\nmodel: claude-opus-5-5\n---\n',
+  });
+  await start($);
+  await forge($);
+  const ui = await mount($, 'terminal');
+  const text = textsUnder(await ui.drawn(), 'diagram').join('\n');
+  expect(text).toMatch(/^│ implementer +forge-sdlc:implementer +claude-opus-5-5 +│$/m);
+  expect(text).toMatch(/^│ verifier +forge-sdlc:verifier +│$/m);
+  await ui.unmount();
+});
+
+test('an unparseable .forge/state.json is the loop unpositioned', async ($, on) => {
+  seat(on, {
+    'forge-sdlc/workflow.yaml': WORKFLOW,
+    'docs/efforts/demo/map.md': MAP,
+    '.forge/state.json': '{ "version": 1, "efforts": ',
   });
   await start($);
   await forge($);
