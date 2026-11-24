@@ -58,13 +58,37 @@ test('GATE-POLICY.md: the closed set of stop reasons in write order, attended la
   assert.match(policy, /first in that order[^\n]*written[^\n]*names all of them/);
 });
 
-test('GATE-POLICY.md: the state write covers attended from forge.yaml; attended from ## Gates or the default writes no stop', () => {
+test('GATE-POLICY.md: one state-write rule: the first reason that holds, except a gate attended from ## Gates or the default, which writes no stop whatever holds', () => {
   const write = sectionOf(policy, 'State write');
   assert.match(write, /`stop: <reason>` beside `gate`/);
-  assert.match(write, /`attended`[^\n]*forge\.yaml/);
-  assert.match(write, /`## Gates` or `default`[^\n]*writes no `stop`/);
+  assert.match(write, /`<reason>` being the first of the gate's `stops` that holds/);
+  assert.match(write, /mode `attended` whose `source` is `policy in forge\.md ## Gates` or `default` writes no `stop`, whatever reasons hold/);
+  assert.equal((write.match(/writes no `stop`/g) ?? []).length, 1, 'the exception is stated once');
+  assert.doesNotMatch(write, /`attended` included when/, 'no second rule beside the first');
   assert.match(write, /every other stage state write drops `stop`/i);
   assert.match(write, /Gate 4 writes none/);
+});
+
+test('GATE-POLICY.md: the sources the state-write exception names are the ones an attended gate off forge.yaml prints', () => {
+  const write = sectionOf(policy, 'State write');
+  const gatesMd = (...bullets) => ['# forge-sdlc host config', '', '## Branches', '- default: main', '', '## Gates', ...bullets.map((b) => `- ${b}`), ''].join('\n');
+  const yaml = (...lines) => ['version: 1', 'workflow:', ...lines, ''].join('\n');
+  for (const gate of [gateOf('plan'), gateOf('spec', { config: gatesMd('policy: attended') })]) {
+    assert.equal(gate.mode, 'attended', JSON.stringify(gate));
+    assert.ok(write.includes(`\`${gate.source}\``), `the exception names ${gate.source}`);
+  }
+  for (const gate of [gateOf('plan', { yaml: yaml('  gates:', '    plan: attended') }), gateOf('intent', { yaml: yaml('  policy: attended') })]) {
+    assert.equal(gate.mode, 'attended', JSON.stringify(gate));
+    assert.ok(!write.includes(`\`${gate.source}\``), `a forge.yaml source (${gate.source}) is not in the exception`);
+  }
+});
+
+test('docs/contracts.md: the stop field agrees with GATE-POLICY.md: plan.md for open, no stop for an attended gate off forge.yaml whatever holds', () => {
+  const contracts = readFileSync(path.join(plugin, '..', '..', 'docs', 'contracts.md'), 'utf8');
+  const line = contracts.split('\n').find((l) => l.startsWith('- `stop` is optional'));
+  assert.ok(line, 'the stop bullet');
+  assert.match(line, /`open` \(an `open:` line in intent\.md, spec\.md or plan\.md\)/);
+  assert.match(line, /an attended gate from `## Gates` or the default writes no `stop`, whatever reasons hold/);
 });
 
 test('GATE-POLICY.md: the report line keeps its prefix and suffix, its middle the tail of the gate source', () => {
@@ -151,6 +175,7 @@ for (const s of STAGES) {
     assert.equal(attended.length, 1, 'one line for a stop by mode attended');
     assert.match(attended[0], /none of those holding/, 'only when no reason of the stop rule holds');
     assert.ok(attended[0].includes(`\`${s.next}\``), 'names the next command');
+    assert.ok(attended[0].includes(s.artifact), 'names the artifact the owner reads');
     assert.ok(attended[0].includes("the gate's `source`"), 'names the source');
   });
 }
