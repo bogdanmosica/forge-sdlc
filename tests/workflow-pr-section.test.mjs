@@ -43,3 +43,7 @@ test('spec: Gate 2 rewrites ## Workflow after step 6\'s state write and any stop
 test('plan: the gate record rewrites ## Workflow after its state write', () => {
   namesWorkflowAfterStateWrite(stepOf(skill('plan'), 6), /- State:/, 'plan step 6');
 });
+
+test('build: Gate 4 rewrites ## Workflow after setting the effort built', () => {
+  namesWorkflowAfterStateWrite(stepOf(skill('build'), 4), /Set the effort to `stage: built`/, 'build step 4');
+});
