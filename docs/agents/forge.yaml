@@ -1,0 +1,5 @@
+# forge-sdlc roster and loop knobs for this repository: plugins/forge-sdlc/hooks/ROUTING.md, the README's The loop
+version: 1
+workflow:
+  policy: autonomous            # attended | autonomous: who passes Gates 1 to 3
+  max_parallel_slices: 3

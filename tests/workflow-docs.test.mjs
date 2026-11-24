@@ -3,6 +3,7 @@
 // GLOSSARY and CLAUDE.md lines, this repository's own forge.yaml, and the plugin version.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -96,4 +97,19 @@ test('CLAUDE.md: a Commands line for bin/workflow.mjs and the loop tab clause', 
   assert.match(line, /--project <host>/);
   assert.match(line, /exit 0, 2 bad usage/);
   assert.match(claude, /`\/forge` help panel[^)]*loop tab[^)]*diagram|`\/forge` help panel[^)]*diagram[^)]*loop/, 'the panel clause names the loop diagram');
+});
+
+test('this repository: docs/agents/forge.yaml holds workflow:, forge.md has no ## Gates, and the gates resolve from forge.yaml', () => {
+  const md = read(repo, 'docs', 'agents', 'forge.md');
+  assert.doesNotMatch(md, /^## Gates$/m);
+  const yaml = read(repo, 'docs', 'agents', 'forge.yaml');
+  assert.match(yaml, /^version: 1$/m);
+  assert.match(yaml, /^workflow:$/m);
+  const bin = path.join(plugin, 'bin', 'workflow.mjs');
+  const gate = JSON.parse(execFileSync(process.execPath, [bin, '--gate', 'intent', '--project', repo], { encoding: 'utf8' }));
+  assert.equal(gate.mode, 'policy');
+  assert.equal(gate.source, 'workflow.policy in forge.yaml');
+  const all = JSON.parse(execFileSync(process.execPath, [bin, '--project', repo], { encoding: 'utf8' }));
+  assert.equal(all.maxParallelSlices, 3);
+  assert.deepEqual(all.problems.filter((p) => /## Gates|workflow|roster:/.test(p)), [], 'no gate or roster problem');
 });
