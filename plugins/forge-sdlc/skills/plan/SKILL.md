@@ -52,8 +52,9 @@ Done when `git log -1 -- docs/efforts/<slug>/plan.md` prints the commit.
 
 - PR body: rewrite only the `## Plan` section with the slice table (nn, title, blocked by) and each ticket's link, each slice's proof block below the table, and step 3's four Quiz lines under the slice table when step 3 wrote them (mode `policy` only); every other section stays verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the same section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
 - State: with `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.mjs` (`node --input-type=module -e`), set the effort to `stage: plan`, `gate: plan`, `slices: { "<slug>-<nn>": { "status": "open", "mode": "normal", "ticket": "<pointer>" } }` for every slice, `updatedAt` now, and set or drop `stop` beside `gate` as the reference's State write says.
+- Workflow: Then, after the state write, rewrite only the PR body's `## Workflow` section: the output of `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --mermaid --effort <slug> --project .` in a fenced `mermaid` block, every other section verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
 
-Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop: attended`, `stop: risk-high`, or no `stop`.
+Done when `.forge/state.json` reads back `stage: plan`, `gate: plan`, one open slice per row of the table, and `stop: attended`, `stop: risk-high`, or no `stop`, and the PR body (or PR.md) holds the `## Workflow` section.
 
 ## 7. Report
 

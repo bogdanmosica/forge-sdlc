@@ -40,3 +40,6 @@ test('wayfinder: Gate 1 rewrites ## Workflow after its stop write, the first sta
 test('spec: Gate 2 rewrites ## Workflow after step 6\'s state write and any stop', () => {
   namesWorkflowAfterStateWrite(stepOf(skill('spec'), 7), /A stop writes `stop: <reason>`/, 'spec step 7');
 });
+test('plan: the gate record rewrites ## Workflow after its state write', () => {
+  namesWorkflowAfterStateWrite(stepOf(skill('plan'), 6), /- State:/, 'plan step 6');
+});
