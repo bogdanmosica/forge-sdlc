@@ -215,14 +215,14 @@ test('plan steps 1, 5 and 6: a policy-passed Gate 2, the Quiz block in plan.md a
   assert.match(step(6), /`## Plan`[^\n]*Quiz[^\n]*under the slice table|under the slice table[^\n]*Quiz/);
 });
 
-test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; the stop bullet\'s open reason stays intent.md or spec.md', () => {
+test('contracts: the PR body ## Plan row notes the Quiz lines under autonomous; the stop bullet\'s open reason names plan.md, as GATE-POLICY.md\'s table does', () => {
   const contracts = readFileSync(path.join(repo, 'docs', 'contracts.md'), 'utf8');
   const row = contracts.split('\n').find((l) => l.startsWith('| `## Plan` |'));
   assert.ok(row, 'a ## Plan row');
   assert.match(row, /Quiz lines[^|]*`autonomous`[^|]*`risk: normal`/);
   const stop = contracts.split('\n').find((l) => l.startsWith('- `stop` is optional'));
   assert.ok(stop, 'a stop bullet');
-  assert.match(stop, /`open` \(an `open:` line in intent\.md or spec\.md\)/);
+  assert.match(stop, /`open` \(an `open:` line in intent\.md, spec\.md or plan\.md\)/);
 });
 
 test('the gate policy reference: the open reason names intent.md, spec.md or plan.md (workflow-as-code spec: the table gains plan.md)', () => {
