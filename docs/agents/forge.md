@@ -28,9 +28,6 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 ## Risk
 - high: plugins/forge-sdlc/hooks/**, plugins/forge-sdlc/.claude-plugin/**, .claude-plugin/**
 
-## Policy skills
-- skills: writing-for-agents # applied by the spec-writer and the reviewer
-
 ## Test file globs
 - globs: tests/**
 

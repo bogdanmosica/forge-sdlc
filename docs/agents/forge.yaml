@@ -1,0 +1,4 @@
+# forge-sdlc roster for this repository: plugins/forge-sdlc/hooks/ROUTING.md
+version: 1
+slots:
+  policy: [writing-for-agents]  # applied by the spec-writer and the reviewer
