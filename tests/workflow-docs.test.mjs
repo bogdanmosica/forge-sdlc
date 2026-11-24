@@ -59,3 +59,41 @@ test('ADR 0025 restates its removal promise: the deprecated sections go in 0.10.
   assert.doesNotMatch(adr, /removed in 0\.9\.0/);
   assert.match(adr, /removed in 0\.10\.0[^\n]*ADR 0026/);
 });
+
+test('README: the workflow: schema beside the loop diagram, the gate policy pointed at forge.yaml, the window restated', () => {
+  const readme = read(repo, 'README.md');
+  const loop = readme.split(/^## The loop$/m)[1].split(/^## /m)[0];
+  const yaml = /```yaml\n(workflow:[\s\S]*?)```/.exec(loop);
+  assert.ok(yaml, 'a workflow: yaml block in The loop');
+  for (const key of ['policy:', 'max_parallel_slices:', 'gates:']) assert.ok(yaml[1].includes(key), key);
+  assert.match(loop, /gates\.<key>|gates\.(intent|spec|plan)/, 'the per-gate override');
+  assert.match(loop, /`attended`[^\n]*stop|stop[^\n]*`attended`/, 'the attended stop');
+  assert.match(loop, /bin\/workflow\.mjs[^\n]*--gate/, 'one gate from the command');
+  assert.match(loop, /docs\/adr\/0026-the-loop-declared-tuned-per-gate\.md/, 'links the ADR');
+  assert.doesNotMatch(loop, /`policy` under `## Gates` in `forge\.md`/, 'the gate policy lives in forge.yaml');
+  assert.doesNotMatch(readme, /read until 0\.9\.0/, 'the deprecation window is restated');
+  assert.match(readme, /`init`[^\n]*workflow:[^\n]*docs\/agents\/forge\.yaml|`init`[^\n]*docs\/agents\/forge\.yaml[^\n]*workflow:/, 'init writes workflow: to forge.yaml');
+});
+
+test('GLOSSARY.md: gate policy and host config name workflow: in forge.yaml', () => {
+  const lines = read(repo, 'GLOSSARY.md').split('\n');
+  const policy = lines.find((l) => l.startsWith('- **gate policy**'));
+  assert.ok(policy);
+  assert.match(policy, /`workflow:`[^\n]*forge\.yaml|forge\.yaml[^\n]*`workflow:`/);
+  assert.match(policy, /per gate|one gate|gates\.<key>/, 'the per-gate override');
+  const host = lines.find((l) => l.startsWith('- **host config**'));
+  assert.ok(host);
+  assert.match(host, /`workflow:`/);
+  assert.doesNotMatch(host, /worktrees, gates, risk/, 'forge.md no longer holds the gates');
+});
+
+test('CLAUDE.md: a Commands line for bin/workflow.mjs and the loop tab clause', () => {
+  const claude = read(repo, 'CLAUDE.md');
+  const line = claude.split('\n').find((l) => l.startsWith('- `node plugins/forge-sdlc/bin/workflow.mjs'));
+  assert.ok(line, 'a Commands line');
+  assert.match(line, /--gate/);
+  assert.match(line, /--mermaid/);
+  assert.match(line, /--project <host>/);
+  assert.match(line, /exit 0, 2 bad usage/);
+  assert.match(claude, /`\/forge` help panel[^)]*loop tab[^)]*diagram|`\/forge` help panel[^)]*diagram[^)]*loop/, 'the panel clause names the loop diagram');
+});
