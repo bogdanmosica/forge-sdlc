@@ -113,3 +113,9 @@ test('this repository: docs/agents/forge.yaml holds workflow:, forge.md has no #
   assert.equal(all.maxParallelSlices, 3);
   assert.deepEqual(all.problems.filter((p) => /## Gates|workflow|roster:/.test(p)), [], 'no gate or roster problem');
 });
+
+test('plugin.json: 0.9.x, the minor that ships the declared workflow, with it in the description', () => {
+  const manifest = JSON.parse(read(plugin, '.claude-plugin', 'plugin.json'));
+  assert.match(manifest.version, /^0\.9\.\d+$/);
+  assert.match(manifest.description, /workflow\.yaml[^.]*workflow:|workflow:[^.]*workflow\.yaml/);
+});

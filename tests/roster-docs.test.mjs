@@ -1,5 +1,5 @@
-// The roster's documentation (spec roster-as-code, "Docs" and "Version"): the plugin version
-// that ships the roster, the ADR and design Decision behind the second host config file, the
+// The roster's documentation (spec roster-as-code, "Docs" and "Version"): the plugin
+// description naming the roster, the ADR and design Decision behind the second host config file, the
 // one CLAUDE.md clause, and the references an owner reads before writing docs/agents/forge.yaml.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,9 +11,8 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const plugin = path.join(repo, 'plugins', 'forge-sdlc');
 const read = (...parts) => readFileSync(path.join(...parts), 'utf8');
 
-test('plugin.json: 0.8.x, the minor that shipped a new host file and hook, with the roster in its description', () => {
+test('plugin.json: the roster in its description (the version check moved to workflow-docs.test.mjs)', () => {
   const manifest = JSON.parse(read(plugin, '.claude-plugin', 'plugin.json'));
-  assert.match(manifest.version, /^0\.8\.\d+$/);
   assert.match(manifest.description, /roster[^.]*docs\/agents\/forge\.yaml/);
 });
 
