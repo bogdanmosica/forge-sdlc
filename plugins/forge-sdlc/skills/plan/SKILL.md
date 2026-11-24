@@ -61,6 +61,6 @@ Three lines: the plan commit, the tickets (pointers, frontier first), and the ga
 
 - mode `policy`, passed: the reference's report line, `Gate 3 passed: <tail>, nothing open`, on which wayfinder's Resume continues into build.
 - stopped by `risk-high`, whatever the mode: the reason and `/forge-sdlc:wayfinder <slug>` to resume, as the reference's Report line says.
-- stopped by mode `attended`, none of those holding: the next command, `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`), with the gate's `source`.
+- stopped by mode `attended`, none of those holding: the next move, with the gate's `source`: the owner reads plan.md, then approves it by running `/forge-sdlc:build <slug>` (or `/forge-sdlc:wayfinder <slug>`).
 
 Done when the state reads back and the report is printed.

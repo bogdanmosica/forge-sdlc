@@ -57,4 +57,4 @@ A gate stopped by `open`, `flagged` or `risk-high` reports its reasons and `/for
 
 ## State write
 
-A stage that stops at its gate writes `stop: <reason>` beside `gate` in the effort's record of `.forge/state.json`: the first reason that holds, `attended` included when the mode is `attended` from forge.yaml. A gate in mode `attended` whose source is `## Gates` or `default` writes no `stop`. Every other stage state write drops `stop`. Gate 4 writes none: `gate: pr` already names it.
+A stage that stops at its gate writes `stop: <reason>` beside `gate` in the effort's record of `.forge/state.json`, `<reason>` being the first of the gate's `stops` that holds, with one exception: a gate in mode `attended` whose `source` is `policy in forge.md ## Gates` or `default` writes no `stop`, whatever reasons hold, so a host without `workflow:` records as before this file named `attended`. A gate attended from forge.yaml always writes one, `attended` when no earlier reason holds. Every other stage state write drops `stop`. Gate 4 writes none: `gate: pr` already names it.
