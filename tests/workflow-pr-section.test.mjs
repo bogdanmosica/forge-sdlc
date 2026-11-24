@@ -36,3 +36,7 @@ test('wayfinder: Gate 1 rewrites ## Workflow after its stop write, the first sta
   namesWorkflowAfterStateWrite(stepOf(text, 7), /A stop writes `stop`/, 'wayfinder step 7');
   assert.doesNotMatch(stepOf(text, 6), /## Workflow/, 'step 6 drafts the PR; the section waits for the gate');
 });
+
+test('spec: Gate 2 rewrites ## Workflow after step 6\'s state write and any stop', () => {
+  namesWorkflowAfterStateWrite(stepOf(skill('spec'), 7), /A stop writes `stop: <reason>`/, 'spec step 7');
+});
