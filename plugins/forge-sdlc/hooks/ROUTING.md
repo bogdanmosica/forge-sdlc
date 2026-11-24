@@ -35,10 +35,13 @@ The agent file's frontmatter is the default and the roster overrides it; `## Rou
 
 ## Deprecated
 
-Two sections of `docs/agents/forge.md` are deprecated since 0.8.0 and still read until 0.9.0, which removes them: `## Routing` (its `model.<role>` and `effort.<role>` bullets) and `## Policy skills`. Each bullet left in them is a toast and a band line naming the roster key to move it to:
+Three sections of `docs/agents/forge.md` are deprecated and still read through 0.9.x: `## Routing` (its `model.<role>` and `effort.<role>` bullets) and `## Policy skills` since 0.8.0, and `## Gates` (`policy`, `spec`, `max_parallel_slices`, moving to `workflow:`) since 0.9.0. All three are removed together in the next minor, 0.10.0, not in 0.9.0 as first announced ([ADR 0026](../../../docs/adr/0026-the-loop-declared-tuned-per-gate.md)). Each bullet left in them is a toast and a band line naming the forge.yaml key to move it to:
 
 - `## Routing: model.implementer is deprecated; move it to roles.implementer.model in docs/agents/forge.yaml`
 - `## Policy skills: skills is deprecated; move it to slots.policy in docs/agents/forge.yaml` (a value of `none` says nothing)
+- `## Gates: policy is deprecated; move it to workflow.policy in docs/agents/forge.yaml`, and the same for `max_parallel_slices`
+- `## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in docs/agents/forge.yaml`
+- `## Gates: spec always is deprecated and has no docs/agents/forge.yaml equivalent; Gate 2 follows workflow.policy`
 - `## Routing: model.Explore is deprecated and has no docs/agents/forge.yaml equivalent; it stops working when ## Routing is removed`: a bullet for an agent type that is no role (`Explore`, or any other type verbatim) works only through the deprecated section.
 
 ## Invalid entries

@@ -40,3 +40,22 @@ test('docs/design.md section 8: a Decision line for the workflow links ADR 0026;
   assert.doesNotMatch(config, /^## Gates$/m, 'init no longer writes ## Gates into forge.md');
   assert.match(config, /^workflow:[^\n]*\n {2}policy: /m, 'the forge.yaml example holds workflow:');
 });
+
+test('hooks/ROUTING.md lists ## Gates among the deprecated sections and restates their removal to the next minor', () => {
+  const doc = read(plugin, 'hooks', 'ROUTING.md');
+  const deprecated = doc.split(/^## Deprecated$/m)[1].split(/^## /m)[0];
+  assert.match(deprecated, /## Routing[^\n]*## Policy skills[^\n]*## Gates|## Gates[^\n]*## Routing/, 'all three named');
+  assert.match(deprecated, /0\.10\.0/, 'removed together in the next minor');
+  assert.doesNotMatch(deprecated, /until 0\.9\.0, which removes them/, 'the old promise is gone');
+  // the reader's own words, so the reference quotes what the band shows
+  assert.match(deprecated, /## Gates: policy is deprecated; move it to workflow\.policy in docs\/agents\/forge\.yaml/);
+  assert.match(deprecated, /## Gates: spec only-on-open is deprecated; move it to workflow\.gates\.spec: policy in docs\/agents\/forge\.yaml/);
+  assert.match(deprecated, /## Gates: spec always is deprecated and has no docs\/agents\/forge\.yaml equivalent; Gate 2 follows workflow\.policy/);
+  assert.match(deprecated, /ADR 0026|0026-the-loop-declared/, 'links the ADR that moved the window');
+});
+
+test('ADR 0025 restates its removal promise: the deprecated sections go in 0.10.0', () => {
+  const adr = read(repo, 'docs', 'adr', '0025-the-roster-in-forge-yaml.md');
+  assert.doesNotMatch(adr, /removed in 0\.9\.0/);
+  assert.match(adr, /removed in 0\.10\.0[^\n]*ADR 0026/);
+});

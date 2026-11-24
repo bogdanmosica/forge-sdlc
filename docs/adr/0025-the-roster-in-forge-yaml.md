@@ -21,6 +21,6 @@ forge.md is one `- key: value` bullet per line under a `## Section`. A role need
 
 - A host's crew setup is a reviewed, branchable file: swapping the reviewer, re-routing a model or disabling `domain-modeling` is one diff to forge.yaml.
 - A swapped-in agent runs its own definition with the forge brief; the worktree, the proof, the verify record and the Stop gate still hold it, and ADR 0011's write scopes become its own to honour.
-- `## Routing` bullets for types that are no role (`model.Explore`) have no roster equivalent and stop working when the section is removed in 0.9.0.
+- `## Routing` bullets for types that are no role (`model.Explore`) have no roster equivalent and stop working when the section is removed in 0.10.0 (moved from 0.9.0 by ADR 0026, which removes `## Routing`, `## Policy skills` and `## Gates` together).
 - The guard sees Agent and Skill tool calls only: a slash command the human types, and the upstream procedures read by file, are outside it. Like every hook here it is a reminder backed by review, not a sandbox.
 - The schema leaves room for later top-level keys (procedures, workflow, measurement); until a later version defines one, it is reported as unknown and ignored.
