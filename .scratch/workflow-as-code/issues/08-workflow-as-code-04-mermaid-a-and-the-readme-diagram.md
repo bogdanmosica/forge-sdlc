@@ -1,7 +1,7 @@
 # 08: workflow-as-code-04: Mermaid A and the README diagram
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -30,3 +30,7 @@ passes: the Mermaid cases and the README equality check green
 - recommended: labels carry `<br/>` as their only markup, the prototype's `<b>` and `<i>` dropped, and the stage boxes name the model short (`claude-opus-5-5` as `opus`) as the prototype does (source: ticket, "only `{{ }}`, `==>`, `:::`, `<br/>` and plain edges")
 - recommended: `--effort` naming no record prints the same bytes as no `--effort`; `--effort` without `--mermaid`, an empty `--effort` and `--mermaid` with `--gate` are bad usage, exit 2 (source: spec, `workflow.mjs --mermaid [--effort <slug>]`)
 - recommended: the renderer is `mermaidOf(workflow)`, exported from `bin/workflow.mjs` beside the only command that prints it, over `readWorkflow`'s result (source: spec, `bin/workflow.mjs` "prints Mermaid A")
+
+## Comments
+
+clean. Review record: .forge/review/workflow-as-code-04.md. Merged 4c67126 into feat/workflow-as-code.

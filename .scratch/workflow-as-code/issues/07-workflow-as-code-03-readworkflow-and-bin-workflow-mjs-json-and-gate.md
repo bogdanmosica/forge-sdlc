@@ -1,7 +1,7 @@
 # 07: workflow-as-code-03: readWorkflow and bin/workflow.mjs JSON and --gate
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -29,3 +29,7 @@ passes against fixture hosts in a temp dir
 - recommended: the agents' frontmatter models are keyed `forge-sdlc:<file name>` from `plugins/forge-sdlc/agents/*.md`, the agent type the roster names (source: spec, `resolveWorkflow` "`agentModels` holds each plugin agent's frontmatter model")
 - recommended: `--project` defaults to the cwd as given, not to the host `host-dir.mjs` would resolve from it (source: spec, "All forms take `--project <host>`, defaulting to the cwd")
 - recommended: `--mermaid` is bad usage (exit 2) until slice 04 adds it (source: plan row 03 names only the JSON and `--gate` forms)
+
+## Comments
+
+clean. Review record: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/workflow-as-code-03.md. Merged into feat/workflow-as-code at e7339df.

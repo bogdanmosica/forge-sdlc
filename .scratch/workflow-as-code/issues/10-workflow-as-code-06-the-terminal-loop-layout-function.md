@@ -1,7 +1,7 @@
 # 10: workflow-as-code-06: The terminal loop layout function
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -32,3 +32,8 @@ passes: the layout cases at each width and the help-table tests green
 - recommended: the record's waiting gate is `▶ Gate <n> · <mode> · waiting`, and a passed stage folds only when its gate passed too, so `built`/`pr` keeps build a box waiting at Gate 4 (source: spec "passed stages fold to one line each with their gate at the right"; slice 02's position reading)
 - recommended: with no effort the title is `the loop · policy <p> · ≤<n> slices`, every gate is `○` (ahead of any effort), nothing is folded and no row but the legend shows `▶`, `✓` or `■` (source: spec "or the loop with no position when there is none")
 - recommended: a stage with no roles shows `lead` and its command, since the resolved stage carries no `lead` text; the agent column takes the model column's room when no role of the stage has a model (source: prototype `compact`; slice 02's resolved stage shape)
+
+
+## Comments
+
+merged 6fe8f50; review record .forge/review/workflow-as-code-06.md (clean after 1 fix round)

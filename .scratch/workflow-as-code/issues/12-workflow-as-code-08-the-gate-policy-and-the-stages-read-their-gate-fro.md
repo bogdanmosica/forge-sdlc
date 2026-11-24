@@ -1,7 +1,7 @@
 # 12: workflow-as-code-08: The gate policy and the stages read their gate from the workflow
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -22,3 +22,7 @@ node --test tests/workflow-stages.test.mjs tests/wayfinder.test.mjs tests/spec.t
 ```
 
 passes: the stage gate checks and the existing stage text tests green
+
+## Comments
+
+- clean: review record `.forge/review/workflow-as-code-08.md`; merged at ec4d600c0216dbe0262770c81339c0d4daa478b2 into feat/workflow-as-code.

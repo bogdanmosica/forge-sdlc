@@ -1,7 +1,7 @@
 # 09: workflow-as-code-05: The attended stop in effort-state and the state contract
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -30,3 +30,7 @@ passes: the new effort-state cases and the existing ones green, the mod typechec
 - recommended: `hooks/types/index.d.ts` had no stop type, so it gains `ForgeStop = 'open' | 'flagged' | 'risk-high' | 'attended'`, held to `docs/contracts.md` by `tests/effort-state-workflow.test.mjs` (source: spec, "The state contract (`hooks/types/index.d.ts`) gains `stop: 'attended'`")
 - recommended: the contracts' stop bullet keeps `open` naming intent.md or spec.md; `plan.md` for `open` is slice 08's, with `tests/plan.test.mjs` in its proof (source: plan row 08; spec, "The stop-reasons table gains `plan.md` for `open`" under the gate policy reference)
 - recommended: an `attended` stop on a gate with no forge.yaml setting (`none`, `pr`, or settings since changed) reads `gate <gate> was attended in forge.yaml` (source: spec, `effort-state.mjs` paragraph)
+
+## Comments
+
+- merged: review record .forge/review/workflow-as-code-05.md, merge sha 9e0a416

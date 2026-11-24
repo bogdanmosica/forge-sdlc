@@ -1,7 +1,7 @@
 # 11: workflow-as-code-07: The /forge loop tab draws the loop
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -23,3 +23,7 @@ test -f plugins/forge-sdlc/hooks/forge.workflow.test.tsx && claude plugin test p
 ```
 
 passes: the loop tab tests and every existing mod test green, the mod typechecks
+
+## Comments
+
+clean. Review record: /Users/mosica.bogdan/Desktop/personal/forge-sdlc/.forge/review/workflow-as-code-07.md. Merged to feat/workflow-as-code as 578f14d.

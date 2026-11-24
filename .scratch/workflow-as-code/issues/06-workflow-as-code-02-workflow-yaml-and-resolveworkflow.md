@@ -1,7 +1,7 @@
 # 06: workflow-as-code-02: workflow.yaml and resolveWorkflow
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -36,3 +36,7 @@ passes: resolveWorkflow cases and the shipped-file checks green
 - recommended: `problems` holds the roster's problems first (the `workflow:` lines included, so `bin/workflow.mjs` shows the settings' problems) and then the `workflow.yaml: ` lines (source: spec user story 23 "print the resolved workflow as JSON with its problems, so that I can check my settings")
 - recommended: anything wrong in workflow.yaml (a parse error, a version other than 1, `stops` other than the closed set, stages not exactly map … built in order, an unknown stage or gate key, a role, slot or stop the reader does not know, a gate under the wrong key or on a stage that has none) is one problem line each plus `the plugin’s fixed stages are drawn until the file is fixed`, and the whole loop falls back to `FIXED_STAGES` in roster.mjs, which a test holds equal to the shipped file's resolution (source: spec "A malformed workflow.yaml is a reported problem, and the result falls back to the fixed stage list")
 - recommended: the shipped file gives `intent` and `plan` explicit empty `roles` and `slots`, and keeps the sketch's `human` and `lead` lines as description the reader accepts but does not return (source: spec workflow.yaml sketch)
+
+## Comments
+
+merged 706e2df into feat/workflow-as-code. Review record: .forge/review/workflow-as-code-02.md (clean).
