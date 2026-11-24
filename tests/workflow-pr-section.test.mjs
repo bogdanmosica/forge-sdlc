@@ -47,3 +47,13 @@ test('plan: the gate record rewrites ## Workflow after its state write', () => {
 test('build: Gate 4 rewrites ## Workflow after setting the effort built', () => {
   namesWorkflowAfterStateWrite(stepOf(skill('build'), 4), /Set the effort to `stage: built`/, 'build step 4');
 });
+
+test('docs/contracts.md: ## Workflow is an owned PR body section, after the assumptions, written by every stage', () => {
+  const table = read('docs/contracts.md').split('## PR body sections')[1].split('\n## ')[0];
+  const rows = table.split('\n').filter((l) => /^\| `## /.test(l)).map((l) => /^\| `## ([^`]+)`/.exec(l)[1]);
+  assert.deepEqual(rows.slice(0, 4), ['Intent', 'Assumptions to confirm', 'Workflow', 'Spec']);
+  const row = table.split('\n').find((l) => l.startsWith('| `## Workflow` |'));
+  assert.match(row, /\| wayfinder, then spec, plan and build \|/);
+  assert.match(row, /bin\/workflow\.mjs --mermaid --effort <slug>/);
+  assert.match(row, /fenced `mermaid` block/);
+});
