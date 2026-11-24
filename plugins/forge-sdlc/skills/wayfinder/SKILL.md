@@ -83,13 +83,13 @@ Done when the PR (or PR.md) shows both sections and `.forge/state.json` reads ba
 
 ## 7. Gate 1
 
-Read Gate 1 with `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --gate intent --project .` and apply the [gate policy](GATE-POLICY.md): gate key `intent`, artifact intent.md, next command `/forge-sdlc:wayfinder <slug>`. A stop writes `stop` to the effort as step 6 writes state, where the reference's State write says. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line, picked by the first of the gate's `stops` that holds, as the reference's Report line says:
+Read Gate 1 with `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --gate intent --project .` and apply the [gate policy](GATE-POLICY.md): gate key `intent`, artifact intent.md, next command `/forge-sdlc:wayfinder <slug>`. A stop writes `stop` to the effort as step 6 writes state, where the reference's State write says. Then, after step 6's state write and any stop, rewrite only the PR body's `## Workflow` section: the output of `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --mermaid --effort <slug> --project .` in a fenced `mermaid` block, every other section verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`. This is the first write of the section; spec, plan and build refresh it after theirs. Report in four lines: the intent path, the PR URL (or PR.md), the `open:` assumptions verbatim (or none), and the gate line, picked by the first of the gate's `stops` that holds, as the reference's Report line says:
 
 - mode `policy`, passed: the reference's report line, then continue as [Resume](#resume) step 3 with `spec` as next, in this run.
 - stopped by `open` or `risk-high`, whatever the mode: the reasons and `/forge-sdlc:wayfinder <slug>`, as the reference's Report line says; this run ends here.
 - stopped by mode `attended`, none of those holding: the next move, with the gate's `source`: the owner reads intent.md, comments or edits it, then runs `/forge-sdlc:wayfinder <slug>`; this run ends here.
 
-Done when the report is printed and the run has ended at Gate 1 or gone on into `spec`.
+Done when the PR body (or PR.md) holds the `## Workflow` section, the report is printed and the run has ended at Gate 1 or gone on into `spec`.
 
 ## Resume
 

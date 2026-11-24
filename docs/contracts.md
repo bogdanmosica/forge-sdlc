@@ -111,6 +111,7 @@ Owned sections, in order, each a `## ` heading. A command rewrites only the sect
 | --- | --- | --- |
 | `## Intent` | wayfinder | the Destination, under the intent headings |
 | `## Assumptions to confirm` | wayfinder, then spec | the assumption lines, `open` first |
+| `## Workflow` | wayfinder, then spec, plan and build | the output of `bin/workflow.mjs --mermaid --effort <slug>` in a fenced `mermaid` block, the effort's place in the loop; each stage rewrites it after its state write, Gate 1 first |
 | `## Spec` | spec | a link to `spec.md` and the user-story count |
 | `## Flagged concerns` | spec | the spec's bullets, verbatim |
 | `## Plan` | plan | the slice table: nn, title, blocked by; below it each slice's proof as a fenced block, then plan.md's four Quiz lines (its `## Quiz`) under `autonomous` with `risk: normal` only |

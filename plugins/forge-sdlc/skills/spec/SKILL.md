@@ -55,7 +55,7 @@ With `readState` and `writeState` from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/lib.
 
 ## 7. Gate 2
 
-Apply the [gate policy](../wayfinder/GATE-POLICY.md) to the Gate 2 read in step 1: gate key `spec`, artifact spec.md, next command `/forge-sdlc:plan <slug>`. A passed gate lets `/forge-sdlc:wayfinder` continue into plan. A stop writes `stop: <reason>` to the effort as step 6 writes state, where the reference's State write says.
+Apply the [gate policy](../wayfinder/GATE-POLICY.md) to the Gate 2 read in step 1: gate key `spec`, artifact spec.md, next command `/forge-sdlc:plan <slug>`. A passed gate lets `/forge-sdlc:wayfinder` continue into plan. A stop writes `stop: <reason>` to the effort as step 6 writes state, where the reference's State write says. Then, after step 6's state write and any stop, rewrite only the PR body's `## Workflow` section: the output of `node "${CLAUDE_PLUGIN_ROOT}/bin/workflow.mjs" --mermaid --effort <slug> --project .` in a fenced `mermaid` block, every other section verbatim (`gh pr view --json body`, edit, `gh pr edit --body-file`). Without a remote the section goes into `docs/efforts/<slug>/PR.md`, committed on `feat/<slug>`.
 
 Report in three lines: the spec commit and issue link, the counts (user stories, flagged concerns, open assumptions), and the gate line, picked by the first of the gate's `stops` that holds, as the reference's Report line says:
 
@@ -63,4 +63,4 @@ Report in three lines: the spec commit and issue link, the counts (user stories,
 - stopped by `open`, `flagged` or `risk-high`, whatever the mode: the reasons and `/forge-sdlc:wayfinder <slug>` to resume, as the reference's Report line says.
 - stopped by mode `attended`, none of those holding: `Gate 2:`, then the next move with the gate's `source`: the owner reads spec.md, then approves it by running `/forge-sdlc:plan <slug>`.
 
-Done when the report is printed and, after a stop the reference's State write records, the state reads back `stop: <reason>`.
+Done when the PR body (or PR.md) holds the `## Workflow` section, the report is printed and, after a stop the reference's State write records, the state reads back `stop: <reason>`.
