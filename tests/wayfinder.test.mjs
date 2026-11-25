@@ -296,7 +296,7 @@ const doc = (rel) => readFileSync(path.join(repo, rel), 'utf8');
 test('ADR 0018 "Gates pass by policy" records the four stops, the self-answered quiz, one run and attended by default', () => {
   const adr = doc('docs/adr/0018-gates-pass-by-policy.md');
   assert.match(adr, /^# 18\. Gates pass by policy$/m);
-  assert.match(adr, /^Status: accepted, \d{4}-\d{2}-\d{2}$/m);
+  assert.match(adr, /^Status: accepted, \d{4}-\d{2}-\d{2}(; .+)?$/m);
   for (const h of ['Context', 'Decision', 'Consequences']) assert.match(adr, new RegExp(`^## ${h}$`, 'm'), h);
   for (const stop of ['`open:`', 'flagged concern', '`risk: high`', 'Gate 4']) assert.ok(adr.includes(stop), stop);
   assert.match(adr, /`attended`[^\n]*default/);
