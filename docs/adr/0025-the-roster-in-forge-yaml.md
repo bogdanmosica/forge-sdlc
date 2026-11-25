@@ -1,6 +1,6 @@
 # 25. The roster in forge.yaml
 
-Status: accepted, 2026-11-22; amends the convention "Hosts configure the plugin in `docs/agents/forge.md` only" (CLAUDE.md), which now reads forge.md plus the optional roster
+Status: accepted, 2026-11-22; amends the convention "Hosts configure the plugin in `docs/agents/forge.md` only" (CLAUDE.md), which now reads forge.md plus the optional roster; amended by ADR 0026 (`workflow:` in forge.yaml, and the removal of `## Routing`, `## Policy skills` and `## Gates` moved to the minor after 0.9.0)
 
 ## Context
 
