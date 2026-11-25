@@ -61,6 +61,22 @@ test('ADR 0025 restates its removal promise: the deprecated sections go in 0.10.
   assert.match(adr, /removed in 0\.10\.0[^\n]*ADR 0026/);
 });
 
+test('ADR 0018 and ADR 0025 Status lines point at ADR 0026', () => {
+  const status = (file) => /^Status: .*$/m.exec(read(repo, 'docs', 'adr', file))[0];
+  assert.match(status('0018-gates-pass-by-policy.md'), /^Status: accepted, 2026-10-19; superseded in part by ADR 0026/);
+  assert.match(status('0025-the-roster-in-forge-yaml.md'), /amended by ADR 0026/);
+});
+
+test('docs/how-it-works.md section 2: the gate policy is workflow.policy and workflow.gates.<key> in forge.yaml, not ## Gates', () => {
+  const doc = read(repo, 'docs', 'how-it-works.md');
+  const section = /^## 2\. Who passes a gate\n([\s\S]*?)^## 3\. /m.exec(doc)[1];
+  assert.doesNotMatch(section, /## Gates/);
+  assert.doesNotMatch(section, /"gates\.policy"/, 'the diagram node names the forge.yaml key');
+  assert.match(section, /workflow\.policy/);
+  assert.match(section, /workflow\.gates\.<key>/);
+  assert.match(section, /docs\/agents\/forge\.yaml/);
+});
+
 test('README: the workflow: schema beside the loop diagram, the gate policy pointed at forge.yaml, the window restated', () => {
   const readme = read(repo, 'README.md');
   const loop = readme.split(/^## The loop$/m)[1].split(/^## /m)[0];
@@ -95,7 +111,7 @@ test('CLAUDE.md: a Commands line for bin/workflow.mjs and the loop tab clause', 
   assert.match(line, /--gate/);
   assert.match(line, /--mermaid/);
   assert.match(line, /--project <host>/);
-  assert.match(line, /exit 0, 2 bad usage/);
+  assert.match(line, /exit 0, 1 [^,;]*state\.json[^,;]*, 2 bad usage/, 'exit 1: an unreadable state.json under --effort');
   assert.match(claude, /`\/forge` help panel[^)]*loop tab[^)]*diagram|`\/forge` help panel[^)]*diagram[^)]*loop/, 'the panel clause names the loop diagram');
 });
 
