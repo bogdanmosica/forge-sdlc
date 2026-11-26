@@ -26,7 +26,8 @@ function stateHost({ config = BRANCHES_ONLY, yaml, efforts = {} } = {}) {
 
 /** The JSON effort-state.mjs prints for `args`, exit 0. */
 function run(...args) {
-  const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', timeout: 120_000 });
+  // ~0.4 s on a quiet machine; 10 s proved too tight under a loaded full suite, so 30 s still catches a hang.
+  const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', timeout: 30_000 });
   assert.equal(r.status, 0, r.stderr);
   return JSON.parse(r.stdout);
 }
