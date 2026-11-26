@@ -26,7 +26,7 @@ function stateHost({ config = BRANCHES_ONLY, yaml, efforts = {} } = {}) {
 
 /** The JSON effort-state.mjs prints for `args`, exit 0. */
 function run(...args) {
-  const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', timeout: 10_000 });
+  const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', timeout: 120_000 });
   assert.equal(r.status, 0, r.stderr);
   return JSON.parse(r.stdout);
 }

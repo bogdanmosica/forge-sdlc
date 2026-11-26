@@ -46,12 +46,12 @@ flowchart TD
 
 ## 2. Who passes a gate
 
-`## Gates` → `policy` in the host's `docs/agents/forge.md`. This repo runs `autonomous`, so a single `wayfinder` run goes from idea to the first stop or Gate 4.
+A gate's mode is `workflow.gates.<key>` (`intent`, `spec`, `plan`) in the host's `docs/agents/forge.yaml`, else `workflow.policy`; Gate 4 is always the code owner's. This repo runs `workflow.policy: autonomous`, so a single `wayfinder` run goes from idea to the first stop or Gate 4.
 
 ```mermaid
 flowchart TD
-    at["stage done, artifact committed"] --> pol{"gates.policy"}
-    pol -->|attended| stopA["stop: owner passes it<br/>by typing the next command"]
+    at["stage done, artifact committed"] --> pol{"workflow.gates.key,<br/>else workflow.policy"}
+    pol -->|attended| stopA["stop: attended<br/>owner passes it<br/>by typing the next command"]
     pol -->|autonomous| risk{"risk: high?"}
     risk -->|yes| stopR["stop: risk-high<br/>effort runs attended from here<br/>Gate 2 labels needs-tech-lead"]
     risk -->|no| open{"open: line in<br/>the gate's artifact?"}
@@ -71,7 +71,7 @@ flowchart TD
     class pass ok
 ```
 
-A stop writes `stop: open | flagged | risk-high` beside `gate` in `.forge/state.json`; every other stage write drops it. Under `attended`, Gate 2 still honours `spec: only-on-open`. At Gate 3 under `autonomous` the quiz answers itself: four `recommended:` lines in `plan.md`'s `## Quiz`, copied under the PR's slice table for review at Gate 4.
+A stop writes `stop: open | flagged | risk-high | attended` beside `gate` in `.forge/state.json`; every other stage write drops it. `attended` is written only when the mode comes from forge.yaml. `workflow.gates.spec: policy` lets Gate 2 pass by policy under an attended `workflow.policy`. At Gate 3 under `autonomous` the quiz answers itself: four `recommended:` lines in `plan.md`'s `## Quiz`, copied under the PR's slice table for review at Gate 4.
 
 ## 3. Inside a build
 
