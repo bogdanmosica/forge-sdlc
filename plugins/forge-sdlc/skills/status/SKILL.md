@@ -11,7 +11,7 @@ argument-hint: "[slug]"
 
 `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" . <slug>` for one effort, `node "${CLAUDE_PLUGIN_ROOT}/bin/effort-state.mjs" --list .` for all. Exit 1 prints its line and ends the run.
 
-Done when you hold `stage`, `gate`, `next`, `source`, `policy` and `stop` for each effort (an empty list: print `no effort in progress` and end).
+Done when you hold `stage`, `gate`, `next`, `why`, `source`, `policy` and `stop` for each effort (an empty list: print `no effort in progress` and end).
 
 ## 2. Per effort
 

@@ -20,16 +20,8 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 ## Worktrees
 - install: none   # run at the root of each new slice worktree (beside the repository); this plugin has no dependencies to install
 
-## Gates
-- policy: autonomous             # or: attended
-- spec: always                   # or: only-on-open
-- max_parallel_slices: 3
-
 ## Risk
 - high: plugins/forge-sdlc/hooks/**, plugins/forge-sdlc/.claude-plugin/**, .claude-plugin/**
-
-## Policy skills
-- skills: writing-for-agents # applied by the spec-writer and the reviewer
 
 ## Test file globs
 - globs: tests/**

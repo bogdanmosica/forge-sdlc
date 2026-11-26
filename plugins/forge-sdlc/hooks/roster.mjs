@@ -17,8 +17,21 @@
  *   slots: Record<string, string>,
  *   policy: string[],
  *   allow: { agents: string[], skills: string[] },
+ *   workflow: Workflow,
  *   problems: string[],
  * }} Roster
+ */
+/** @typedef {'attended' | 'autonomous'} Policy */
+/** @typedef {'attended' | 'policy'} GateMode */
+/**
+ * The host's workflow: knobs, merged with forge.md's deprecated `## Gates`;
+ * each knob's source names where it came from (`default` when nowhere).
+ * @typedef {{
+ *   policy: Policy,
+ *   maxParallelSlices: number,
+ *   gates: { intent: GateMode, spec: GateMode, plan: GateMode },
+ *   sources: { policy: string, maxParallelSlices: string, intent: string, spec: string, plan: string },
+ * }} Workflow
  */
 
 export const PLUGIN = 'forge-sdlc';
@@ -68,6 +81,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     slots,
     policy: [],
     allow: { agents: [], skills: [] },
+    workflow: workflowOf(NO_SETTINGS, forgeConfig),
     problems: [],
   };
   fromForgeMd(roster, forgeConfig);
@@ -137,6 +151,7 @@ export function resolveRoster(yamlText, forgeConfig) {
     const names = list === null ? [] : namesOf(list, `allow.${kind}`, kind === 'agents' ? 'agent type' : 'skill', say);
     if (names) roster.allow[kind] = names;
   }
+  roster.workflow = workflowOf(settingsOf(file, say), forgeConfig);
   return roster;
 }
 
@@ -181,7 +196,8 @@ const roleOf = (role, agent, model, effort) => ({
  * forge.md's deprecated sections, read while they last: each valid `## Routing`
  * bullet for a role sets that role's model or effort (forge.yaml, read after,
  * wins key by key), and `## Policy skills` is the policy list until
- * `slots.policy` replaces it. Every bullet still there is one deprecation line.
+ * `slots.policy` replaces it; `## Gates` is merged by workflowOf. Every bullet
+ * still there is one deprecation line.
  * @param {Roster} roster
  * @param {ForgeConfig | undefined} config
  */
@@ -215,7 +231,362 @@ function fromForgeMd(roster, config) {
     if (good.length < names.length)
       roster.problems.push(`## Policy skills: ${keyOf(key)} holds an item that is not a skill name; it is skipped`);
   }
+  for (const [key, value] of Object.entries(sectionOf(config, 'gates'))) {
+    const v = String(value ?? '').trim();
+    const move = Object.hasOwn(GATES_MOVED, key) ? GATES_MOVED[key] : undefined;
+    if (key === 'spec' && v === 'only-on-open') roster.problems.push(`## Gates: spec only-on-open is deprecated; move it to workflow.gates.spec: policy in ${ROSTER_FILE}`);
+    else if (key === 'spec')
+      roster.problems.push(`## Gates: spec ${v === 'always' ? v : quote(value)} is deprecated and has no ${ROSTER_FILE} equivalent; Gate 2 follows workflow.policy`);
+    else if (move) roster.problems.push(`## Gates: ${keyOf(key)} is deprecated; move it to ${move} in ${ROSTER_FILE}`);
+    else roster.problems.push(`## Gates: ${keyOf(key)} is deprecated and has no ${ROSTER_FILE} equivalent; it stops working when ## Gates is removed`);
+  }
 }
+
+const ROSTER_FILE = 'docs/agents/forge.yaml';
+/** @type {Record<string, string>} */
+const GATES_MOVED = { policy: 'workflow.policy', max_parallel_slices: 'workflow.max_parallel_slices' };
+
+export const GATE_KEYS = /** @type {const} */ (['intent', 'spec', 'plan']);
+export const MAX_PARALLEL_SLICES = 3;
+
+/**
+ * What forge.yaml's workflow: sets, each value already checked.
+ * (`maxParallelSlices` is `bad` for a value that is reported and replaced by the default.)
+ * @typedef {{ policy?: Policy, maxParallelSlices?: number | 'bad', gates: Partial<Record<GateKey, GateMode>> }} Settings
+ * @typedef {typeof GATE_KEYS[number]} GateKey
+ */
+/** @type {Settings} */
+const NO_SETTINGS = { gates: {} };
+const YAML = 'in forge.yaml';
+const MD = 'in forge.md ## Gates';
+const WORKFLOW_KEYS = ['policy', 'max_parallel_slices', 'gates'];
+
+/**
+ * forge.yaml's workflow: section, read key by key.
+ * @param {Record<string, unknown>} file
+ * @param {(line: string) => void} say
+ * @returns {Settings}
+ */
+function settingsOf(file, say) {
+  /** @type {Settings} */
+  const out = { gates: {} };
+  for (const [key, value] of entriesOf(file, 'workflow', say)) {
+    if (value === null) continue;
+    if (key === 'policy') {
+      if (value === 'attended' || value === 'autonomous') out.policy = value;
+      else say(`workflow.policy ${quote(value)} is not attended or autonomous; ignored`);
+    } else if (key === 'max_parallel_slices') {
+      if (Number.isInteger(value) && Number(value) > 0) out.maxParallelSlices = Number(value);
+      else {
+        say(`workflow.max_parallel_slices ${quote(value)} is not a positive integer; ${MAX_PARALLEL_SLICES} used`);
+        out.maxParallelSlices = 'bad';
+      }
+    } else if (key === 'gates') {
+      if (!isMap(value)) say('workflow.gates is not a map; ignored');
+      for (const [gate, mode] of isMap(value) ? Object.entries(value) : []) {
+        if (gate === 'pr') say('workflow.gates.pr is not a setting: Gate 4 is always the code owner’s; ignored');
+        else if (!GATE_KEYS.includes(/** @type {GateKey} */ (gate))) say(`workflow.gates.${keyOf(gate)} is not a gate (${GATE_KEYS.join(', ')}); ignored`);
+        else if (mode === 'attended' || mode === 'policy') out.gates[/** @type {GateKey} */ (gate)] = mode;
+        else if (mode !== null) say(`workflow.gates.${gate} ${quote(mode)} is not attended or policy; ignored`);
+      }
+    } else if (key === 'stages') say('workflow.stages is not a host setting: the plugin’s workflow.yaml fixes the stages; ignored');
+    else say(`workflow.${keyOf(key)} is not a workflow key (${WORKFLOW_KEYS.join(', ')}); ignored`);
+  }
+  return out;
+}
+
+/**
+ * The workflow knobs: forge.yaml's settings over forge.md's `## Gates` over the
+ * defaults, each with its source. A gate's mode is, first match wins: its
+ * `gates.<key>`; for Gate 2, `## Gates` `spec: only-on-open` when forge.yaml
+ * sets neither `workflow.policy` nor `gates.spec`; the global policy
+ * (`workflow.policy`, else `## Gates` `policy`, else `attended`), where
+ * `autonomous` is mode `policy` and anything else `attended`.
+ * @param {Settings} settings
+ * @param {ForgeConfig | undefined} config
+ * @returns {Workflow}
+ */
+function workflowOf(settings, config) {
+  const md = sectionOf(config, 'gates');
+  const mdPolicy = typeof md.policy === 'string' ? md.policy.trim() : undefined;
+  const mdMax = typeof md.max_parallel_slices === 'string' && /^\d+$/.test(md.max_parallel_slices.trim()) ? Number(md.max_parallel_slices.trim()) : 0;
+  /** @type {Policy} */
+  let policy = 'attended';
+  let policySource = 'default';
+  if (settings.policy) [policy, policySource] = [settings.policy, `workflow.policy ${YAML}`];
+  else if (mdPolicy !== undefined) [policy, policySource] = [mdPolicy === 'autonomous' ? 'autonomous' : 'attended', `policy ${MD}`];
+  let max = MAX_PARALLEL_SLICES;
+  let maxSource = 'default';
+  if (typeof settings.maxParallelSlices === 'number') [max, maxSource] = [settings.maxParallelSlices, `workflow.max_parallel_slices ${YAML}`];
+  else if (!settings.maxParallelSlices && mdMax > 0) [max, maxSource] = [mdMax, `max_parallel_slices ${MD}`];
+  /** @type {Workflow} */
+  const out = {
+    policy,
+    maxParallelSlices: max,
+    gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
+    sources: { policy: policySource, maxParallelSlices: maxSource, intent: policySource, spec: policySource, plan: policySource },
+  };
+  const onlyOnOpen = !settings.policy && !settings.gates.spec && String(md.spec ?? '').trim() === 'only-on-open';
+  for (const gate of GATE_KEYS) {
+    const set = settings.gates[gate];
+    if (set) [out.gates[gate], out.sources[gate]] = [set, `gates.${gate} ${YAML}`];
+    else if (gate === 'spec' && onlyOnOpen) [out.gates[gate], out.sources[gate]] = ['policy', `spec ${MD}`];
+    else out.gates[gate] = policy === 'autonomous' ? 'policy' : 'attended';
+  }
+  return out;
+}
+
+// --- The workflow ------------------------------------------------------------
+// The plugin's workflow.yaml (descriptive: the stages and gates are fixed, the
+// file says what each does) joined with the resolved roster: each role's agent,
+// model and effort, each slot's skill, each gate's mode with its source, and,
+// for an effort, where it stands.
+
+export const STAGES = /** @type {const} */ (['map', 'intent', 'spec', 'plan', 'build', 'built']);
+/** The closed set of stop reasons, in write order. */
+export const STOPS = /** @type {const} */ (['open', 'flagged', 'risk-high', 'attended']);
+
+/**
+ * @typedef {{ role: string, agent: string, model?: string, effort?: Effort, swapped: boolean }} WorkflowRole
+ * @typedef {{ slot: string, skill: string }} WorkflowSlot
+ * @typedef {'passed' | 'current' | 'ahead'} StageStatus
+ * @typedef {'passed' | 'waiting' | 'stopped' | 'ahead'} GateStatus
+ * @typedef {{ key: string, n: number, artifact: string, stops: string[], mode: GateMode | 'owner', source: string, status?: GateStatus }} WorkflowGate
+ * @typedef {{ name: string, does: string, command?: string, roles: WorkflowRole[], slots: WorkflowSlot[], status?: StageStatus, gate?: WorkflowGate }} WorkflowStage
+ * @typedef {{ slug: string, stage: string, gate: string, stop: string, risk: 'normal' | 'high' }} EffortPosition
+ * @typedef {{ stages: WorkflowStage[], policy: Policy, maxParallelSlices: number, effort: EffortPosition | null, problems: string[] }} ResolvedWorkflow
+ * @typedef {{ name: string, does: string, command?: string, roles: string[], slots: string[], gate?: { key: string, n: number, artifact: string, stops: string[] } }} Described
+ */
+
+/**
+ * The loop: the plugin's workflow.yaml text joined with a resolved roster.
+ * `agentModels` maps an agent type (`forge-sdlc:implementer`) to its frontmatter
+ * model, read when the roster sets none. `effort`, an effort's record
+ * (`{ slug, stage, gate, stop, risk }`), positions the loop: each stage
+ * passed, current or ahead, and each gate passed, waiting (the record's gate),
+ * stopped (that gate with a stop reason) or ahead.
+ * @param {string | undefined} workflowText
+ * @param {Roster | undefined} roster
+ * @param {{ agentModels?: Record<string, string>, effort?: unknown }} [options]
+ * @returns {ResolvedWorkflow}
+ */
+export function resolveWorkflow(workflowText, roster, options) {
+  const r = isRoster(roster) ? roster : resolveRoster(undefined, undefined);
+  const problems = [...r.problems];
+  const agentModels = isMap(options?.agentModels) ? options.agentModels : {};
+  const at = positionOf(options?.effort);
+  const riskHigh = isMap(options?.effort) && options.effort.risk === 'high';
+  const described = descriptionOf(workflowText, (line) => void problems.push(`workflow.yaml: ${line}`));
+  /** @param {string} role @returns {WorkflowRole} */
+  const roleIn = (role) => {
+    const set = Object.hasOwn(r.roles, role) ? r.roles[role] : undefined;
+    const rr = isMap(set) && typeof set.agent === 'string' ? set : { agent: `${PLUGIN}:${role}`, swapped: false };
+    const model = rr.model ?? (Object.hasOwn(agentModels, rr.agent) && isModel(agentModels[rr.agent]) ? agentModels[rr.agent] : undefined);
+    return { role, agent: rr.agent, ...(model ? { model } : {}), ...(rr.effort ? { effort: rr.effort } : {}), swapped: rr.swapped };
+  };
+  /** @param {string} slot @returns {WorkflowSlot} */
+  const slotIn = (slot) => ({ slot, skill: slot === 'policy' ? r.policy.join(', ') || 'none' : String(Object.hasOwn(r.slots, slot) ? r.slots[slot] : '') });
+  /** @param {NonNullable<Described['gate']>} g @returns {WorkflowGate} */
+  const gateIn = (g) => {
+    if (g.key === 'pr') return { ...g, mode: 'owner', source: 'always' };
+    if (riskHigh) return { ...g, mode: 'attended', source: 'risk: high' };
+    const key = /** @type {GateKey} */ (g.key);
+    return { ...g, mode: r.workflow.gates[key], source: r.workflow.sources[key] };
+  };
+  const current = at ? described.findIndex((d) => d.name === at.stage) : -1;
+  const waiting = at ? described.findIndex((d) => d.gate?.key === at.gate) : -1;
+  /** The gate of the stage at index i, against the record's gate, else the stage. @param {number} i @returns {GateStatus} */
+  const gateStatus = (i) => {
+    if (i === waiting) return at?.stop === 'none' ? 'waiting' : 'stopped';
+    return i < (waiting >= 0 ? waiting : current) ? 'passed' : 'ahead';
+  };
+  /** @type {(i: number) => StageStatus} */
+  const stageStatus = (i) => (i < current ? 'passed' : i === current ? 'current' : 'ahead');
+  const stages = described.map((d, i) => ({
+    name: d.name,
+    does: d.does,
+    ...(d.command ? { command: d.command } : {}),
+    roles: d.roles.map(roleIn),
+    slots: d.slots.map(slotIn),
+    ...(current >= 0 ? { status: stageStatus(i) } : {}),
+    ...(d.gate ? { gate: { ...gateIn(d.gate), ...(current >= 0 ? { status: gateStatus(i) } : {}) } } : {}),
+  }));
+  return {
+    stages,
+    policy: r.workflow.policy,
+    maxParallelSlices: r.workflow.maxParallelSlices,
+    effort: current >= 0 ? at : null,
+    problems,
+  };
+}
+
+/**
+ * An effort's record as the loop reads it, or null when it names no stage of
+ * the loop; a gate or stop outside its closed set reads as `none`.
+ * @param {unknown} effort
+ * @returns {EffortPosition | null}
+ */
+function positionOf(effort) {
+  if (!isMap(effort) || !STAGES.includes(/** @type {any} */ (effort.stage))) return null;
+  const gate = ['intent', 'spec', 'plan', 'pr'].includes(/** @type {any} */ (effort.gate)) ? String(effort.gate) : 'none';
+  const stop = STOPS.includes(/** @type {any} */ (effort.stop)) ? String(effort.stop) : 'none';
+  return { slug: String(effort.slug ?? ''), stage: String(effort.stage), gate, stop, risk: effort.risk === 'high' ? 'high' : 'normal' };
+}
+
+/** The plugin's stages as workflow.yaml ships them: the loop drawn when the file is malformed. */
+/** @type {readonly Described[]} */
+const FIXED_STAGES = [
+  {
+    name: 'map',
+    does: 'the map and its tickets, worked with the owner',
+    command: '/forge-sdlc:wayfinder',
+    roles: ['researcher', 'prototyper'],
+    slots: ['grilling', 'prototyper.prototype', 'domain-modeling'],
+  },
+  {
+    name: 'intent',
+    does: 'intent.md and the draft PR',
+    command: '/forge-sdlc:wayfinder',
+    roles: [],
+    slots: [],
+    gate: { key: 'intent', n: 1, artifact: 'intent.md', stops: ['open', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'spec',
+    does: 'spec.md under the policy skills',
+    command: '/forge-sdlc:spec',
+    roles: ['spec-writer'],
+    slots: ['spec-writer.codebase-design', 'policy'],
+    gate: { key: 'spec', n: 2, artifact: 'spec.md', stops: ['open', 'flagged', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'plan',
+    does: 'plan.md, slices, the quiz',
+    command: '/forge-sdlc:plan',
+    roles: [],
+    slots: [],
+    gate: { key: 'plan', n: 3, artifact: 'plan.md', stops: ['open', 'risk-high', 'attended'] },
+  },
+  {
+    name: 'build',
+    does: 'one worktree per slice, merged when clean',
+    command: '/forge-sdlc:build',
+    roles: ['implementer', 'verifier', 'reviewer', 'merger'],
+    slots: ['implementer.tdd'],
+    gate: { key: 'pr', n: 4, artifact: 'the PR', stops: [] },
+  },
+  { name: 'built', does: 'ready for review; the code owner merges', roles: [], slots: [] },
+];
+const FILE_KEYS = ['version', 'stops', 'stages'];
+const STAGE_FIELDS = ['does', 'command', 'roles', 'slots', 'human', 'lead', 'gate', 'end'];
+const GATE_FIELDS = ['n', 'key', 'artifact', 'stops', 'owner'];
+
+/**
+ * workflow.yaml read against the fixed stages and gates: its stages, or, when
+ * anything in it is wrong, each wrong thing reported and the fixed stages.
+ * @param {unknown} text
+ * @param {(line: string) => void} say
+ * @returns {readonly Described[]}
+ */
+function descriptionOf(text, say) {
+  /** @type {string[]} */
+  const bad = [];
+  const flag = (/** @type {string} */ line) => void bad.push(line);
+  const { value, errors } = parseYamlSubset(typeof text === 'string' ? text : '');
+  /** @type {Described[]} */
+  const described = [];
+  if (typeof text !== 'string') flag('the file is missing or unreadable');
+  for (const e of errors) flag(`line ${e.line}: ${e.message}`);
+  if (typeof text === 'string' && !isMap(value)) flag('the file is not a map of keys');
+  if (isMap(value)) {
+    for (const key of Object.keys(value)) if (!FILE_KEYS.includes(key)) flag(`${keyOf(key)} is not a workflow.yaml key (${FILE_KEYS.join(', ')})`);
+    if (value.version !== 1) flag(`version ${quote(value.version ?? null)} is not 1`);
+    if (!Array.isArray(value.stops) || value.stops.join() !== STOPS.join()) flag(`stops is not [${STOPS.join(', ')}]`);
+    const stages = value.stages;
+    if (!isMap(stages)) flag('stages is not a map');
+    else {
+      if (Object.keys(stages).join() !== STAGES.join()) flag(`stages are not ${STAGES.join(', ')}, in that order`);
+      for (const fixed of FIXED_STAGES) if (Object.hasOwn(stages, fixed.name)) described.push(stageOf(fixed, stages[fixed.name], flag));
+    }
+  }
+  if (!bad.length) return described;
+  for (const line of bad) say(line);
+  say('the plugin’s fixed stages are drawn until the file is fixed');
+  return FIXED_STAGES;
+}
+
+/**
+ * One stage of the file, checked against its fixed counterpart.
+ * @param {Described} fixed
+ * @param {unknown} s
+ * @param {(line: string) => void} flag
+ * @returns {Described}
+ */
+function stageOf(fixed, s, flag) {
+  const where = `stages.${fixed.name}`;
+  if (!isMap(s)) {
+    flag(`${where} is not a map`);
+    return fixed;
+  }
+  for (const key of Object.keys(s)) if (!STAGE_FIELDS.includes(key)) flag(`${where}.${keyOf(key)} is not a stage key (${STAGE_FIELDS.join(', ')})`);
+  if (typeof s.does !== 'string' || !s.does) flag(`${where}.does is not a line of text`);
+  if (s.command != null && typeof s.command !== 'string') flag(`${where}.command is not a command`);
+  /** @type {Described} */
+  const out = {
+    name: fixed.name,
+    does: String(s.does ?? ''),
+    ...(typeof s.command === 'string' ? { command: s.command } : {}),
+    roles: knownOf(s.roles, `${where}.roles`, ROLES, 'role', flag),
+    slots: knownOf(s.slots, `${where}.slots`, SLOT_NAMES, 'slot', flag),
+  };
+  const g = s.gate;
+  if (!fixed.gate) {
+    if (g != null) flag(`${where}.gate: the ${fixed.name} stage ends at no gate`);
+    return out;
+  }
+  if (!isMap(g)) {
+    flag(`${where}.gate is not a map`);
+    return out;
+  }
+  for (const key of Object.keys(g)) if (!GATE_FIELDS.includes(key)) flag(`${where}.gate.${keyOf(key)} is not a gate key (${GATE_FIELDS.join(', ')})`);
+  if (g.key !== fixed.gate.key || g.n !== fixed.gate.n) flag(`${where}.gate is not Gate ${fixed.gate.n}, key ${fixed.gate.key}`);
+  if (typeof g.artifact !== 'string' || !g.artifact) flag(`${where}.gate.artifact is not a line of text`);
+  const owners = fixed.gate.key === 'pr';
+  if (owners && g.stops != null) flag(`${where}.gate.stops: Gate 4 is the code owner’s and stops on nothing`);
+  if (!owners && g.owner != null) flag(`${where}.gate.owner: only Gate 4 is the code owner’s`);
+  out.gate = { key: fixed.gate.key, n: fixed.gate.n, artifact: String(g.artifact ?? ''), stops: owners ? [] : knownOf(g.stops, `${where}.gate.stops`, STOPS, 'stop reason', flag) };
+  return out;
+}
+
+/**
+ * A list whose every item is one of `known`; anything else is flagged.
+ * @param {unknown} list
+ * @param {string} key
+ * @param {readonly string[]} known
+ * @param {string} what
+ * @param {(line: string) => void} flag
+ * @returns {string[]}
+ */
+function knownOf(list, key, known, what, flag) {
+  if (list == null) return [];
+  if (!Array.isArray(list)) {
+    flag(`${key} is not a list`);
+    return [];
+  }
+  for (const item of list) if (!known.includes(item)) flag(`${key} holds ${quote(item)}, not a ${what} (${known.join(', ')})`);
+  return list.filter((item) => known.includes(item));
+}
+
+/** Whether a value has the fields the join reads off a roster. @param {unknown} r @returns {r is Roster} */
+const isRoster = (r) =>
+  isMap(r) &&
+  isMap(r.roles) &&
+  isMap(r.slots) &&
+  Array.isArray(r.policy) &&
+  Array.isArray(r.problems) &&
+  isMap(r.workflow) &&
+  isMap(r.workflow.gates) &&
+  isMap(r.workflow.sources);
 
 /** A forge.md section as a map, anything else as none. */
 const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {string} */ name) => {
@@ -223,7 +594,7 @@ const sectionOf = (/** @type {ForgeConfig | undefined} */ config, /** @type {str
   return isMap(section) ? section : {};
 };
 
-const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow'];
+const TOP_KEYS = ['version', 'enforce', 'roles', 'slots', 'allow', 'workflow'];
 const ROLE_FIELDS = ['agent', 'model', 'effort'];
 
 /** An agent type or skill name as the Agent and Skill tools name them. */

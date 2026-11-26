@@ -19,6 +19,12 @@ const DEFAULT_SLOTS = {
   'spec-writer.codebase-design': 'mattpocock-skills:codebase-design',
   'domain-modeling': 'mattpocock-skills:domain-modeling',
 };
+const DEFAULT_WORKFLOW = {
+  policy: 'attended',
+  maxParallelSlices: 3,
+  gates: { intent: 'attended', spec: 'attended', plan: 'attended' },
+  sources: { policy: 'default', maxParallelSlices: 'default', intent: 'default', spec: 'default', plan: 'default' },
+};
 
 test('without forge.yaml or forge.md the roster is exactly today’s defaults', () => {
   assert.deepEqual(resolveRoster(undefined, undefined), {
@@ -29,6 +35,7 @@ test('without forge.yaml or forge.md the roster is exactly today’s defaults', 
     slots: DEFAULT_SLOTS,
     policy: [],
     allow: { agents: [], skills: [] },
+    workflow: DEFAULT_WORKFLOW,
     problems: [],
   });
 });
@@ -206,6 +213,7 @@ test('a roster swaps roles, sets model and effort, swaps and disables slots, lis
     },
     policy: ['writing-for-agents', 'security'],
     allow: { agents: ['Explore'], skills: ['pr'] },
+    workflow: DEFAULT_WORKFLOW,
     problems: [],
   });
 });

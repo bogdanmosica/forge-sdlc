@@ -144,7 +144,7 @@ Decision (chaining): inside the loop a forge-sdlc command runs another by readin
 
 Decision (members): every Agent call the commands make is a **member call**, defined once in `skills/build/MEMBERS.md` and linked with the member's role at each call in build, slice-review, wayfinder and spec. Before the call the lead runs `bin/crew-name.mjs <role>` (`--slice` for an implementer) and passes its line as `name`; after an implementer's call it writes the id the Agent result names as the slice's `agent`; it waits for the member's report and, under a lead with agent teams enabled, ends the teammate with the shutdown request once its work is settled. Agent teams is the transport, not crew.sh, and nothing detects it: a teams lead shows each member as a named pane, a plain lead runs the same call as a subagent. Names are display only ([ADR 0017](adr/0017-agents-as-named-members.md)).
 
-Decision (gates): Gates 1 to 3 pass by the host's **gate policy**, `policy` under `## Gates` in `forge.md` (section 8): `attended`, the default, stops at every gate for the owner; `autonomous` passes a gate when its artifact has no `open:` line, no flagged concern and the effort is `risk: normal`, so one `wayfinder` run goes on to the first stop or Gate 4, which stays the code owner's. A stop is written as `stop` beside `gate` in the effort's state (section 9). The rule, the stop reasons, the `Gate <n> passed` report line and the state write live in `skills/wayfinder/GATE-POLICY.md`, linked by wayfinder, spec and plan ([ADR 0018](adr/0018-gates-pass-by-policy.md), superseding ADR 0006).
+Decision (gates): Gates 1 to 3 pass by the host's **gate policy**, `workflow.policy` in forge.yaml, overridden for one gate by `workflow.gates.<key>` (section 8, [ADR 0026](adr/0026-the-loop-declared-tuned-per-gate.md)): `attended`, the default, stops at every gate for the owner; `autonomous` passes a gate when its artifact has no `open:` line, no flagged concern and the effort is `risk: normal`, so one `wayfinder` run goes on to the first stop or Gate 4, which stays the code owner's. A stop is written as `stop` beside `gate` in the effort's state (section 9). The rule, the stop reasons, the `Gate <n> passed` report line and the state write live in `skills/wayfinder/GATE-POLICY.md`, linked by wayfinder, spec and plan ([ADR 0018](adr/0018-gates-pass-by-policy.md), superseding ADR 0006).
 
 ### `init` (once per host)
 
@@ -332,11 +332,6 @@ Written once by `init`, edited by hand later: `docs/agents/forge.md`, and the ro
 ## Worktrees
 - install: pnpm install --frozen-lockfile --prefer-offline   # run at the root of each new slice worktree; or none
 
-## Gates
-- policy: attended               # or: autonomous
-- spec: always                   # or: only-on-open
-- max_parallel_slices: 3
-
 ## Risk
 - high: src/auth/**, src/payments/**, migrations/**
 
@@ -348,7 +343,7 @@ Written once by `init`, edited by hand later: `docs/agents/forge.md`, and the ro
 - names.implementer: Scotty, Miles O'Brien, Rom, Nog, Quark   # optional, one per overridden role
 ```
 
-Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Two further sections are optional, never written by init and read only by the run pane mod (`plugins/forge-sdlc/hooks/ROUTING.md`): `## Routing`, `model.<role>` and `effort.<role>` bullets that override an agent file's frontmatter at spawn, and `## Mark`, the `text` and `color` of the word at the left of the band above the prompt. `## Routing`, and `## Policy skills` from hosts set up before 0.8.0, are deprecated: the roster replaces them, they are still read until 0.9.0, and each bullet left in them is a band line naming the roster key to move it to. Under `## Gates`, `policy` is the gate policy, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and under `autonomous` the `spec` key is ignored ([ADR 0018](adr/0018-gates-pass-by-policy.md)).
+Every bullet is one `- key: value` line under its `## Section`, with an optional trailing `# comment`: that is the shape `bin/forge-config.mjs` and the hooks parse. `## Crew` holds only the crew theme and, optionally, one `names.<role>` bullet per role whose pool the owner overrides, names in display form, comma-separated; init asks the theme and writes `theme: none` on a host that picks none, and `bin/crew-name.mjs` reads the section. Two further sections are optional, never written by init and read only by the run pane mod (`plugins/forge-sdlc/hooks/ROUTING.md`): `## Routing`, `model.<role>` and `effort.<role>` bullets that override an agent file's frontmatter at spawn, and `## Mark`, the `text` and `color` of the word at the left of the band above the prompt. `## Routing`, and `## Policy skills` from hosts set up before 0.8.0, are deprecated: the roster replaces them, they are still read through 0.9.x and removed in 0.10.0, and each bullet left in them is a band line naming the roster key to move it to. `## Gates` from hosts set up before 0.9.0 is deprecated the same way, its bullets moving to `workflow:` in forge.yaml, and removed with them ([ADR 0026](adr/0026-the-loop-declared-tuned-per-gate.md)). The gate policy is `workflow.policy`, `attended` or `autonomous`; a missing key, or any other value, reads as `attended`, and while `## Gates` is read, under `autonomous` the `spec` key is ignored ([ADR 0018](adr/0018-gates-pass-by-policy.md)).
 
 CLAUDE.md gets one sub-block, under the `## Agent skills` heading Matt's setup created, replaced in place on re-run:
 
@@ -375,9 +370,16 @@ slots:
 allow:
   agents: [Explore]             # under enforce, built-ins and extra skills that fill no role or slot
   skills: []
+workflow:                       # the loop's knobs; the stages themselves are the plugin's workflow.yaml
+  policy: attended              # or: autonomous; the gate policy
+  max_parallel_slices: 3        # a positive integer
+  gates:                        # intent, spec, plan: attended | policy, overriding policy for that gate
+    plan: attended
 ```
 
 Decision (roster): a second host config file, `docs/agents/forge.yaml`, holds which agent fills each role with its model and effort, which skill fills each slot, and whether calls outside it are denied; forge.md keeps every other section. Roles swap in the run pane mod at `agent.spawn` so no lead changes its calls, slots resolve through `bin/roster.mjs <slot> --project <host>` at each call site, and one pure reader (`hooks/roster.mjs`) parses a strict YAML subset with no dependency ([ADR 0025](adr/0025-the-roster-in-forge-yaml.md)).
+
+Decision (workflow): the loop is declared by the plugin in `plugins/forge-sdlc/workflow.yaml` (stages, roles, slots, each gate's stop list), descriptive only, and tuned by the host under `workflow:` in forge.yaml: `policy`, `max_parallel_slices` and `gates.<key>` (`intent`, `spec`, `plan`: `attended` or `policy`), each gate override beating the global policy for that gate alone; a gate attended from forge.yaml stops with `stop: attended`, Gate 4 stays the owner's, and `bin/workflow.mjs` prints the resolved loop as JSON, one gate, or the Mermaid the README and each PR draw ([ADR 0026](adr/0026-the-loop-declared-tuned-per-gate.md), superseding ADR 0018 in part).
 
 Policy skills are the playbook's Design-stage idea: the spec-writer calls each skill of the roster's `policy` slot by name so brand, security or compliance rules constrain the spec, and what a skill cannot resolve becomes a line under `## Flagged concerns`.
 

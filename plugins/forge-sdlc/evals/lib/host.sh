@@ -30,7 +30,8 @@ tracker() {
   printf '# Issue tracker\n\nLocal markdown: one file per ticket under `.scratch/<slug>/issues/<nn>-<title>.md`, a `Blocked by:` line for each edge, closed by `Status: closed`.\n' > docs/agents/issue-tracker.md
 }
 
-# config [formatter]: docs/agents/forge.md in the shape init writes; the formatter defaults to none.
+# config [formatter]: docs/agents/forge.md in the shape init writes, and the roster docs/agents/forge.yaml
+# with the workflow knobs init writes under workflow:; the formatter defaults to none.
 config() {
   mkdir -p docs/agents
   cat > docs/agents/forge.md <<MD
@@ -54,10 +55,6 @@ config() {
 ## Worktrees
 - install: none
 
-## Gates
-- spec: always
-- max_parallel_slices: 3
-
 ## Risk
 - high: none
 
@@ -67,6 +64,7 @@ config() {
 ## Test file globs
 - globs: tests/**
 MD
+  printf 'version: 1\nworkflow:\n  policy: attended\n  max_parallel_slices: 3\n' > docs/agents/forge.yaml
 }
 
 commit() { git add -A && git commit -qm "$1"; }

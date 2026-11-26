@@ -24,14 +24,14 @@ The loop is tested against the version in [UPSTREAM.lock](plugins/forge-sdlc/UPS
 
 ```text
 /mattpocock-skills:setup-matt-pocock-skills   # tracker, triage labels, domain docs
-/forge-sdlc:init                              # proof commands, formatter, branches, gates, risk → docs/agents/forge.md
+/forge-sdlc:init                              # proof commands, formatter, branches, risk → docs/agents/forge.md; gates → forge.yaml
 ```
 
-`init` derives what the repo tells it, asks the rest, writes `docs/agents/forge.md` (the host config every skill and hook reads), writes the policy skills it asks for to `docs/agents/forge.yaml` as `slots.policy` (see [Roster](#roster)), adds a `### Delivery loop` block to CLAUDE.md, and gitignores `.forge/`. Edit `forge.md` by hand later; rerun `init` to rewrite it.
+`init` derives what the repo tells it, asks the rest, writes `docs/agents/forge.md` (the host config every skill and hook reads), writes the gate policy, the Gate 2 override and `max_parallel_slices` it asks for under `workflow:` (see [The loop](#the-loop)) and the policy skills as `slots.policy` (see [Roster](#roster)) to `docs/agents/forge.yaml`, adds a `### Delivery loop` block to CLAUDE.md, and gitignores `.forge/`. Edit `forge.md` by hand later; rerun `init` to rewrite it.
 
 ## Roster
 
-`docs/agents/forge.yaml`, optional, is the roster: which agent fills each of the seven roles and on which model and effort, which skill fills each slot (`implementer.tdd`, `prototyper.prototype`, `grilling`, `spec-writer.codebase-design`, `domain-modeling`, `policy`), and, with `enforce: true`, which Agent and Skill calls are allowed at all. Without it every role is `forge-sdlc:<role>` and every slot today's `mattpocock-skills` skill. Its shape, precedence over the deprecated `## Routing` and `## Policy skills` sections of `forge.md` (read until 0.9.0), its invalid entries and the band lines they leave are in [plugins/forge-sdlc/hooks/ROUTING.md](plugins/forge-sdlc/hooks/ROUTING.md). Read [plugins/forge-sdlc/skills/build/ROLES.md](plugins/forge-sdlc/skills/build/ROLES.md) before filling a role with another agent: what the role is given, reports and leaves, and the hooks that hold it. `node plugins/forge-sdlc/bin/roster.mjs --project <host>` prints the resolved roster and its problems.
+`docs/agents/forge.yaml`, optional, is the roster: which agent fills each of the seven roles and on which model and effort, which skill fills each slot (`implementer.tdd`, `prototyper.prototype`, `grilling`, `spec-writer.codebase-design`, `domain-modeling`, `policy`), and, with `enforce: true`, which Agent and Skill calls are allowed at all. Without it every role is `forge-sdlc:<role>` and every slot today's `mattpocock-skills` skill. Its shape, precedence over the deprecated `## Routing` and `## Policy skills` sections of `forge.md` (read through 0.9.x and removed with `## Gates` in 0.10.0), its invalid entries and the band lines they leave are in [plugins/forge-sdlc/hooks/ROUTING.md](plugins/forge-sdlc/hooks/ROUTING.md). Read [plugins/forge-sdlc/skills/build/ROLES.md](plugins/forge-sdlc/skills/build/ROLES.md) before filling a role with another agent: what the role is given, reports and leaves, and the hooks that hold it. `node plugins/forge-sdlc/bin/roster.mjs --project <host>` prints the resolved roster and its problems.
 
 ```yaml
 version: 1
@@ -47,6 +47,39 @@ slots:
 
 Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sdlc:wayfinder` is the front door: it starts an effort from an idea or `#issue`, and resumes one from its slug, running the next stage and stopping at that stage's gate. The other stage commands rerun one stage by hand.
 
+The loop as `node plugins/forge-sdlc/bin/workflow.mjs --mermaid` draws it for a host with no settings; with `--effort <slug>` it marks where that effort stands. `tests/workflow-mermaid.test.mjs` holds this block equal to the command.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 320}}}%%
+flowchart TD
+%% policy attended
+  map["1 · map<br/>the map and its tickets, worked with the owner<br/>researcher · claude-sonnet-5-5<br/>prototyper · claude-opus-5-5"]
+  intent["2 · intent<br/>intent.md and the draft PR"]
+  G1{{"Gate 1 · attended · default"}}:::gattended
+  intent --> G1
+  G1 ==>|"you pass it"| spec
+  spec["3 · spec<br/>spec.md under the policy skills<br/>spec-writer · claude-opus-5-5"]
+  G2{{"Gate 2 · attended · default"}}:::gattended
+  spec --> G2
+  G2 ==>|"you pass it"| plan
+  plan["4 · plan<br/>plan.md, slices, the quiz"]
+  G3{{"Gate 3 · attended · default"}}:::gattended
+  plan --> G3
+  G3 ==>|"you pass it"| build
+  build["5 · build<br/>one worktree per slice, merged when clean<br/>implementer · claude-opus-5-5<br/>verifier · claude-sonnet-5-5<br/>reviewer · claude-opus-5-5<br/>merger · claude-sonnet-5-5"]
+  G4{{"Gate 4 · owner"}}:::gowner
+  build --> G4
+  G4 ==>|"code owner reviews, merges"| built
+  built["6 · built<br/>ready for review; the code owner merges"]
+  classDef passed fill:#dafbe1,stroke:#1a7f37,color:#1f2328
+  classDef current fill:#ddf4ff,stroke:#0969da,stroke-width:3px,color:#1f2328
+  classDef ahead fill:#f6f8fa,stroke:#8c959f,color:#1f2328
+  classDef gpolicy fill:#ffffff,stroke:#1a7f37,color:#1f2328
+  classDef gattended fill:#ffffff,stroke:#9a6700,stroke-dasharray:4 3,color:#1f2328
+  classDef gowner fill:#ffebe9,stroke:#cf222e,color:#1f2328
+  classDef stopped fill:#fff8c5,stroke:#bf8700,stroke-width:3px,color:#1f2328
+```
+
 | Stage | Command | Artifact committed on `feat/<slug>` | Agents | Gate (who decides) |
 | --- | --- | --- | --- | --- |
 | Plan | `/forge-sdlc:wayfinder <idea>` (`/forge-sdlc:intent <slug>` reshapes the Destination) | `map.md`, then `intent.md`; draft PR (or `PR.md`) | researcher, prototyper | 1: the owner accepts the intent, or the policy when nothing is open |
@@ -57,7 +90,19 @@ Every command is user-invoked: type it with the `forge-sdlc:` prefix. `/forge-sd
 | any | `/forge-sdlc:status [slug]` | none: read-only | none | none |
 | any | `/forge-sdlc:help` | none: opens the `/forge` panel on the commands | none | none |
 
-Who passes Gates 1 to 3 is the gate policy, `policy` under `## Gates` in `forge.md`. `attended`, the default, stops at every gate for its human, as the table reads. With `policy: autonomous`, one `/forge-sdlc:wayfinder <idea>` charts and works the map with you, then runs intent, spec, plan and build in the same run, printing each stage's report as its gate passes, and stops only on an `open:` assumption line, a flagged concern in the spec, `risk: high` (that effort then runs attended), or Gate 4, which stays the code owner's. The quiz's answers are recorded in `plan.md` and the PR body for review at Gate 4; a stopped effort resumes with `/forge-sdlc:wayfinder <slug>` to its next stop.
+Who passes Gates 1 to 3 is the gate policy, `workflow.policy` in `docs/agents/forge.yaml`. `attended`, the default, stops at every gate for its human, as the table reads. With `policy: autonomous`, one `/forge-sdlc:wayfinder <idea>` charts and works the map with you, then runs intent, spec, plan and build in the same run, printing each stage's report as its gate passes, and stops only on an `open:` assumption line, a flagged concern in the spec, `risk: high` (that effort then runs attended), or Gate 4, which stays the code owner's. The quiz's answers are recorded in `plan.md` and the PR body for review at Gate 4; a stopped effort resumes with `/forge-sdlc:wayfinder <slug>` to its next stop.
+
+The stages and their gates are the plugin's own, declared in `plugins/forge-sdlc/workflow.yaml`; a host cannot reorder, add or remove one. It tunes them under `workflow:` in forge.yaml, every key optional:
+
+```yaml
+workflow:
+  policy: autonomous            # attended (the default) | autonomous: who passes Gates 1 to 3
+  max_parallel_slices: 3        # a positive integer: slices building at once
+  gates:                        # intent, spec, plan: attended | policy, for that gate alone
+    plan: attended              # the plan quiz waits for you; Gates 1 and 2 pass by policy
+```
+
+`gates.<key>` beats `policy` for its gate; `gates.spec: policy` is what `spec: only-on-open` was. The stops `open`, `flagged` and `risk-high` hold under every setting, and Gate 4 is always the code owner's (`gates.pr` is a reported problem). A gate attended from forge.yaml stops with `stop: attended`, and `/forge-sdlc:status` says which key set it. `node plugins/forge-sdlc/bin/workflow.mjs --gate <key> --project <host>` prints a gate's mode, the setting it came from and its stops; with no flag, the whole resolved loop and its problems as JSON. forge.md's `## Gates` is still read through 0.9.x, a band line per bullet naming the key to move it to, and removed with `## Routing` and `## Policy skills` in 0.10.0 ([ADR 0026](docs/adr/0026-the-loop-declared-tuned-per-gate.md)).
 
 Build is unattended: each slice is built test-first in its own worktree, verified (`.forge/verify/<slug>-<nn>.json`), reviewed on three axes (Standards, Spec, Bugs and security), and merged `--no-ff` into `feat/<slug>` only when clean. Two fix rounds at most, then the slice is red: it stays local and is listed in the PR. Only `feat/<slug>` is ever pushed.
 

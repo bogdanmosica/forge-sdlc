@@ -1,0 +1,13 @@
+# PROTOTYPE, throwaway (ticket workflow-as-code 04). A sample host forge.yaml:
+# the roster (effort roster-as-code) plus the workflow knobs (tickets 02, 03).
+version: 1
+roles:
+  reviewer:
+    agent: my-plugin:reviewer
+    model: sonnet
+    effort: medium
+workflow:
+  policy: autonomous
+  max_parallel_slices: 3
+  gates:
+    plan: attended

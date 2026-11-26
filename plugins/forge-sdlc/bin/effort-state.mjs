@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // Where an effort stands and which command runs next: `node bin/effort-state.mjs [host-dir] <slug>`
-// prints `{ slug, stage, gate, next, why, source, policy, stop }`; `--list [host-dir]` prints every effort as an array.
+// prints `{ slug, stage, gate, next, why, source, policy, stop, gates }`; `--list [host-dir]` prints every effort as an array.
 // One argument is the slug, the host is cwd. Read-only.
-//   policy: attended | autonomous (the host's `## Gates` policy key, read on each call; anything but `autonomous` is attended)
-//   stop:   open | flagged | risk-high (the state's stop; `why` then names it) | none (also always with source artifacts)
+//   policy: attended | autonomous (the resolved global policy, workflow.policy in forge.yaml else `## Gates` policy, read on
+//           each call; anything but `autonomous` is attended)
+//   stop:   open | flagged | risk-high | attended (the state's stop; `why` then names it, for attended the forge.yaml key)
+//           | none (also always with source artifacts)
+//   gates:  { intent, spec, plan, pr }, each { mode, source } from readWorkflow positioned on the effort
 //   next:   map (work the map: wayfinder step 4 on) | spec | plan | build | none (Gate 4 is the code owner's)
 //   source: state (.forge/state.json) | artifacts (re-derived from docs/efforts/<slug>/ on the effort
 //           branch, and whether PR.md carries ## Evidence or the GitHub PR is ready; design section 9)
@@ -12,7 +15,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-import { DEFAULT_BRANCHES, git, globOfShape, localBranches, readHostConfig, readState } from '../hooks/scripts/lib.mjs';
+import { DEFAULT_BRANCHES, git, globOfShape, localBranches, readHostConfig, readState, readWorkflow } from '../hooks/scripts/lib.mjs';
 
 /** The command after each stage: the human running it is the approval of the gate the effort waits at. */
 const NEXT = { map: 'map', intent: 'spec', spec: 'plan', plan: 'build', build: 'build', built: 'none' };
@@ -26,11 +29,23 @@ const WHY = {
   built: 'Gate 4: the PR is ready for the code owner',
 };
 
-/** Why the run stopped, by the state's `stop` (the closed set of the gate policy reference); it replaces the stage's line. */
+/** The forge.yaml sources that make a gate attended and so write `stop: attended`; any other source writes no stop. */
+const ATTENDED_IN_YAML = /^(gates\.(?:intent|spec|plan)|workflow\.policy) in forge\.yaml$/;
+
+/**
+ * Why the run stopped, by the state's `stop` (the closed set of the gate policy reference, `attended` last);
+ * it replaces the stage's line. `attended` names the forge.yaml key that makes the gate attended now, read
+ * from the current settings like `policy`, or says it was when they no longer do.
+ */
 const STOP_WHY = {
-  open: 'an open line waits for the owner',
-  flagged: 'a flagged concern waits for the owner',
-  'risk-high': 'risk high, the effort runs attended',
+  open: () => 'an open line waits for the owner',
+  flagged: () => 'a flagged concern waits for the owner',
+  'risk-high': () => 'risk high, the effort runs attended',
+  attended: (gate) => {
+    const g = settings().stages.find((s) => s.gate?.key === gate)?.gate;
+    const key = g?.mode === 'attended' ? ATTENDED_IN_YAML.exec(g.source)?.[1] : undefined;
+    return key ? `gate ${gate} is attended in forge.yaml (${key})` : `gate ${gate} was attended in forge.yaml`;
+  },
 };
 
 const args = process.argv.slice(2);
@@ -45,8 +60,17 @@ const config = readHostConfig(dir);
 const shape = config?.branches?.effort || DEFAULT_BRANCHES.effort;
 const branchOf = (slug) => shape.replace('<slug>', slug);
 const state = readState(dir);
-/** The host's gate policy: `attended` unless the key reads exactly `autonomous`. The default lives here, not in lib.mjs. */
-const policy = config?.gates?.policy === 'autonomous' ? 'autonomous' : 'attended';
+/** The host's current gate settings: the resolved workflow with no effort position, read once. */
+let unpositioned;
+const settings = () => (unpositioned ??= readWorkflow(dir));
+/** The host's resolved global gate policy: `workflow.policy` in forge.yaml, else `## Gates` `policy`; `attended` unless it reads exactly `autonomous`. */
+const policy = settings().policy === 'autonomous' ? 'autonomous' : 'attended';
+
+/** Each gate's `{ mode, source }` from the resolved workflow, positioned on the effort (risk: high makes every gate attended). */
+function gatesOf(slug) {
+  const stages = readWorkflow(dir, slug).stages;
+  return Object.fromEntries(stages.filter((s) => s.gate).map(({ gate }) => [gate.key, { mode: gate.mode, source: gate.source }]));
+}
 
 /** The first ref of the effort branch that exists: local, then origin's. */
 function refOf(slug) {
@@ -91,13 +115,13 @@ function where(slug) {
   const record = state?.efforts?.[slug];
   if (record?.stage in NEXT) {
     const stop = Object.hasOwn(STOP_WHY, record.stop ?? '') ? record.stop : 'none';
-    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop];
-    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop };
+    const why = stop === 'none' ? WHY[record.stage] : STOP_WHY[stop](record.gate);
+    return { slug, stage: record.stage, gate: record.gate ?? 'none', next: NEXT[record.stage], why, source: 'state', policy, stop, gates: gatesOf(slug) };
   }
   const derived = fromArtifacts(slug);
   if (!derived) return null;
   const [stage, gate] = derived;
-  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none' };
+  return { slug, stage, gate, next: NEXT[stage], why: `${WHY[stage]} (no state record; read from ${branchOf(slug)})`, source: 'artifacts', policy, stop: 'none', gates: gatesOf(slug) };
 }
 
 if (list) {

@@ -1,0 +1,50 @@
+# PROTOTYPE, throwaway (ticket workflow-as-code 04). A sample of the plugin's
+# workflow.yaml: the loop as forge-sdlc runs it. Descriptive only: a host tunes
+# gates in its forge.yaml, never stages.
+version: 1
+stops: [open, flagged, risk-high, attended]
+stages:
+  wayfinder:
+    does: map, tickets, intent.md
+    command: /forge-sdlc:wayfinder
+    roles: [researcher, prototyper]
+    slots: [grilling, prototyper.prototype]
+    human: charting and grilling stay yours
+    gate:
+      n: 1
+      key: intent
+      artifact: intent.md
+      stops: [open, risk-high, attended]
+  spec:
+    does: spec.md under the policy skills
+    command: /forge-sdlc:spec
+    roles: [spec-writer]
+    slots: [spec-writer.codebase-design, domain-modeling, policy]
+    gate:
+      n: 2
+      key: spec
+      artifact: spec.md
+      stops: [open, flagged, risk-high, attended]
+  plan:
+    does: plan.md, slices, the quiz
+    command: /forge-sdlc:plan
+    roles: []
+    lead: the plan quiz
+    gate:
+      n: 3
+      key: plan
+      artifact: plan.md
+      stops: [open, risk-high, attended]
+  build:
+    does: one worktree per slice, merged when clean
+    command: /forge-sdlc:build
+    roles: [implementer, verifier, reviewer, merger]
+    slots: [implementer.tdd]
+    gate:
+      n: 4
+      key: pr
+      artifact: the PR
+      owner: always
+  pr:
+    does: ready for review; the code owner merges
+    end: true

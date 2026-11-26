@@ -1,6 +1,6 @@
 # 18. Gates pass by policy
 
-Status: accepted, 2026-10-19
+Status: accepted, 2026-10-19; superseded in part by ADR 0026 (the per-gate override in `workflow.gates.<key>`)
 
 ## Context
 

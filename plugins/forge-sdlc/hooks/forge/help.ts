@@ -71,41 +71,49 @@ export const MOD_COMMANDS: Row[] = [
   },
 ];
 
-// The loop, stage by stage: what runs, and where the driver is needed (`you`).
-export const LOOP: { stage: string; text: string; you?: string }[] = [
+// Before the loop: how to watch a run, and the setup once per host.
+export const LOOP_START: LoopProse[] = [
   {
-    stage: 'Watch',
-    text: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab); a plain `claude` runs them as named subagents, listed in /forge-pane and the band',
-    you: 'run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns); hover a band figure for what it counts',
+    name: 'watch',
+    you: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab), a plain `claude` runs them as named subagents; run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns) and hover a band figure for what it counts',
   },
   {
-    stage: 'Setup',
-    text: 'once per host: /mattpocock-skills:setup-matt-pocock-skills, then /forge-sdlc:init derives the proof commands and branches from the repo and writes docs/agents/forge.md',
-    you: 'answer what the repo cannot tell: the tracker, the gate policy, the risk paths, the crew theme',
-  },
-  {
-    stage: 'Plan',
-    text: '/forge-sdlc:wayfinder <idea | #issue | slug> charts a map on feat/<slug>, works its tickets (researcher, prototyper), writes intent.md and opens the draft PR',
-    you: 'Gate 1: accept intent.md, or the policy does when no open: line remains; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
-  },
-  {
-    stage: 'Design',
-    text: '/forge-sdlc:spec <slug>: the spec-writer synthesises spec.md under the policy skills, committed on feat/<slug> and linked from the PR',
-    you: 'Gate 2: approve spec.md, or the policy does when nothing is open or flagged; the tech lead too when risk: high',
-  },
-  {
-    stage: 'Build',
-    text: '/forge-sdlc:plan <slug> breaks the spec into tracer-bullet slices and publishes the tickets; /forge-sdlc:build <slug> runs unattended: one worktree and implementer per slice, test-first, the verifier, the three-axis review, merged --no-ff into feat/<slug> when clean, red after two fix rounds',
-    you: "Gate 3: answer plan's quiz and approve the breakdown, or the policy answers it under autonomous",
-  },
-  {
-    stage: 'Deploy',
-    text: 'build marks the PR ready with the evidence and the red slices; only feat/<slug> is ever pushed',
-    you: 'Gate 4: the code owner reviews the PR and merges it; always yours, whatever the policy',
+    name: 'setup',
+    you: 'once per host, /mattpocock-skills:setup-matt-pocock-skills, then /forge-sdlc:init derives the proof commands and branches from the repo and writes docs/agents/forge.md; answer what the repo cannot tell: the tracker, the gate policy, the risk paths, the crew theme',
   },
 ];
+
+// What the driver does at each stage of the loop, keyed by the workflow's
+// stage names (workflow.yaml); the stage's command and gate come from the
+// workflow. `you` is the text when the stage's gate stops for the driver
+// (or it has none); `policy` replaces it when the gate passes by policy.
+export const LOOP: Record<string, { you: string; policy?: string }> = {
+  map: {
+    you: 'start it with /forge-sdlc:wayfinder <idea | #issue | slug>, which charts the map on feat/<slug> with you; answer its grilling tickets and judge its prototypes, charting stays yours',
+  },
+  intent: {
+    you: 'accept intent.md; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
+    policy:
+      'the policy accepts intent.md when no open: line remains, you when it stops; /forge-sdlc:wayfinder <slug> resumes a stopped effort at its next stage',
+  },
+  spec: {
+    you: 'approve spec.md; the tech lead too when risk: high',
+    policy:
+      'the policy approves spec.md when nothing is open or flagged, you when it stops; the tech lead too when risk: high',
+  },
+  plan: {
+    you: "answer plan's quiz and approve the breakdown into tracer-bullet slices",
+    policy: "the policy answers plan's quiz and approves the breakdown, you when it stops",
+  },
+  build: {
+    you: 'nothing while /forge-sdlc:build <slug> runs the slices unattended (red after two fix rounds); then the code owner reviews the PR it marks ready and merges it, always theirs whatever the policy',
+  },
+  built: {
+    you: 'the PR carries the evidence and the red slices; only feat/<slug> is ever pushed',
+  },
+};
 export const GATES =
-  'Gates 1 to 3 pass by the gate policy under ## Gates in forge.md: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. Gate 4 is always the code owner’s.';
+  'Gates 1 to 3 pass by the gate policy, workflow.policy in docs/agents/forge.yaml: attended, the default, stops at each one for you; autonomous passes a gate with no open: line, no flagged concern and normal risk. gates.intent, gates.spec or gates.plan under workflow: sets that one gate to attended or policy, whatever the global policy. Gate 4 is always the code owner’s.';
 
 // A SKILL.md's frontmatter to its name, the first sentence of its description
 // and its argument hint; null when the file has no frontmatter or no name.
@@ -200,6 +208,183 @@ export const upstreamGroup = (skills: Skill[]): Group => ({
   title: UPSTREAM,
   rows: [...skills].sort((a, b) => a.name.localeCompare(b.name)).map((s) => row(UPSTREAM, s)),
 });
+
+// The loop as the /forge loop tab draws it (terminal B), from the resolved
+// workflow (hooks/roster.mjs resolveWorkflow) and the panel's width: rows of
+// text, each as wide as the panel, and the tone the panel paints it in. From
+// LOOP_BOXES columns passed stages fold to one line with their gate at the
+// right, and the current stage and those ahead are boxes with their gate in
+// the bottom border; below it, one line per stage, down to LOOP_FLOOR.
+// The shapes here are the reader's, written out: this module has no imports.
+export type LoopTone = 'title' | 'legend' | 'plain' | 'passed' | 'current' | 'ahead' | 'stopped' | 'swapped' | 'note';
+export type LoopRow = { text: string; tone: LoopTone };
+export type LoopGate = {
+  key: string;
+  n: number;
+  artifact: string;
+  stops: string[];
+  mode: string;
+  source: string;
+  status?: 'passed' | 'waiting' | 'stopped' | 'ahead';
+};
+export type LoopStage = {
+  name: string;
+  does: string;
+  command?: string;
+  roles: { role: string; agent: string; model?: string; effort?: string; swapped: boolean }[];
+  slots: { slot: string; skill: string }[];
+  status?: 'passed' | 'current' | 'ahead';
+  gate?: LoopGate;
+};
+export type LoopWorkflow = {
+  stages: LoopStage[];
+  policy: string;
+  maxParallelSlices: number;
+  effort: { slug: string; stage: string; gate: string; stop: string; risk: string } | null;
+};
+// The prose under the diagram: the start rows, then one per workflow stage
+// with an entry in LOOP, its command from the workflow, and a gate's line
+// headed by the gate and its mode.
+export type LoopProse = { name: string; command?: string; you: string };
+export function loopProse(stages: readonly LoopStage[]): LoopProse[] {
+  return [
+    ...LOOP_START,
+    ...stages.flatMap((s) => {
+      const text = Object.hasOwn(LOOP, s.name) ? LOOP[s.name] : undefined;
+      if (!text) return [];
+      const you = s.gate?.mode === 'policy' && text.policy ? text.policy : text.you;
+      return [
+        {
+          name: s.name,
+          ...(s.command ? { command: s.command } : {}),
+          you: s.gate ? `Gate ${s.gate.n} · ${s.gate.mode}: ${you}` : you,
+        },
+      ];
+    }),
+  ];
+}
+
+export const LOOP_BOXES = 52;
+export const LOOP_FLOOR = 24;
+export const LOOP_LEGEND = ['▶ here', '✓ passed', '■ stopped', '○ ahead', '⇄ swapped in forge.yaml'];
+
+// Cut to w with an ellipsis, or padded to w.
+const cut = (s: string, w: number): string => (s.length > w ? `${s.slice(0, Math.max(0, w - 1))}…` : s);
+const fit = (s: string, w: number): string => cut(s, w).padEnd(w);
+
+export function loopRows(workflow: LoopWorkflow, columns: number): LoopRow[] {
+  const W = Math.max(LOOP_FLOOR, Math.floor(columns));
+  return W >= LOOP_BOXES ? boxes(workflow, W) : lines(workflow, W);
+}
+
+const GATE_GLYPH = { passed: '✓', waiting: '▶', stopped: '■', ahead: '○' } as const;
+
+// A gate's text in its stage's bottom border.
+function gateText(g: LoopGate, stop: string): string {
+  const glyph = GATE_GLYPH[g.status ?? 'ahead'];
+  if (g.status === 'passed')
+    return `${glyph} Gate ${g.n} · passed by ${g.mode === 'policy' ? 'policy' : g.mode === 'owner' ? 'the code owner' : 'you'}`;
+  if (g.status === 'stopped') return `${glyph} Gate ${g.n} · ${g.mode} · STOPPED: ${stop}`;
+  if (g.status === 'waiting') return `${glyph} Gate ${g.n} · ${g.mode} · waiting`;
+  if (g.mode === 'policy') return `${glyph} Gate ${g.n} · policy · stops on ${g.stops.filter((s) => s !== 'attended').join(' · ')}`;
+  return `${glyph} Gate ${g.n} · ${g.mode} · always stops`;
+}
+
+function boxes(wf: LoopWorkflow, W: number): LoopRow[] {
+  const out: LoopRow[] = [];
+  const push = (text: string, tone: LoopTone) => out.push({ text: fit(text, W), tone });
+  const effort = wf.effort;
+  const title = effort
+    ? `${effort.slug} · policy ${wf.policy} · risk ${effort.risk} · ≤${wf.maxParallelSlices} slices`
+    : `the loop · policy ${wf.policy} · ≤${wf.maxParallelSlices} slices`;
+  push(title, 'title');
+  for (const line of legendLines(W)) push(line, 'legend');
+  const inner = W - 4;
+  wf.stages.forEach((s, i) => {
+    if (s.status === 'passed' && (!s.gate || s.gate.status === 'passed')) {
+      const who = s.roles.length ? s.roles.map((r) => r.role + (r.swapped ? ' ⇄' : '')).join(' · ') : 'lead';
+      const right = s.gate ? `Gate ${s.gate.n} ✓ ${s.gate.mode}` : '';
+      const left = `${fit(`✓ ${s.name}`, 10)}${who}`;
+      push(right ? `${fit(left, W - right.length - 1)} ${right}` : left, 'passed');
+      return;
+    }
+    const tone: LoopTone = s.status ?? 'plain';
+    if (!s.gate && i === wf.stages.length - 1) {
+      push(`  ▼ ${s.status === 'current' ? '▶ ' : ''}${s.name}  ${s.does}`, tone);
+      return;
+    }
+    const tag = s.status === 'current' ? ' ▶ here ' : '';
+    const name = fit(` ${s.name} `, Math.min(s.name.length + 2, W - 4 - tag.length)).trimEnd() + ' ';
+    out.push({ text: `╭─${name}${'─'.repeat(W - 3 - name.length - tag.length)}${tag}╮`, tone });
+    const row = (text: string, t: LoopTone = tone) => out.push({ text: `│ ${fit(text, inner)} │`, tone: t });
+    row(s.does);
+    const roleW = 12;
+    const modelW = 16;
+    const models = s.roles.map((r) => [r.model, r.effort].filter(Boolean).join(' · '));
+    const agentW = inner - roleW - 1 - (models.some(Boolean) ? modelW + 1 : 0);
+    if (!s.roles.length) row(`${fit('lead', roleW)} ${s.command ?? ''}`);
+    s.roles.forEach((r, k) => {
+      const agent = fit((r.swapped ? '⇄ ' : '') + r.agent, agentW);
+      row(`${fit(r.role, roleW)} ${agent}${models.some(Boolean) ? ` ${models[k]}` : ''}`, r.swapped ? 'swapped' : tone);
+    });
+    const skills = s.slots
+      .flatMap((k) => k.skill.split(', '))
+      .filter((k) => k && k !== 'none' && k !== 'disabled')
+      .map((k) => k.slice(k.lastIndexOf(':') + 1));
+    if (skills.length) row(`skills  ${skills.join(' · ')}`);
+    if (!s.gate) {
+      out.push({ text: `╰${'─'.repeat(W - 2)}╯`, tone });
+      return;
+    }
+    const g = s.gate;
+    const gt = ` ${cut(gateText(g, effort?.stop ?? 'none'), W - 6)} `;
+    out.push({ text: `╰─${gt}${'─'.repeat(W - 3 - gt.length)}╯`, tone: g.status === 'stopped' ? 'stopped' : g.status === 'waiting' ? 'current' : tone });
+    if (g.status === 'stopped' && effort) for (const line of stopLines(g, effort)) push(`  ${line}`, 'note');
+  });
+  return out;
+}
+
+// What a stopped gate adds under it: why, from the stop reason (only
+// `attended` names where its setting came from), and the command that resumes.
+function stopLines(g: LoopGate, effort: NonNullable<LoopWorkflow['effort']>): string[] {
+  const why: Record<string, string> = {
+    open: `an open: line in ${g.artifact}`,
+    flagged: `a flagged concern in ${g.artifact}`,
+    'risk-high': 'risk: high, every gate attended',
+    attended: `attended by ${g.source}`,
+  };
+  return [`why: ${why[effort.stop] ?? effort.stop}`, `resume: /forge-sdlc:wayfinder ${effort.slug}`];
+}
+
+// The legend, its entries kept whole, as many to a line as the width holds.
+function legendLines(W: number): string[] {
+  const out: string[] = [];
+  for (const item of LOOP_LEGEND) {
+    const last = out.pop();
+    if (last !== undefined && last.length + 2 + item.length <= W) out.push(`${last}  ${item}`);
+    else out.push(...(last === undefined ? [] : [last]), item);
+  }
+  return out;
+}
+
+function lines(wf: LoopWorkflow, W: number): LoopRow[] {
+  const out: LoopRow[] = [];
+  const push = (text: string, tone: LoopTone) => out.push({ text: fit(text, W), tone });
+  push(wf.effort?.slug || 'the loop', 'title');
+  push(`policy ${wf.policy}`, 'legend');
+  const STAGE_GLYPH = { passed: '✓', current: '▶', ahead: '○' } as const;
+  for (const s of wf.stages) {
+    const swap = s.roles.some((r) => r.swapped) ? ' ⇄' : '';
+    push(`${STAGE_GLYPH[s.status ?? 'ahead']} ${s.name}${swap}`, s.status ?? 'plain');
+    const g = s.gate;
+    if (!g) continue;
+    const status = g.status ?? 'ahead';
+    const tone: LoopTone = !g.status ? 'plain' : status === 'waiting' ? 'current' : status;
+    push(`${GATE_GLYPH[status]}   G${g.n} ${g.mode}`, tone);
+    if (status === 'stopped' && wf.effort) for (const line of stopLines(g, wf.effort)) push(`  ${line}`, 'note');
+  }
+  return out;
+}
 
 // Version directories newest first (`1.10.0` before `1.9.2`).
 export const newestVersionFirst = (versions: string[]): string[] =>
