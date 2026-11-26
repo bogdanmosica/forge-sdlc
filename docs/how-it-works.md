@@ -52,7 +52,7 @@ A gate's mode is `workflow.gates.<key>` (`intent`, `spec`, `plan`) in the host's
 flowchart TD
     at["stage done, artifact committed"] --> pol{"workflow.gates.key,<br/>else workflow.policy"}
     pol -->|attended| stopA["stop: attended<br/>owner passes it<br/>by typing the next command"]
-    pol -->|autonomous| risk{"risk: high?"}
+    pol -->|policy| risk{"risk: high?"}
     risk -->|yes| stopR["stop: risk-high<br/>effort runs attended from here<br/>Gate 2 labels needs-tech-lead"]
     risk -->|no| open{"open: line in<br/>the gate's artifact?"}
     open -->|yes| stopO["stop: open"]
