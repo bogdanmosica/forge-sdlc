@@ -82,7 +82,7 @@ const state = (efforts: Record<string, unknown>) => JSON.stringify({ version: 1,
 function seat(on: On, files: Record<string, string>, opts: { hostDir?: string } = {}): void {
   mock.env(on, { HOME: '/home' });
   const norm = (p: string) =>
-    (p.match(/(?:^|\/)((?:docs|\.forge|\.scratch)\/.*)$/)?.[1] ?? p.match(/(forge-sdlc(?:\/.*)?)$/)?.[1] ?? p).replace(/\/$/, '');
+    (p.match(/(?:^|\/)((?:docs|\.forge|\.scratch)\/.*)$/)?.[1] ?? p.match(/(?:^|.*\/)(forge-sdlc(?:\/.*)?)$/)?.[1] ?? p).replace(/\/$/, ''); // the last forge-sdlc folder: a checkout may be named forge-sdlc too
   on('session.start', ($, e) => ({ cwd: e.cwd }));
   on('session.cwd', () => ({ value: '/host' })); // the cwd start() opens the session in
   on('command.register', ($, e) => ({ value: { command: e.name } }));
