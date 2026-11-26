@@ -1,4 +1,4 @@
-// The workbench mod: the cmux-config views rebuilt inside Claude Code. The
+// The workbench mod: every Claude session at a glance, inside Claude Code. The
 // session store (sessions.ts) and each view register their own matched hooks
 // through registerWorkbench; the four unmatched events several parts need,
 // session.start, prompt.submit, turn.step and turn.complete, are hooked once

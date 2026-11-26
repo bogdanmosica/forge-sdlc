@@ -66,4 +66,4 @@ Then check the file reads back: `node "${CLAUDE_PLUGIN_ROOT}/bin/forge-config.mj
 
 ## 5. Report
 
-Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed). Done when the config reads back, forge.md, forge.yaml and the Delivery loop block are written and, on GitHub, `gh label list --search wayfinder:` shows all five labels.
+Three lines: the config path, the proof commands as written, and the guardrails now in force on this host (edits and commits on a protected branch are refused; only `feat/<slug>` is pushed, besides `chore/*` and `fix/*` outside an effort). Done when the config reads back, forge.md, forge.yaml and the Delivery loop block are written and, on GitHub, `gh label list --search wayfinder:` shows all five labels.

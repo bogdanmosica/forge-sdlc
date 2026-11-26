@@ -182,7 +182,7 @@ test('/forge loop opens on how the loop runs: each stage, and where the driver i
     expect(textsUnder(tree, 'commands'), surface).toEqual([]);
     const loop = textsUnder(tree, 'loop').join('\n');
     for (const stage of ['watch', 'setup', 'map', 'intent', 'spec', 'plan', 'build', 'built']) expect(loop, surface).toMatch(new RegExp(`^${stage}( · |$)`, 'm'));
-    expect(loop, surface).toMatch(/cmux claude-teams/); // how to watch the agents, one pane each
+    expect(loop, surface).toMatch(/agent teams enabled/); // how to watch the agents, one teammate each
     expect(loop, surface).toMatch(/\/forge-sdlc:init/);
     expect(loop, surface).toMatch(/\/forge-sdlc:wayfinder/);
     expect(loop, surface).toMatch(/\/forge-sdlc:build/);

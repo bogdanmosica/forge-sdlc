@@ -14,7 +14,7 @@ Read by every forge-sdlc skill and hook. One `- key: value` bullet per line unde
 ## Branches
 - default: main
 - protected: main
-- effort: feat/<slug>            # the only branch that is pushed
+- effort: feat/<slug>            # the effort's one pushed branch; chore/*, fix/* push outside an effort
 - slice: slice/<slug>-<nn>       # local, one worktree each, never pushed
 
 ## Worktrees

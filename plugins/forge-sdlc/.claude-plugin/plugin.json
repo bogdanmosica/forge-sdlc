@@ -1,6 +1,6 @@
 {
   "name": "forge-sdlc",
-  "version": "0.9.0",
+  "version": "0.9.2",
   "description": "The AI-native SDLC loop as a team of agents over Matt Pocock's skills: wayfinder front door, intent, spec, plan, build, guardrail hooks, and the roster: docs/agents/forge.yaml picks the agent, model and effort of each role and the skill of each slot, optionally enforced, and the loop itself: workflow.yaml declares its stages and gates, tuned per gate under workflow: in forge.yaml and drawn by bin/workflow.mjs as a Mermaid diagram and in /forge's loop tab. One effort, one folder, one pushed branch, one PR. Plus the run pane (/forge-pane: the frontier, the agents, where your context went, crew names from docs/agents/forge.md; the H button and /handoff-new hand the conversation off and start fresh; /forge, also /forge-sdlc:help, the help panel: the commands, the agents and how the loop runs) and the workbench mod: /focus-pane, /boards, a needs-you band above the prompt, /diff-pane, /side-chat, /morning, /crew.",
   "author": {
     "name": "Bogdan Mosica"

@@ -230,7 +230,7 @@ async function readChord($: EngineInterface): Promise<string | undefined> {
 // in the band's last row, under the agents, on every third turn (the 1st, 4th,
 // 7th...), the next tip each time, until the next prompt; no row otherwise.
 export const TIPS = [
-  'Start the session with `cmux claude-teams` to see each agent in its own pane; /forge loop says how',
+  'Start the session with agent teams enabled to see each agent as a named teammate; /forge loop says how',
   'Run /forge-pane to see the run: the frontier, the agents and where your context went',
   'Run /forge-sdlc:help, or /forge, for the commands, the agents and how the loop runs',
   'Run /forge-pane history to list the stored runs, /forge-pane export to write them as CSV',

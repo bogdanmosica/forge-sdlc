@@ -1,15 +1,13 @@
-// The slash commands, mod counterparts of cmux-config's palette scripts:
+// The slash commands:
 //
-//   /diff-pane [branch|working|staged|<ref>]  the diff in a pane (review-diff.sh's
-//        viewer): `branch` against the merge base with the remote default
+//   /diff-pane [branch|working|staged|<ref>]  the diff in a pane: `branch` against the merge base with the remote default
 //        branch, working tree included (the default off main); `working`
 //        against HEAD (the default on main); `staged`; or any ref
 //   /side-chat <question>  asks over this session's whole context through a
 //        fork, answered in a pane and never added to the conversation
-//        (side-chat.sh's vault fork)
 //   /morning  every live session's MR checked with glab: failed pipeline,
-//        conflicts, unresolved threads (morning-routine.sh)
-//   /crew <agent type> <task>  starts a named background agent (crew.sh spawn)
+//        conflicts, unresolved threads
+//   /crew <agent type> <task>  starts a named background agent
 //
 // Text from git, glab and the model is shown, never run; a ref given to /diff-pane
 // must not start with "-", so it cannot pass as a git option.

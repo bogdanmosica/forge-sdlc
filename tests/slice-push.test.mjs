@@ -25,11 +25,28 @@ test('on an initialised host, pushing a slice branch is denied with the effort s
   }
 });
 
-test('on an initialised host, any other ref is denied too: only the effort branch is pushed', () => {
-  const { dir } = host({ branch: 'fix/typo' });
-  assert.equal(decisionOf(push(dir, 'git push origin fix/typo')), 'deny');
+test('on an initialised host, any other ref is denied too: only the effort branch and chore/fix branches are pushed', () => {
+  const { dir } = host({ branch: 'wip/typo' });
+  assert.equal(decisionOf(push(dir, 'git push origin wip/typo')), 'deny');
   assert.equal(decisionOf(push(dir, 'git push')), 'deny');
   assert.equal(decisionOf(push(dir, 'git push origin main')), 'deny');
+  assert.equal(decisionOf(push(dir, 'git push origin chores/x')), 'deny');
+});
+
+test('on an initialised host, chore/* and fix/* branches outside an effort are pushed, by name or bare', () => {
+  for (const branch of ['chore/remove-cmux', 'fix/typo']) {
+    const { dir } = host({ branch });
+    for (const command of [`git push origin ${branch}`, 'git push', 'git push -u origin HEAD', 'git push origin @']) {
+      const r = push(dir, command);
+      assert.equal(r.status, 0, r.stderr);
+      assert.deepEqual(r.decision, {}, `${branch}: ${command}`);
+    }
+  }
+});
+
+test('the deny reason names the chore/ and fix/ way out', () => {
+  const { dir } = host({ branch: 'slice/x-01' });
+  assert.match(reasonOf(push(dir, 'git push')), /besides chore\/\* and fix\/\* branches outside an effort/);
 });
 
 test('the destination decides: slice content pushed onto the effort ref passes, effort content onto a slice ref does not', () => {

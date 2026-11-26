@@ -1,5 +1,4 @@
-// The Focus pane (`/focus-pane`): this session at a glance, the mod counterpart of
-// cmux-config's Focus board. Branch with its diff against the default branch
+// The Focus pane (`/focus-pane`): this session at a glance. Branch with its diff against the default branch
 // and its uncommitted and unpushed counts, the Jira ticket named in the branch,
 // the status, context, prompt cache, cost and rate limits with their resets,
 // the branch's MR from glab with the ready-to-merge checklist (needs the VPN;
@@ -33,8 +32,7 @@ const focusJiraTried = atom(
 const focusCache = atom({ plugin: 'forge-sdlc', key: 'focusCache' } as const, null as FocusCache | null);
 
 // Lines the checkout has that origin's default branch lacks: `git diff
-// --shortstat` against their merge base, untracked files counted as added, as
-// cmux-config's refresh-diff.sh counts them.
+// --shortstat` against their merge base, untracked files counted as added.
 async function diffStat($: EngineInterface, cwd: string) {
   const base = (await run($, ['git', 'symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd))?.trim();
   const mergeBase = base ? (await run($, ['git', 'merge-base', base, 'HEAD'], cwd))?.trim() : undefined;
@@ -153,9 +151,8 @@ function treeGate(git: FocusGit | null): MergeGate {
   return git.dirty ? { label, detail: 'uncommitted changes', state: 'fail' } : { label, detail: 'clean', state: 'ok' };
 }
 
-// The ready-to-merge checklist for an open MR, the gates of cmux-config's
-// Focus board (`mergeGates` in boards.js) but the agent todos, which a mod
-// cannot read.
+// The ready-to-merge checklist for an open MR, the merge gates minus the
+// agent todos, which a mod cannot read.
 export function mergeGates(mr: FocusMr | null, git: FocusGit | null): MergeGate[] | null {
   if (mr?.state !== 'opened') return null;
   const gates = [ciGate(mr.pipeline), conflictGate(mr), threadsGate(mr), approvedGate(mr)];
@@ -183,7 +180,7 @@ function left(ms: number): string {
   return h < 24 ? `${h}h ${m % 60}m` : `${Math.floor(h / 24)}d ${h % 24}h`;
 }
 
-// The prompt-cache chip of cmux-config's Focus board (`cacheChip`): green while
+// The prompt-cache chip: green while
 // the cached prefix is within its TTL, yellow in its last sixth, red once cold
 // with what the next request re-sends, grey when no request used the cache.
 export function cacheChip(c: FocusCache | null, now: number): { text: string; color: string } | null {

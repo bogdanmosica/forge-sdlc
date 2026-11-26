@@ -1,6 +1,5 @@
 // The needs-you band above the prompt: other sessions waiting on you, oldest
-// first, then those that finished a turn while you were away, the mod
-// counterpart of the needs-you strip on cmux-config's Board and Focus boards.
+// first, then those that finished a turn while you were away.
 // At most MAX_ROWS rows and a "+N more" line; a prompt waiting longer than
 // STALE_MS leaves the band (the Boards pane still lists it). "×" marks a row
 // read for this viewer, until that session asks again or finishes another

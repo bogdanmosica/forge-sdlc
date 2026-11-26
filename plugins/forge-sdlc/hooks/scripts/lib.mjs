@@ -17,6 +17,8 @@ export const STATE_FILE = path.join('.forge', 'state.json');
 
 /** Branch shapes used when the host config names none. */
 export const DEFAULT_BRANCHES = { effort: 'feat/<slug>', slice: 'slice/<slug>-<nn>' };
+/** Branches outside any effort, pushed for their own small PR: a chore or a fix that needs no intent, spec or plan (ADR 0028). */
+export const OUTSIDE_EFFORT_BRANCHES = ['chore/*', 'fix/*'];
 
 /* Payload */
 
@@ -142,8 +144,8 @@ export const globOfShape = (shape) => shape.replace(/<[^>]+>/g, '*');
 /**
  * The branch rules in force for the checkout in `dir`: the default branch (config, else
  * detected from origin/HEAD, else `main` or `master` when one exists), the protected globs
- * (the default branch plus the config's list), the effort and slice globs, and whether a
- * config exists at all.
+ * (the default branch plus the config's list), the effort and slice globs, the globs of the
+ * branches pushed outside an effort, and whether a config exists at all.
  */
 export function branchRules(config, dir) {
   const branches = config?.branches ?? {};
@@ -154,6 +156,7 @@ export function branchRules(config, dir) {
     protected: [...new Set([defaultBranch, ...listOf(branches.protected)].filter(Boolean))],
     effort: globOfShape(branches.effort || DEFAULT_BRANCHES.effort),
     slice: globOfShape(branches.slice || DEFAULT_BRANCHES.slice),
+    outside: OUTSIDE_EFFORT_BRANCHES,
   };
 }
 
