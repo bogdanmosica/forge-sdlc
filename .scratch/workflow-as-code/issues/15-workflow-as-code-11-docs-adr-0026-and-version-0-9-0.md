@@ -1,7 +1,7 @@
 # 15: workflow-as-code-11: Docs, ADR 0026 and version 0.9.0
 
 Type: slice
-Status: open
+Status: resolved
 Labels: ready-for-agent
 Spec: `docs/efforts/workflow-as-code/spec.md` on `feat/workflow-as-code`
 
@@ -23,3 +23,8 @@ node --test tests/workflow-docs.test.mjs && npm run check
 ```
 
 exits 0: the docs checks, validate, typecheck and every test green
+
+## Comments
+
+- red: verify record .forge/verify/workflow-as-code-11.json is green:false at head 3b8536f (proof exit 1: tests/workflow-docs.test.mjs "CLAUDE.md: a Commands line for bin/workflow.mjs and the loop tab clause", exit 1 on an unreadable state.json under --effort). Review not run; no record (none). Slice branch and worktree kept for the implementer.
+- merged 3ffed0de1d10ec625c9cc642cca3de028369f2f8; review record .forge/review/workflow-as-code-11.md (clean).
