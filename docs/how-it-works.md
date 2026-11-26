@@ -172,7 +172,7 @@ flowchart LR
         pb["protected-branch<br/>no edit/commit on main"]
         sf["spec-frozen<br/>intent/spec/plan read-only<br/>once stage is build"]
         tf["test-frozen<br/>test globs read-only<br/>in a checkout in fix mode"]
-        sp["slice-push<br/>push only feat/slug"]
+        sp["slice-push<br/>push only feat/slug,<br/>chore/* and fix/* outside an effort"]
         sd["secrets-in-diff<br/>no credential shapes<br/>or .env in a commit"]
     end
     subgraph Post["PostToolUse"]

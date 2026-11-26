@@ -1,6 +1,6 @@
 # 3. One pushed branch per effort, and the map and docs commit on it
 
-Status: accepted, 2026-10-17
+Status: accepted, 2026-10-17; amended by ADR 0028 (chore/* and fix/* push outside an effort)
 
 ## Context
 

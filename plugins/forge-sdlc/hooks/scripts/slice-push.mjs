@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Guardrail: one pushed branch per effort. PreToolUse on Bash `git push`: on a host with
 // docs/agents/forge.md, deny a push whose ref on origin is anything but the effort glob
-// (`feat/*`), including `--all` and `--mirror`; on a host without it, deny only a `slice/*`
+// (`feat/*`) or a branch outside an effort (`chore/*`, `fix/*`, ADR 0028), including `--all`
+// and `--mirror`; on a host without it, deny only a `slice/*`
 // ref. A bare push, `HEAD` or `@` resolve to the checked-out branch of the checkout the push
 // runs in (after a `cd` earlier in the command, or the push's own `-C`). Deletes pass: removing
 // a ref from origin is cleanup. Tags pass (`refs/tags/...`, `--tags`, or a name that is a tag and
@@ -107,7 +108,8 @@ function publishedRefs(push) {
 /** The ref the push would publish against the rules, or undefined when it publishes none. */
 export function offendingRef(push, rules) {
   if (push.deletes) return undefined;
-  const offends = (ref) => (rules.configured ? !matchesGlob(ref, rules.effort) : matchesGlob(ref, rules.slice));
+  const pushable = (ref) => [rules.effort, ...rules.outside].some((glob) => matchesGlob(ref, glob));
+  const offends = (ref) => (rules.configured ? !pushable(ref) : matchesGlob(ref, rules.slice));
   if (push.all) return rules.configured ? '--all' : localBranches(push.dir, rules.slice)[0];
   return publishedRefs(push)
     .filter((ref) => ref && !isTag(push.dir, ref)) // a detached HEAD or a non-repo publishes nothing git would accept
@@ -130,8 +132,9 @@ export function slicePushCheck(payload, { config }) {
     }
     return deny(
       rules.configured
-        ? `Ref ${hit} is not the effort branch, and only ${effort} is pushed (docs/agents/forge.md, Branches). ` +
-            'Slice branches stay local; the merger merges them into the effort branch. Push the effort branch instead.'
+        ? `Ref ${hit} is not the effort branch, and only ${effort} is pushed, besides ${rules.outside.join(' and ')} ` +
+            'branches outside an effort (docs/agents/forge.md, Branches). Slice branches stay local; the merger merges ' +
+            'them into the effort branch. Push the effort branch instead, or a chore/ or fix/ branch for work outside an effort.'
         : `Branch ${hit} is a slice branch, and slice branches are never pushed: a slice is a local worktree the ` +
             `merger merges into the effort branch ${effort}. Push the effort branch instead.`,
     );
