@@ -1,5 +1,5 @@
 // The Boards pane (`/boards`): every live Claude session with this plugin, the
-// mod counterpart of cmux-config's Boards panel, read from the session store
+// read from the session store
 // (sessions.ts) every REFRESH_MS. Four tabs:
 //
 //   Board  sessions grouped by repo: status, branch, last prompt, age, ctx, cost
@@ -201,8 +201,7 @@ export function registerBoards(on: On) {
         teams.length === 0
           ? [
               <Text key="crew-none" dimColor>
-                No agent team is running. Start the session with `cmux claude-teams` and the loop's agents join here,
-                one pane each.
+                No agent team is running. Start the session with agent teams enabled and the loop's agents join here.
               </Text>,
             ]
           : teams.map((t) => (

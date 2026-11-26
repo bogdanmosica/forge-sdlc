@@ -9,7 +9,6 @@ Matt's skills are used unmodified. forge-sdlc adds the frame: where each artifac
 ```sh
 claude plugin marketplace add <path or URL of this repository>
 claude plugin install forge-sdlc@forge-personal --scope project
-claude plugin install workbench@forge-personal --scope user   # optional, the cmux hooks, see Workbench below
 ```
 
 `mattpocock-skills@claude-plugins-official` is a declared dependency. The CLI installs it with forge-sdlc, at the same scope, and the success line lists it (`+ 1 dependency: mattpocock-skills`). That works because this marketplace's `allowCrossMarketplaceDependenciesOn` names `claude-plugins-official`; without that allowlist the CLI skips a dependency from another marketplace and forge-sdlc fails to load. If the success line does not list the dependency, install it by hand at the same scope and the plugin loads on the next start:
@@ -106,7 +105,7 @@ workflow:
 
 Build is unattended: each slice is built test-first in its own worktree, verified (`.forge/verify/<slug>-<nn>.json`), reviewed on three axes (Standards, Spec, Bugs and security), and merged `--no-ff` into `feat/<slug>` only when clean. Two fix rounds at most, then the slice is red: it stays local and is listed in the PR. Only `feat/<slug>` is ever pushed.
 
-Every agent the loop starts is a named member, its name drawn from the crew theme `init` asks for. A lead launched with agent teams enabled (as `cmux claude-teams` does) is what makes the names visible: each member opens as a named pane, listed in cmux's Crew panel, and closes once its work is settled. A plain lead runs the same calls as subagents, and the names show only in the Gate 4 report.
+Every agent the loop starts is a named member, its name drawn from the crew theme `init` asks for. A lead launched with agent teams enabled is what makes the names visible: each member opens as a named teammate, listed in `/boards`' Crew tab, and closes once its work is settled. A plain lead runs the same calls as subagents, and the names show only in the Gate 4 report.
 
 ## Hooks
 
@@ -145,13 +144,11 @@ Reminders for the agent, not a sandbox: the git host's branch protection stays t
 
 The [roster](#roster) in `docs/agents/forge.yaml` feeds it: a role's `agent`, `model` and `effort` are applied at spawn and on every step (a swap only to an agent type the session offered), the row marked `⇄ routed`, each invalid entry and each bullet left in the deprecated `## Routing` toasted once and kept in the band ([plugins/forge-sdlc/hooks/ROUTING.md](plugins/forge-sdlc/hooks/ROUTING.md)). An optional section of `docs/agents/forge.md` also feeds it: `## Mark` (`text`, `color`, a hex colour in quotes) replaces the `forge` word at the left of the band. The `## Crew` theme init writes also names, at spawn, any agent the lead left unnamed (a skill's own Explore or general-purpose agent) from the theme's `general` pool, in front of its description; the loop's member calls keep the name `bin/crew-name.mjs` gave them, shown in its display form. The Agent call itself is never rewritten: a rewrite lands after auto mode reviewed the call, which then refuses it once.
 
-Ported from eMAG's `emag-sdlc` plugin on 2026-10-31 (0.3.0; the handoff button 0.4.0; the `/forge` help panel 0.5.0; its Tools group listing all nine of the mod's commands 0.5.1), without its GitLab merge-request gauge and Jira; synced on 2026-11-07 (0.6.0): crew naming at spawn, the command center, the `cmux claude-teams` watch hints, and the context-budget hook.
+Ported from eMAG's `emag-sdlc` plugin on 2026-10-31 (0.3.0; the handoff button 0.4.0; the `/forge` help panel 0.5.0; its Tools group listing all nine of the mod's commands 0.5.1), without its GitLab merge-request gauge and Jira; synced on 2026-11-07 (0.6.0): crew naming at spawn, the command center, the agent-teams watch hints, and the context-budget hook.
 
 ## Workbench
 
 forge-sdlc also carries the workbench mod (`plugins/forge-sdlc/hooks/workbench.tsx`, registered from the run pane's module): every running Claude session at a glance inside Claude Code. `/focus-pane` shows this session (branch with its diff against the default branch, the Jira ticket the branch names, the MR from `glab` with a ready-to-merge checklist, context, prompt cache, cost and rate limits, the files edited); `/boards` lists every live session (board, lanes, inbox, agent teams) from the records each session keeps in `~/.cache/workbench/sessions/`; a needs-you band above the prompt names the sessions waiting on you; `/diff-pane`, `/side-chat`, `/morning` and `/crew` do the rest. The same mod ships in eMAG's `emag-sdlc` plugin, so a host with either plugin has it; the records are shared, so sessions under either see each other.
-
-`plugins/workbench/` is a second, standalone plugin in this marketplace, unrelated to the loop: command hooks (`hooks/scripts/`) that feed the [cmux](https://github.com/manaflow-ai/cmux) sidebars (needs-you marker, lanes, task mirror, checkpoints, activity log, FILES line, team and crew sync) and stay silent outside cmux, and the `cmux-crew` skill, which runs a visible team of sessions, one cmux pane per member. It is installed at user scope so the hooks run in any project's session. It moved here from the eMAG `agent-pipeline` repository on 2026-10-29 at version 0.5.1; its mod moved into forge-sdlc and emag-sdlc the same day (0.6.0).
 
 ## Developing
 

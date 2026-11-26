@@ -92,7 +92,7 @@ test('the loop prose says the front door resumes a stopped effort, and that Gate
   const you = (name) => prose.find((p) => p.name === name)?.you ?? '';
   assert.match(you('intent'), /\/forge-sdlc:wayfinder <slug> resumes/, 'a stopped effort resumes with /forge-sdlc:wayfinder <slug>');
   assert.match(you('build'), /code owner/);
-  assert.match(you('watch'), /cmux claude-teams/);
+  assert.match(you('watch'), /agent teams enabled/);
   assert.match(you('setup'), /\/forge-sdlc:init/);
 });
 

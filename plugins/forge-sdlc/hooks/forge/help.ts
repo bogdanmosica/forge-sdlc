@@ -43,7 +43,7 @@ export const MOD_COMMANDS: Row[] = [
   },
   {
     command: '/boards',
-    description: 'Every running Claude session: board, lanes, inbox, and the crew of a `cmux claude-teams` lead.',
+    description: 'Every running Claude session: board, lanes, inbox, and the crew of an agent-teams lead.',
   },
   {
     command: '/diff-pane',
@@ -75,7 +75,7 @@ export const MOD_COMMANDS: Row[] = [
 export const LOOP_START: LoopProse[] = [
   {
     name: 'watch',
-    you: 'start the host session with `cmux claude-teams` and every agent the loop spawns opens in its own cmux pane (the Crew panel, /boards Crew tab), a plain `claude` runs them as named subagents; run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns) and hover a band figure for what it counts',
+    you: 'start the host session with agent teams enabled and every agent the loop spawns opens as a named teammate (the /boards Crew tab), a plain `claude` runs them as named subagents; run /forge-pane to see the run (it opens by itself on /forge-sdlc:wayfinder and /forge-sdlc:build from 144 columns) and hover a band figure for what it counts',
   },
   {
     name: 'setup',

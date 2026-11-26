@@ -116,7 +116,7 @@ test('without credentials or off VPN there is no ticket row and no error', async
   expect(h.fetches).toEqual([]);
 });
 
-test('the merge gates follow the cmux Focus board', () => {
+test('the merge gates of an open MR', () => {
   const mr: FocusMr = {
     iid: 1,
     url: 'u',

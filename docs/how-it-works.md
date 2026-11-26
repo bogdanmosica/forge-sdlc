@@ -75,7 +75,7 @@ A stop writes `stop: open | flagged | risk-high | attended` beside `gate` in `.f
 
 ## 3. Inside a build
 
-Every agent is a **member call** ([MEMBERS.md](../plugins/forge-sdlc/skills/build/MEMBERS.md)): named by `bin/crew-name.mjs` from the host's crew theme, a visible pane under a `cmux claude-teams` lead, a subagent under a plain one.
+Every agent is a **member call** ([MEMBERS.md](../plugins/forge-sdlc/skills/build/MEMBERS.md)): named by `bin/crew-name.mjs` from the host's crew theme, a named teammate under a lead with agent teams enabled, a subagent under a plain one.
 
 ```mermaid
 sequenceDiagram
