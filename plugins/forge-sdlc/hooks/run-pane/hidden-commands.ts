@@ -8,7 +8,11 @@
 
 // The plugin whose commands are hidden; a matcher pins `provider.plugin` to it,
 // so a host's or another plugin's command of the same short name stays listed.
+// The engine names a plugin's provider by its plugin id, `<name>@<marketplace>`
+// (`mattpocock-skills@claude-plugins-official`), so the pin takes that id from
+// any marketplace, and the bare name besides.
 export const UPSTREAM_PLUGIN = 'mattpocock-skills';
+const UPSTREAM_ID = new RegExp(`^${UPSTREAM_PLUGIN}@`);
 
 // The short names: what spec, plan, build, wayfinder, init and slice-review
 // read by file or replace.
@@ -22,12 +26,12 @@ export const HIDDEN_COMMANDS: readonly string[] = [
   'pr',
 ];
 
-export type HiddenMatcher = { command: readonly string[]; provider: { plugin: string } };
+export type HiddenMatcher = { command: readonly string[]; provider: { plugin: readonly (string | RegExp)[] } };
 
 // The `command.describe` matcher for one short name: its plugin-qualified or
 // bare name, from the upstream plugin only.
 export function hiddenMatcher(name: string): HiddenMatcher {
-  return { command: [`${UPSTREAM_PLUGIN}:${name}`, name], provider: { plugin: UPSTREAM_PLUGIN } };
+  return { command: [`${UPSTREAM_PLUGIN}:${name}`, name], provider: { plugin: [UPSTREAM_PLUGIN, UPSTREAM_ID] } };
 }
 
 // Whether a listed command, by its name and its provider's plugin, is one of
@@ -35,6 +39,6 @@ export function hiddenMatcher(name: string): HiddenMatcher {
 export function isHiddenCommand(command: string, plugin: string): boolean {
   return HIDDEN_COMMANDS.some((name) => {
     const m = hiddenMatcher(name);
-    return m.provider.plugin === plugin && m.command.includes(command);
+    return m.provider.plugin.some((p) => (typeof p === 'string' ? p === plugin : p.test(plugin))) && m.command.includes(command);
   });
 }

@@ -49,6 +49,16 @@ test("an upstream name, qualified or bare, from mattpocock-skills is hidden", ()
   }
 });
 
+test('the provider is matched by plugin id, <name>@<marketplace>, as the engine names it', () => {
+  for (const name of HIDDEN_COMMANDS) {
+    assert.equal(isHiddenCommand(`mattpocock-skills:${name}`, 'mattpocock-skills@claude-plugins-official'), true, name);
+    assert.equal(isHiddenCommand(name, 'mattpocock-skills@claude-plugins-official'), true, name);
+  }
+  assert.equal(isHiddenCommand('mattpocock-skills:tdd', 'mattpocock-skills@claude-plugins-official'), false);
+  assert.equal(isHiddenCommand('wayfinder', 'mattpocock-skills-fork@elsewhere'), false);
+  assert.equal(isHiddenCommand('forge-sdlc:wayfinder', 'forge-sdlc@forge-personal'), false);
+});
+
 test('the same name from another provider, or as forge-sdlc:<name>, stays listed', () => {
   assert.equal(isHiddenCommand('pr', 'my-tools'), false);
   assert.equal(isHiddenCommand('code-review', 'engine'), false);
@@ -60,6 +70,6 @@ test('the same name from another provider, or as forge-sdlc:<name>, stays listed
 test("a matcher names the qualified and the bare name and pins the provider's plugin", () => {
   assert.deepEqual(hiddenMatcher('to-spec'), {
     command: ['mattpocock-skills:to-spec', 'to-spec'],
-    provider: { plugin: 'mattpocock-skills' },
+    provider: { plugin: ['mattpocock-skills', /^mattpocock-skills@/] },
   });
 });
