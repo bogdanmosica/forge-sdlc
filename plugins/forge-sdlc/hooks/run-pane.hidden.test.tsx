@@ -8,7 +8,9 @@ import { test, expect } from 'claude-code/testing';
 import type { Engine } from 'claude-code/testing';
 import type { On, Origin } from 'claude-code';
 
-const MATT: Origin = { plugin: 'mattpocock-skills', tier: 'user' };
+// The engine names a plugin's provider by its plugin id, `<name>@<marketplace>`,
+// as it seats Matt's plugin from the official marketplace.
+const MATT: Origin = { plugin: 'mattpocock-skills@claude-plugins-official', tier: 'user' };
 
 function seat(on: On) {
   on('command.describe', ($, e) => ({
@@ -47,8 +49,15 @@ test('a bare upstream name from mattpocock-skills is hidden too', async ($, on) 
   expect((await describe($, 'to-spec', MATT)).isHidden).toBe(true);
 });
 
+test('mattpocock-skills from another marketplace, or named bare, is hidden too', async ($, on) => {
+  seat(on);
+  expect((await describe($, 'mattpocock-skills:wayfinder', { plugin: 'mattpocock-skills@forge-personal', tier: 'user' })).isHidden).toBe(true);
+  expect((await describe($, 'mattpocock-skills:wayfinder', { plugin: 'mattpocock-skills', tier: 'user' })).isHidden).toBe(true);
+});
+
 const LISTED: [string, Origin][] = [
-  ['forge-sdlc:wayfinder', { plugin: 'forge-sdlc', tier: 'user' }],
+  ['forge-sdlc:wayfinder', { plugin: 'forge-sdlc@forge-personal', tier: 'user' }],
+  ['wayfinder', { plugin: 'mattpocock-skills-fork@elsewhere', tier: 'user' }],
   ['mattpocock-skills:tdd', MATT],
   ['mattpocock-skills:grill-me', MATT],
   ['pr', { plugin: 'my-tools', tier: 'user' }],
